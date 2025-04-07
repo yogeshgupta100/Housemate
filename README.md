@@ -98,7 +98,6 @@ With modern UI animations and transitions powered by Framer Motion, BuildEstate 
 
 ### AI Integration
 ![Azure AI](https://img.shields.io/badge/Azure_AI-0078D4?style=flat-square&logo=microsoftazure)
-![FirecrawlJS](https://img.shields.io/badge/FirecrawlJS-FFA500?style=flat-square)
 ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai)
 
 ## 🚀 Getting Started
@@ -133,7 +132,6 @@ JWT_SECRET=your_jwt_secret
 EMAIL=your_email_for_sending_notifications
 PASSWORD=your_email_password
 AZURE_API_KEY=your_azure_ai_key
-FIRECRAWL_API_KEY=your_firecrawl_api_key
 ```
 
 **Frontend (.env.local)**

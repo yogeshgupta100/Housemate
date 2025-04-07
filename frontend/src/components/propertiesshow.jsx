@@ -227,6 +227,7 @@ const PropertiesShow = () => {
         
         if (response.data.success) {
           // Take only the first 6 properties for featured section
+          // console.log(response.data.property[0],'hello');
           const featuredProperties = response.data.property.slice(0, 6);
           setProperties(featuredProperties);
         } else {

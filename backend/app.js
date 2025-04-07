@@ -1,0 +1,63 @@
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import connectDB from './config/db.js';
+import { errorHandler } from './utils/error.js';
+
+// Load env vars
+dotenv.config();
+
+// Connect to database
+connectDB();
+
+// Create Express app
+const app = express();
+
+// Get directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+
+// Set static folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Routes
+import authRoutes from './routes/authRoutes.js';
+import propertyRoutes from './routes/propertyRoutes.js';
+import newsRoutes from './routes/newsRoute.js';
+// import userRoutes from './routes/UserRoute.js';
+import appointmentRoutes from './routes/appointmentRoute.js';
+import adminRoutes from './routes/adminRoute.js';
+import productRoutes from './routes/ProductRouter.js';
+
+app.use('/api/auth', authRoutes);
+app.use('/api/properties', propertyRoutes);
+app.use('/api/news', newsRoutes);
+// app.use('/api/users', userRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
+
+// Error handling
+app.use(errorHandler);
+
+// Handle 404 routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+}); 

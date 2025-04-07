@@ -20,7 +20,6 @@ import AIPropertyHub from './pages/Aiagent'
 import StructuredData from './components/SEO/StructuredData';
 import 'react-toastify/dist/ReactToastify.css';
 
-
 export const Backendurl = import.meta.env.VITE_BACKEND_URL;
 
 const App = () => {
@@ -55,4 +54,4 @@ const App = () => {
   )
 }
 
-export default App
+export default App 
