@@ -18,7 +18,15 @@ import NotFoundPage from './components/Notfound';
 import { AuthProvider } from './context/AuthContext';
 import AIPropertyHub from './pages/Aiagent'
 import StructuredData from './components/SEO/StructuredData';
+import Dashboard from './components/dashboard/Dashboard';
+import Profile from './components/dashboard/Profile';
+import Favorites from './components/dashboard/Favorites';
+import Wallet from './components/dashboard/Wallet';
 import 'react-toastify/dist/ReactToastify.css';
+import AdminDashboard from './components/admin/Dashboard';
+import Users from './components/admin/Users';
+import MyCoupons from './components/dashboard/MyCoupons';
+import DraftProperties from './components/dashboard/DraftProperties';
 
 
 export const Backendurl = import.meta.env.VITE_BACKEND_URL;
@@ -45,6 +53,23 @@ const App = () => {
         <Route path="/about" element={<Aboutus />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/ai-property-hub" element={<AIPropertyHub />} />
+        
+        {/* Dashboard Routes */}
+        <Route path="/dashboard" element={<Dashboard />}>
+          <Route path="profile" element={<Profile />} />
+          <Route path="favorites" element={<Favorites />} />
+          <Route path="wallet" element={<Wallet />} />
+          <Route path="coupons" element={<MyCoupons />} />
+          <Route path="draft-properties" element={<DraftProperties />} />
+        </Route>
+        
+        <Route path="/admin" element={<AdminDashboard />}>
+          <Route index element={<div>Admin Dashboard</div>} />
+          <Route path="users" element={<Users />} />
+          <Route path="properties" element={<div>Properties Management</div>} />
+          <Route path="settings" element={<div>Settings</div>} />
+        </Route>
+        
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Footer />

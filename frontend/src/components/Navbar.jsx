@@ -149,6 +149,29 @@ const Navbar = () => {
                             {user?.email}
                           </p>
                         </div>
+                        
+                        {/* Dashboard Links */}
+                        <Link
+                          to="/dashboard/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        >
+                          My Profile
+                        </Link>
+                        <Link
+                          to="/dashboard/favorites"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        >
+                          Favorite Properties
+                        </Link>
+                        <Link
+                          to="/dashboard/wallet"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        >
+                          My Wallet
+                        </Link>
+                        
+                        <div className="border-t border-gray-100 my-1"></div>
+                        
                         <motion.button
                           whileHover={{ x: 5 }}
                           onClick={handleLogout}
@@ -333,126 +356,128 @@ const MobileNavLinks = ({
   const isListPropertyActive = currentPath.startsWith("/list-property");
 
   return (
-    <div className="flex flex-col space-y-2 pb-3">
-      {/* Primary Actions */}
-      <div className="grid grid-cols-2 gap-3 px-3 py-2">
-        {/* List Property Button */}
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link
-            to="/list-property"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg shadow-sm transition-colors
-              ${isListPropertyActive
-                ? "bg-blue-700 text-white"
-                : "bg-blue-600 text-white hover:bg-blue-700"}`}
-          >
-            <Building className="w-5 h-5" />
-            <span className="text-sm font-medium">List Property</span>
-          </Link>
-        </motion.div>
-
-        {/* AI Hub Button */}
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link
-            to="/ai-property-hub"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg shadow-sm transition-all relative
-              ${isAIHubActive
-                ? "bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 text-white"
-                : "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700"}`}
-          >
-            <div className="relative">
-              <BotMessageSquare className="w-5 h-5" />
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute -top-1 -right-1"
-              >
-                <Sparkles className="w-3 h-3 text-yellow-400" />
-              </motion.div>
-            </div>
-            <span className="text-sm font-medium">AI Hub</span>
-            {!isAIHubActive && (
-              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-full text-[10px] font-bold">
-                NEW
-              </span>
-            )}
-          </Link>
-        </motion.div>
-      </div>
-
-      <div className="w-full px-3 py-1">
-        <div className="border-t border-gray-100"></div>
-      </div>
-
-      {/* Navigation Links */}
-      {navLinks.map(({ name, path, icon: Icon }) => {
-        const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
-        return (
-          <motion.div key={name} whileTap={{ scale: 0.97 }}>
+    <div className="md:hidden">
+      <div className="px-2 pt-2 pb-3 space-y-1">
+        <Link
+          to="/"
+          className={`block px-3 py-2 rounded-md text-base font-medium ${
+            currentPath === "/"
+              ? "bg-blue-50 text-blue-600"
+              : "text-gray-700 hover:bg-gray-50"
+          }`}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Home
+        </Link>
+        
+        {/* Add Dashboard Links for Mobile */}
+        {isLoggedIn && (
+          <>
             <Link
-              to={path}
-              className={`flex items-center gap-3 px-4 py-3 mx-3 rounded-lg transition-colors
-                ${isActive
-                  ? "bg-blue-50 text-blue-600 font-medium"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                }`}
+              to="/dashboard/profile"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                currentPath === "/dashboard/profile"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              <Icon className="w-5 h-5" />
-              {name}
+              My Profile
             </Link>
-          </motion.div>
-        );
-      })}
-
-      {/* Auth Section */}
-      <div className="pt-4 mt-2 border-t border-gray-100">
-        {isLoggedIn ? (
-          <div className="space-y-3 px-3">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
-                {user?.name ? user.name[0].toUpperCase() : "U"}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-              </div>
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => {
-                handleLogout();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            <Link
+              to="/dashboard/favorites"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                currentPath === "/dashboard/favorites"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
             >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign out</span>
-            </motion.button>
-          </div>
-        ) : (
-          <div className="flex flex-col space-y-3 px-3">
-            <motion.div whileTap={{ scale: 0.97 }}>
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all font-medium"
-              >
-                Sign in
-              </Link>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.97 }}>
-              <Link
-                to="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md shadow-blue-500/20"
-              >
-                Create account
-              </Link>
-            </motion.div>
-          </div>
+              Favorite Properties
+            </Link>
+            <Link
+              to="/dashboard/wallet"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                currentPath === "/dashboard/wallet"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              My Wallet
+            </Link>
+          </>
         )}
+        
+        {/* Rest of the mobile menu items */}
+        {navLinks.map(({ name, path, icon: Icon }) => {
+          const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
+          return (
+            <motion.div key={name} whileTap={{ scale: 0.97 }}>
+              <Link
+                to={path}
+                className={`flex items-center gap-3 px-4 py-3 mx-3 rounded-lg transition-colors
+                  ${isActive
+                    ? "bg-blue-50 text-blue-600 font-medium"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                  }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Icon className="w-5 h-5" />
+                {name}
+              </Link>
+            </motion.div>
+          );
+        })}
+
+        {/* Auth Section */}
+        <div className="pt-4 mt-2 border-t border-gray-100">
+          {isLoggedIn ? (
+            <div className="space-y-3 px-3">
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
+                  {user?.name ? user.name[0].toUpperCase() : "U"}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                </div>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Sign out</span>
+              </motion.button>
+            </div>
+          ) : (
+            <div className="flex flex-col space-y-3 px-3">
+              <motion.div whileTap={{ scale: 0.97 }}>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all font-medium"
+                >
+                  Sign in
+                </Link>
+              </motion.div>
+              <motion.div whileTap={{ scale: 0.97 }}>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md shadow-blue-500/20"
+                >
+                  Create account
+                </Link>
+              </motion.div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

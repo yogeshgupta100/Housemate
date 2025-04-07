@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { Backendurl } from '../../App';
@@ -10,13 +10,16 @@ import {
   Phone,
   Mail,
   Building,
-  Upload
+  Upload,
+  Save
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const PropertyListingForm = () => {
   const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get('draft');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -52,7 +55,7 @@ const PropertyListingForm = () => {
     images: [],
   });
 
-  // Check if user is allowed to list property
+  // Check if user is allowed to list property and load draft if exists
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
@@ -76,7 +79,30 @@ const PropertyListingForm = () => {
         }
       }));
     }
-  }, [isLoggedIn, user, navigate]);
+
+    // Load draft if draftId exists
+    if (draftId) {
+      loadDraft(draftId);
+    }
+  }, [isLoggedIn, user, navigate, draftId]);
+
+  const loadDraft = async (id) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${Backendurl}/api/properties/drafts/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setFormData(response.data.draft);
+      toast.info('Draft loaded successfully');
+    } catch (err) {
+      console.error('Error loading draft:', err);
+      toast.error('Failed to load draft');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -100,31 +126,83 @@ const PropertyListingForm = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    // Here you would typically upload the files to your server/cloud storage
-    // For now, we'll just store the file objects
     setFormData(prev => ({
       ...prev,
       images: [...prev.images, ...files]
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Check if user is logged in
+  const handleSaveDraft = async () => {
     if (!isLoggedIn) {
-      toast.info("Please login to list a property");
-      navigate("/login", { 
-        state: { 
-          from: { 
-            pathname: "/list-property" 
-          } 
-        } 
-      });
+      toast.info("Please login to save a draft");
+      navigate("/login");
       return;
     }
 
-    // Check if user is corporate
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to save a draft');
+        navigate("/login");
+        return;
+      }
+
+      const formDataToSend = new FormData();
+      
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'images') {
+          value.forEach(file => {
+            formDataToSend.append('images', file);
+          });
+        } else if (typeof value === 'object') {
+          formDataToSend.append(key, JSON.stringify(value));
+        } else {
+          formDataToSend.append(key, value);
+        }
+      });
+
+      const url = draftId 
+        ? `${Backendurl}/api/properties/drafts/${draftId}`
+        : `${Backendurl}/api/properties/drafts`;
+
+      const method = draftId ? 'put' : 'post';
+
+      const response = await axios[method](
+        url,
+        formDataToSend,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(draftId ? 'Draft updated successfully!' : 'Draft saved successfully!');
+        navigate('/dashboard/draft-properties');
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      setError(error.response?.data?.message || 'Failed to save draft');
+      toast.error(error.response?.data?.message || 'Failed to save draft');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!isLoggedIn) {
+      toast.info("Please login to list a property");
+      navigate("/login");
+      return;
+    }
+
     if (user?.userType === "corporate") {
       setError("Corporate users cannot list properties. Please contact support for assistance.");
       toast.error("Corporate users cannot list properties");
@@ -138,20 +216,12 @@ const PropertyListingForm = () => {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Please login to list a property');
-        navigate("/login", { 
-          state: { 
-            from: { 
-              pathname: "/list-property" 
-            } 
-          } 
-        });
+        navigate("/login");
         return;
       }
 
-      // Create FormData object for file upload
       const formDataToSend = new FormData();
       
-      // Append all form fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'images') {
           value.forEach(file => {
@@ -812,15 +882,23 @@ const PropertyListingForm = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center pt-6">
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {draftId ? 'Update Draft' : 'Save as Draft'}
+              </button>
+              
               <button
                 type="submit"
                 disabled={loading}
-                className={`px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {loading ? 'Listing Property...' : 'List Property'}
+                {loading ? 'Submitting...' : 'List Property'}
               </button>
             </div>
           </form>
