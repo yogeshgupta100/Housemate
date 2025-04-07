@@ -1,0 +1,260 @@
+.wallet-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.wallet-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.add-money-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-money-button:hover {
+  background-color: #218838;
+}
+
+.wallet-balance {
+  margin-bottom: 40px;
+}
+
+.balance-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 30px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-icon {
+  font-size: 2.5rem;
+  color: #007bff;
+}
+
+.balance-details h2 {
+  margin: 0;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.balance-amount {
+  margin: 5px 0 0;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.add-money-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.modal-content h2 {
+  margin: 0 0 20px;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.submit-button,
+.cancel-button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.submit-button:hover {
+  background-color: #218838;
+}
+
+.cancel-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #c82333;
+}
+
+.transactions-section {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.transactions-section h2 {
+  margin: 0 0 20px;
+  color: #333;
+}
+
+.no-transactions {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.transaction-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.transaction-item.credit .transaction-icon {
+  background-color: #d4edda;
+  color: #28a745;
+}
+
+.transaction-item.debit .transaction-icon {
+  background-color: #f8d7da;
+  color: #dc3545;
+}
+
+.transaction-details {
+  flex: 1;
+}
+
+.transaction-details h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.transaction-date {
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.transaction-amount {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.transaction-item.credit .transaction-amount {
+  color: #28a745;
+}
+
+.transaction-item.debit .transaction-amount {
+  color: #dc3545;
+}
+
+.wallet-loading,
+.wallet-error {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.wallet-error {
+  color: #dc3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .wallet-container {
+    padding: 10px;
+  }
+
+  .balance-card {
+    padding: 20px;
+  }
+
+  .wallet-icon {
+    font-size: 2rem;
+  }
+
+  .balance-amount {
+    font-size: 1.5rem;
+  }
+
+  .modal-content {
+    margin: 20px;
+  }
+} 
