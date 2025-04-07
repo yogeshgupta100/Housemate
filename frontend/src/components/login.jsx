@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Loader } from "lucide-react";
@@ -8,7 +8,6 @@ import { Backendurl } from "../App";
 import { authStyles } from "../styles/auth";
 import { toast } from "react-toastify";
 import { useAuth } from '../context/AuthContext';
-
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -18,8 +17,11 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
+  // Get the redirect path from location state or default to home
+  const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,19 +30,29 @@ const Login = () => {
       [name]: value
     }));
   };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const response = await axios.post(
-        `${Backendurl}/api/users/login`,
-        formData
+        `${Backendurl}/api/auth/login`,
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
       if (response.data.success) {
-        await login(response.data.token, response.data.user);
+        await login(response.data.data.token, response.data.data.user);
         toast.success("Login successful!");
-        navigate("/");
+        // Navigate to the stored path or home
+        navigate(from);
       } else {
         toast.error(response.data.message);
       }

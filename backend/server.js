@@ -7,7 +7,7 @@ import compression from 'compression';
 import connectdb from './config/mongodb.js';
 import { trackAPIStats } from './middleware/statsMiddleware.js';
 import propertyrouter from './routes/ProductRouter.js';
-import userrouter from './routes/UserRoute.js';
+import authRouter from './routes/authRoutes.js';
 import formrouter from './routes/formrouter.js';
 import newsrouter from './routes/newsRoute.js';
 import appointmentRouter from './routes/appointmentRoute.js';
@@ -63,7 +63,7 @@ connectdb().then(() => {
 
 // API Routes
 app.use('/api/products', propertyrouter);
-app.use('/api/users', userrouter);
+app.use('/api/auth', authRouter);
 app.use('/api/forms', formrouter);
 app.use('/api/news', newsrouter);
 app.use('/api/appointments', appointmentRouter);
@@ -73,7 +73,7 @@ app.use('/api', propertyRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  const statusCode = err.status || 500;
+  const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
     message: err.message || 'Internal server error',

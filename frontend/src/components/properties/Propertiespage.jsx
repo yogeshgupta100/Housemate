@@ -29,6 +29,15 @@ const PropertiesPage = () => {
     availability: "",
     searchQuery: "",
     sortBy: "",
+    furnishing: "",
+    propertyCondition: "",
+    propertyStatus: "",
+    amenities: [],
+    minArea: "",
+    maxArea: "",
+    floorNo: "",
+    totalFloors: "",
+    verifiedOnly: false
   });
 
   const fetchProperties = async () => {
@@ -62,27 +71,68 @@ const PropertiesPage = () => {
   const filteredProperties = useMemo(() => {
     return propertyState.properties
       .filter((property) => {
+        // Basic search match
         const searchMatch = !filters.searchQuery || 
           [property.title, property.description, property.location]
             .some(field => field?.toLowerCase().includes(filters.searchQuery.toLowerCase()));
 
+        // Property type match
         const typeMatch = !filters.propertyType || 
           property.type?.toLowerCase() === filters.propertyType.toLowerCase();
 
+        // Price range match
         const priceMatch = property.price >= filters.priceRange[0] && 
           property.price <= filters.priceRange[1];
 
+        // Bedrooms match
         const bedroomsMatch = !filters.bedrooms || filters.bedrooms === "0" || 
           property.beds >= parseInt(filters.bedrooms);
 
+        // Bathrooms match
         const bathroomsMatch = !filters.bathrooms || filters.bathrooms === "0" || 
           property.baths >= parseInt(filters.bathrooms);
 
+        // Availability match
         const availabilityMatch = !filters.availability || 
-          property.availability?.toLowerCase() === filters.availability.toLowerCase();
+          property.listingType?.toLowerCase() === filters.availability.toLowerCase();
+
+        // Area range match
+        const areaMatch = (!filters.minArea || property.floorArea >= parseInt(filters.minArea)) &&
+          (!filters.maxArea || property.floorArea <= parseInt(filters.maxArea));
+
+        // Floor match
+        const floorMatch = !filters.floorNo || property.floorNo === parseInt(filters.floorNo);
+
+        // Total floors match
+        const totalFloorsMatch = !filters.totalFloors || 
+          property.totalFloors === parseInt(filters.totalFloors);
+
+        // Furnishing match
+        const furnishingMatch = !filters.furnishing || 
+          property.furnishing?.toLowerCase() === filters.furnishing.toLowerCase();
+
+        // Property condition match
+        const conditionMatch = !filters.propertyCondition || 
+          property.propertyCondition?.toLowerCase() === filters.propertyCondition.toLowerCase();
+
+        // Property status match
+        const statusMatch = !filters.propertyStatus || 
+          property.propertyStatus?.toLowerCase() === filters.propertyStatus.toLowerCase();
+
+        // Amenities match
+        const amenitiesMatch = !filters.amenities.length || 
+          filters.amenities.every(amenity => 
+            property.amenities?.includes(amenity)
+          );
+
+        // Verified properties match
+        const verifiedMatch = !filters.verifiedOnly || property.verified === true;
 
         return searchMatch && typeMatch && priceMatch && 
-          bedroomsMatch && bathroomsMatch && availabilityMatch;
+          bedroomsMatch && bathroomsMatch && availabilityMatch &&
+          areaMatch && floorMatch && totalFloorsMatch &&
+          furnishingMatch && conditionMatch && statusMatch &&
+          amenitiesMatch && verifiedMatch;
       })
       .sort((a, b) => {
         switch (filters.sortBy) {
@@ -92,6 +142,10 @@ const PropertiesPage = () => {
             return b.price - a.price;
           case "newest":
             return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          case "area-asc":
+            return a.floorArea - b.floorArea;
+          case "area-desc":
+            return b.floorArea - a.floorArea;
           default:
             return 0;
         }

@@ -229,101 +229,88 @@ const Navbar = () => {
 };
 
 const NavLinks = ({ currentPath }) => {
-  // Enhanced NavLinks with special highlight for AI Property Hub
   const navLinks = [
     { name: "Home", path: "/", icon: Home },
     { name: "Properties", path: "/properties", icon: Search },
-    // AI Property Hub is now handled separately
     { name: "About Us", path: "/about", icon: Users },
     { name: "Contact", path: "/contact", icon: MessageCircle },
   ];
 
-  // Special animation for sparkles
-  const [sparkleKey, setSparkleKey] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSparkleKey((prev) => prev + 1);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const isAIHubActive = currentPath.startsWith("/ai-property-hub");
+  const isListPropertyActive = currentPath.startsWith("/list-property");
 
   return (
-    <div className="flex space-x-6 items-center">
-      {navLinks.map(({ name, path, icon: Icon }) => {
-        const isActive =
-          path === "/" ? currentPath === path : currentPath.startsWith(path);
-
-        return (
-          <Link
-            key={name}
-            to={path}
-            className={`relative font-medium transition-colors duration-200 flex items-center gap-1.5 px-2 py-1 rounded-md
-              ${
-                isActive
+    <div className="flex space-x-4 items-center">
+      {/* Main Navigation Links */}
+      <div className="flex space-x-2">
+        {navLinks.map(({ name, path, icon: Icon }) => {
+          const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
+          return (
+            <Link
+              key={name}
+              to={path}
+              className={`relative font-medium transition-colors duration-200 flex items-center gap-1.5 px-3 py-2 rounded-md
+                ${isActive
                   ? "text-blue-600 bg-blue-50"
                   : "text-gray-700 hover:text-blue-600 hover:bg-blue-50/50"
-              }
-            `}
-          >
-            <Icon className="w-4 h-4" />
-            <span>{name}</span>
-            {isActive && (
-              <motion.div
-                layoutId="activeIndicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"
-                initial={false}
-              />
-            )}
-          </Link>
-        );
-      })}
+                }
+              `}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{name}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="navIndicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"
+                  initial={false}
+                />
+              )}
+            </Link>
+          );
+        })}
+      </div>
 
-      {/* Enhanced AI Property Hub Link */}
-      <Link
-        to="/ai-property-hub"
-        className={`relative font-medium transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-md ${
-          isAIHubActive
-            ? "text-white bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 shadow-md shadow-purple-500/30"
-            : "text-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-600 hover:via-purple-500 hover:to-pink-500 hover:text-white"
-        }`}
-      >
-        <div className="relative">
-          <BotMessageSquare
-            className={`w-5 h-5 ${
-              isAIHubActive ? "text-white" : "text-indigo-600"
-            }`}
-          />
-          <motion.div
-            key={sparkleKey}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
-            transition={{ duration: 2, ease: "easeInOut" }}
-            className="absolute -top-1 -right-1"
-          >
-            <Sparkles className="w-3 h-3 text-yellow-400" />
-          </motion.div>
-        </div>
-        <span className="font-semibold">AI Property Hub</span>
-        {isAIHubActive ? (
-          <motion.div
-            layoutId="aiActiveIndicator"
-            className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"
-            initial={false}
-          />
-        ) : (
-          <motion.span
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-full text-[10px] font-bold"
-          >
-            NEW
-          </motion.span>
-        )}
-      </Link>
+      {/* Special Links */}
+      <div className="flex items-center space-x-3 pl-2 border-l border-gray-200">
+        {/* List Property Button */}
+        <Link
+          to="/list-property"
+          className={`px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-sm hover:shadow-md
+            ${isListPropertyActive 
+              ? "bg-blue-700 text-white"
+              : "bg-blue-600 text-white hover:bg-blue-700"}`}
+        >
+          <Building className="w-4 h-4" />
+          <span>List Property</span>
+        </Link>
+
+        {/* AI Property Hub Link */}
+        <Link
+          to="/ai-property-hub"
+          className={`relative font-medium transition-all duration-300 flex items-center gap-2 px-3 py-2 rounded-md ${
+            isAIHubActive
+              ? "text-white bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 shadow-md shadow-purple-500/30"
+              : "text-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-600 hover:via-purple-500 hover:to-pink-500 hover:text-white"
+          }`}
+        >
+          <div className="relative">
+            <BotMessageSquare className={`w-4 h-4 ${isAIHubActive ? "text-white" : "text-indigo-600"}`} />
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute -top-1 -right-1"
+            >
+              <Sparkles className="w-3 h-3 text-yellow-400" />
+            </motion.div>
+          </div>
+          <span className="font-medium">AI Hub</span>
+          {!isAIHubActive && (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-full text-[10px] font-bold">
+              NEW
+            </span>
+          )}
+        </Link>
+      </div>
     </div>
   );
 };
@@ -335,7 +322,6 @@ const MobileNavLinks = ({
   handleLogout,
   currentPath,
 }) => {
-  // Standard navigation links without AI Hub (handled separately)
   const navLinks = [
     { name: "Home", path: "/", icon: Home },
     { name: "Properties", path: "/properties", icon: Search },
@@ -344,47 +330,50 @@ const MobileNavLinks = ({
   ];
 
   const isAIHubActive = currentPath.startsWith("/ai-property-hub");
+  const isListPropertyActive = currentPath.startsWith("/list-property");
 
   return (
-    <div className="flex flex-col space-y-1 pb-3">
-      {/* Enhanced AI Property Hub for Mobile */}
-      <div className="px-3 py-2">
+    <div className="flex flex-col space-y-2 pb-3">
+      {/* Primary Actions */}
+      <div className="grid grid-cols-2 gap-3 px-3 py-2">
+        {/* List Property Button */}
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Link
+            to="/list-property"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg shadow-sm transition-colors
+              ${isListPropertyActive
+                ? "bg-blue-700 text-white"
+                : "bg-blue-600 text-white hover:bg-blue-700"}`}
+          >
+            <Building className="w-5 h-5" />
+            <span className="text-sm font-medium">List Property</span>
+          </Link>
+        </motion.div>
+
+        {/* AI Hub Button */}
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Link
             to="/ai-property-hub"
             onClick={() => setMobileMenuOpen(false)}
-            className={`relative flex items-center gap-3 px-4 py-3.5 rounded-lg shadow-sm transition-all ${
-              isAIHubActive
-                ? "bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20"
-                : "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border border-indigo-100"
-            }`}
+            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg shadow-sm transition-all relative
+              ${isAIHubActive
+                ? "bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 text-white"
+                : "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700"}`}
           >
             <div className="relative">
               <BotMessageSquare className="w-5 h-5" />
               <motion.div
-                animate={{ rotate: [0, 15, -15, 0] }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatType: "loop",
-                }}
+                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
                 className="absolute -top-1 -right-1"
               >
                 <Sparkles className="w-3 h-3 text-yellow-400" />
               </motion.div>
             </div>
-            <div className="flex-1">
-              <div className="font-medium text-base">AI Property Hub</div>
-              <div
-                className={`text-xs ${
-                  isAIHubActive ? "text-indigo-100" : "text-indigo-500"
-                }`}
-              >
-                Smart property recommendations
-              </div>
-            </div>
+            <span className="text-sm font-medium">AI Hub</span>
             {!isAIHubActive && (
-              <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[10px] font-bold">
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-full text-[10px] font-bold">
                 NEW
               </span>
             )}
@@ -398,20 +387,16 @@ const MobileNavLinks = ({
 
       {/* Navigation Links */}
       {navLinks.map(({ name, path, icon: Icon }) => {
-        const isActive =
-          path === "/" ? currentPath === path : currentPath.startsWith(path);
-
+        const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
         return (
           <motion.div key={name} whileTap={{ scale: 0.97 }}>
             <Link
               to={path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
-                ${
-                  isActive
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                }
-              `}
+              className={`flex items-center gap-3 px-4 py-3 mx-3 rounded-lg transition-colors
+                ${isActive
+                  ? "bg-blue-50 text-blue-600 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               <Icon className="w-5 h-5" />
@@ -421,18 +406,16 @@ const MobileNavLinks = ({
         );
       })}
 
-      {/* Auth Buttons for Mobile */}
+      {/* Auth Section */}
       <div className="pt-4 mt-2 border-t border-gray-100">
         {isLoggedIn ? (
           <div className="space-y-3 px-3">
-            <div className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
                 {user?.name ? user.name[0].toUpperCase() : "U"}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.name}
-                </p>
+                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>

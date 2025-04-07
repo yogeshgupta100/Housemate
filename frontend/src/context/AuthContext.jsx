@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
         // Add token to axios default headers
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-        const response = await axios.get(`${Backendurl}/api/users/me`, {
+        const response = await axios.get(`${Backendurl}/api/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -55,9 +55,11 @@ const addproperty = async (req, res) => {
 };
 
 const listproperty = async (req, res) => {
+    console.log("listproperty");
     try {
         const property = await Property.find();
         res.json({ property, success: true });
+        console.log(property);
     } catch (error) {
         console.log("Error listing products: ", error);
         res.status(500).json({ message: "Server Error", success: false });

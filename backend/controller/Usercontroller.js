@@ -24,48 +24,153 @@ dotenv.config();
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const Registeruser = await userModel.findOne({ email });
-    if (!Registeruser) {
-      return res.json({ message: "Email not found", success: false });
+    console.log(email, password);
+    
+    // Find user and include password field
+    const user = await userModel.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Email not found" 
+      });
     }
-    const isMatch = await bcrypt.compare(password, Registeruser.password);
+    
+    // Use the matchPassword method from the User model
+    const isMatch = await user.matchPassword(password);
+    
     if (isMatch) {
-      const token = createtoken(Registeruser._id);
-      return res.json({ token, user: { name: Registeruser.name, email: Registeruser.email }, success: true });
+      const token = createtoken(user._id);
+      return res.status(200).json({ 
+        success: true, 
+        token, 
+        user: { 
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          userType: user.userType,
+          role: user.role
+        } 
+      });
     } else {
-      return res.json({ message: "Invalid password", success: false });
+      return res.status(401).json({ 
+        success: false, 
+        message: "Invalid password" 
+      });
     }
   } catch (error) {
     console.error(error);
-    res.json({ message: "Server error", success: false });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
   }
 };
 
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!validator.isEmail(email)) {
-      return res.json({ message: "Invalid email", success: false });
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      gender,
+      userType = 'User',
+      // Optional fields for corporate/dealer
+      companyName,
+      companyRegistrationNumber,
+      dealerLicense
+    } = req.body;
+    // console.log(req.body);
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password || !gender) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: firstName, lastName, email, password, and gender are required"
+      });
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new userModel({ name, email, password: hashedPassword });
+
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format"
+      });
+    }
+
+    // Check if email already exists
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered"
+      });
+    }
+
+    // Validate user type specific requirements
+    if ((userType === 'Corporate' || userType === 'Dealer') && (!companyName || !companyRegistrationNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Company name and registration number are required for Corporate/Dealer accounts"
+      });
+    }
+
+    if (userType === 'Dealer' && !dealerLicense) {
+      return res.status(400).json({
+        success: false,
+        message: "Dealer license is required for Dealer accounts"
+      });
+    }
+
+    // Create new user
+    const newUser = new userModel({
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      gender,
+      userType,
+      companyName,
+      companyRegistrationNumber,
+      dealerLicense
+    });
+
     await newUser.save();
+
+    // Generate token
     const token = createtoken(newUser._id);
 
-    // send email
+    // Send welcome email
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
       subject: "Welcome to BuildEstate - Your Account Has Been Created",
-      html: getWelcomeTemplate(name)
+      html: getWelcomeTemplate(`${firstName} ${lastName}`)
     };
 
     await transporter.sendMail(mailOptions);
 
-    return res.json({ token, user: { name: newUser.name, email: newUser.email }, success: true });
+    return res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+        userType: newUser.userType
+      }
+    });
   } catch (error) {
-    console.error(error);
-    return res.json({ message: "Server error", success: false });
+    console.error("Registration error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during registration",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -107,7 +212,8 @@ const resetpassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Invalid or expired token", success: false });
     }
-    user.password = await bcrypt.hash(password, 10);
+    // Set the password directly - the pre-save hook will hash it
+    user.password = password;
     user.resetToken = undefined;
     user.resetTokenExpire = undefined;
     await user.save();
