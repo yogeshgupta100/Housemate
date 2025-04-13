@@ -1,4 +1,4 @@
-import userService from '../services/userService.js';
+import userService from '../services/userService.js'; //kkjn ok oknijn
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -20,7 +20,7 @@ export const getUserById = async (req, res) => {
     const user = await userService.getUserById(req.params.id);
     res.status(200).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     res.status(404).json({
