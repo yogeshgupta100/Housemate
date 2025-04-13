@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import userModel from "../models/Usermodel.js"; //USER MODEL MISSING
+import User from "../models/Usermodel.js"; // Fix import path
+import Appointment from "../models/appointmentModel.js"; // Add missing import
 
 export const protect = async (req, res, next) => {
   try {
@@ -13,7 +14,7 @@ export const protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await userModel.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
       return res.status(401).json({

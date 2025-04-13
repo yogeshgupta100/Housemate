@@ -1,4 +1,5 @@
 import authService from '../services/authService.js';
+import User from '../models/Usermodel.js'; // Add User model import if needed
 
 export const register = async (req, res) => {
   try {

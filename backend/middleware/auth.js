@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/Usermodel.js';
+import User from '../models/Usermodel.js'; 
 import { AppError } from '../utils/error.js';
 
 // Protect routes
@@ -45,4 +45,4 @@ export const authorize = (...roles) => {
     }
     next();
   };
-}; 
+};
