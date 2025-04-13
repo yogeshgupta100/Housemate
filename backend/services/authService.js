@@ -1,24 +1,24 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import userRepository from '../repositories/userRepository.js';
+import User from '../models/Usermodel.js'; // Direct model import
 import sendEmail from '../utils/sendEmail.js';
 
 class AuthService {
   async register(userData) {
-    const existingUser = await userRepository.findByEmail(userData.email);
+    const existingUser = await User.findOne({ email: userData.email });
     if (existingUser) {
       throw new Error('Email already registered');
     }
 
-    const user = await userRepository.create(userData);
+    const user = await User.create(userData);
     const token = this.generateToken(user._id);
 
     return { user, token };
   }
 
   async login(email, password) {
-    const user = await userRepository.findByEmail(email);
+    const user = await User.findOne({ email });
     if (!user || !(await this.comparePasswords(password, user.password))) {
       throw new Error('Invalid credentials');
     }
@@ -28,7 +28,7 @@ class AuthService {
   }
 
   async getCurrentUser(userId) {
-    const user = await userRepository.findById(userId);
+    const user = await User.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
@@ -36,11 +36,11 @@ class AuthService {
   }
 
   async updateProfile(userId, updateData) {
-    return await userRepository.update(userId, updateData);
+    return await User.findByIdAndUpdate(userId, updateData, { new: true });
   }
 
   async updatePassword(userId, currentPassword, newPassword) {
-    const user = await userRepository.findById(userId);
+    const user = await User.findById(userId);
     if (!(await this.comparePasswords(currentPassword, user.password))) {
       throw new Error('Current password is incorrect');
     }
@@ -50,7 +50,7 @@ class AuthService {
   }
 
   async forgotPassword(email) {
-    const user = await userRepository.findByEmail(email);
+    const user = await User.findOne({ email });
     if (!user) {
       throw new Error('User not found');
     }

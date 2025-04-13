@@ -4,7 +4,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import * as propertyController from '../controllers/propertyController.js';
-import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -39,13 +38,10 @@ const upload = multer({
   }
 });
 
-// Public routes
 router.get('/', propertyController.getAllProperties);
 router.get('/search', propertyController.searchProperties);
 router.get('/:id', propertyController.getPropertyById);
 
-// Protected routes (require authentication)
-router.use(authenticate);
 router.post('/', propertyController.createProperty);
 router.put('/:id', propertyController.updateProperty);
 router.delete('/:id', propertyController.deleteProperty);

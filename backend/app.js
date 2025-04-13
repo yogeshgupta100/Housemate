@@ -32,10 +32,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 import authRoutes from './routes/authRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
 import newsRoutes from './routes/newsRoute.js';
-import userRoutes from './routes/UserRoute.js';
+import userRoutes from './routes/userRoutes.js'; // Fix casing
 import appointmentRoutes from './routes/appointmentRoute.js';
 import adminRoutes from './routes/adminRoute.js';
-import productRoutes from './routes/ProductRouter.js';
+import productRoutes from './routes/productRoute.js'; // Fix casing
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
