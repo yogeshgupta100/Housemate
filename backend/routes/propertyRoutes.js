@@ -3,17 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import {
-  createProperty,
-  getProperties,
-  getProperty,
-  updateProperty,
-  deleteProperty,
-  getUserProperties,
-  getFeaturedProperties,
-  getPropertiesByCategory
-} from '../controllers/propertyController.js';
-import { protect, authorize } from '../middleware/auth.js';
+import * as propertyController from '../controllers/propertyController.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -49,22 +40,14 @@ const upload = multer({
 });
 
 // Public routes
-router.get('/', getProperties);
-router.get('/featured', getFeaturedProperties);
-router.get('/category/:category', getPropertiesByCategory);
-router.get('/:id', getProperty);
-router.post('/', upload.array('images', 5), createProperty);
+router.get('/', propertyController.getAllProperties);
+router.get('/search', propertyController.searchProperties);
+router.get('/:id', propertyController.getPropertyById);
 
 // Protected routes (require authentication)
-router.use(protect);
-
-// User property routes (accessible to all authenticated users)
-router.get('/user/properties', getUserProperties);
-router.put('/:id', upload.array('images', 5), updateProperty);
-router.delete('/:id', deleteProperty);
-
-// Admin-only routes
-router.use('/admin', authorize('admin'));
-// Add any admin-specific routes here if needed
+router.use(authenticate);
+router.post('/', propertyController.createProperty);
+router.put('/:id', propertyController.updateProperty);
+router.delete('/:id', propertyController.deleteProperty);
 
 export default router;

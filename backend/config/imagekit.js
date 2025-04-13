@@ -1,6 +1,7 @@
 import ImageKit from 'imagekit';
 import dotenv from 'dotenv';
 
+//removed
 dotenv.config({ path: './.env.local' });
 
 const imagekit = new ImageKit({

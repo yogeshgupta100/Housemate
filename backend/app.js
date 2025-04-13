@@ -32,15 +32,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 import authRoutes from './routes/authRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
 import newsRoutes from './routes/newsRoute.js';
-// import userRoutes from './routes/UserRoute.js';
+import userRoutes from './routes/UserRoute.js';
 import appointmentRoutes from './routes/appointmentRoute.js';
 import adminRoutes from './routes/adminRoute.js';
 import productRoutes from './routes/ProductRouter.js';
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/news', newsRoutes);
-// app.use('/api/users', userRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
@@ -60,4 +60,4 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-}); 
+});

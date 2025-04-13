@@ -1,42 +1,8 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import User from '../models/Usermodel.js';
-import { AppError } from '../utils/error.js';
+import authService from '../services/authService.js';
 
-// Generate JWT Token
-const generateToken = (id) => {
-  if (!process.env.JWT_SECRET) {
-    throw new AppError('JWT secret is not configured', 500);
-  }
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '30d'
-  });
-};
-
-// Register user
-export const register = async (req, res, next) => {
+export const register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phone, userType, gender } = req.body;
-    console.log(req.body);
-    // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return next(new AppError('User already exists', 400));
-    }
-
-    // Create user
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      userType,
-      gender
-    });
-
-    // Generate token
-    const token = generateToken(user._id);
+    const { user, token } = await authService.register(req.body);
 
     res.status(201).json({
       success: true,
@@ -54,34 +20,16 @@ export const register = async (req, res, next) => {
       }
     });
   } catch (error) {
-    next(error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// Login user
-export const login = async (req, res, next) => {
+export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    // Check if email and password are provided
-    if (!email || !password) {
-      return next(new AppError('Please provide email and password', 400));
-    }
-
-    // Check if user exists
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return next(new AppError('Invalid credentials', 401));
-    }
-
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return next(new AppError('Invalid credentials', 401));
-    }
-
-    // Generate token
-    const token = generateToken(user._id);
+    const { user, token } = await authService.login(req.body.email, req.body.password);
 
     res.status(200).json({
       success: true,
@@ -99,96 +47,84 @@ export const login = async (req, res, next) => {
       }
     });
   } catch (error) {
-    next(error);
+    res.status(401).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// Get current user
-export const getCurrentUser = async (req, res, next) => {
+export const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return next(new AppError('User not found', 404));
-    }
-
+    const user = await authService.getCurrentUser(req.user.id);
     res.status(200).json({
       success: true,
-      data: {
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone,
-          userType: user.userType,
-          role: user.role
-        }
-      }
+      data: user
     });
   } catch (error) {
-    next(error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// Update user profile
-export const updateProfile = async (req, res, next) => {
+export const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, phone } = req.body;
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return next(new AppError('User not found', 404));
-    }
-
-    user.firstName = firstName || user.firstName;
-    user.lastName = lastName || user.lastName;
-    user.phone = phone || user.phone;
-
-    await user.save();
-
+    const user = await authService.updateProfile(req.user.id, req.body);
     res.status(200).json({
       success: true,
-      data: {
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone,
-          userType: user.userType,
-          role: user.role
-        }
-      }
+      data: user
     });
   } catch (error) {
-    next(error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// Update password
-export const updatePassword = async (req, res, next) => {
+export const updatePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user.id).select('+password');
-
-    if (!user) {
-      return next(new AppError('User not found', 404));
-    }
-
-    // Check current password
-    const isMatch = await user.matchPassword(currentPassword);
-    if (!isMatch) {
-      return next(new AppError('Current password is incorrect', 401));
-    }
-
-    user.password = newPassword;
-    await user.save();
-
+    await authService.updatePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
     res.status(200).json({
       success: true,
       message: 'Password updated successfully'
     });
   } catch (error) {
-    next(error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
-}; 
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    await authService.forgotPassword(req.body.email);
+    res.status(200).json({
+      success: true,
+      message: 'Password reset email sent'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    await authService.resetPassword(req.params.token, req.body.password);
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
