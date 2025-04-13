@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import userModel from "../models/Usermodel.js";
+import userModel from "../models/Usermodel.js"; //USER MODEL MISSING
 
 export const protect = async (req, res, next) => {
   try {
