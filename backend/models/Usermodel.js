@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const UserSchema = new mongoose.Schema({
-    // Basic Information
     firstName: {
         type: String,
         required: [true, 'First name is required'],
@@ -38,90 +37,22 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
     },
-    dateOfBirth: {
-        type: Date,
-        validate: {
-            validator: function(v) {
-                return v <= new Date();
-            },
-            message: 'Date of birth cannot be in the future'
-        }
-    },
-    
-    // Address Information
-    address: {
-        street: { type: String, trim: true },
-        city: { type: String, trim: true },
-        state: { type: String, trim: true },
-        zipCode: { type: String, trim: true },
-        country: { type: String, trim: true }
-    },
-    
-    // Profile Information
-    profilePicture: {
-        type: String,
-        default: 'default-profile.jpg'
-    },
-    fatherName: {
-        type: String,
-        trim: true
-    },
-    governmentIdCard: {
-        type: String,
-        trim: true
-    },
-    religion: {
-        type: String,
-        trim: true
-    },
-    maritalStatus: {
-        type: String,
-        enum: ['Bachelor', 'Married', 'Divorced', 'Widowed'],
-        default: 'Bachelor'
-    },
     gender: {
         type: String,
-        required: [true, 'Gender is required'],
-        enum: ['male', 'female', 'other', 'prefer_not_to_say']
+        enum: ['male', 'female', 'other']
     },
-    
-    // User Type and Role
+    role: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role',
+        required: [true, 'Role is required']
+    },
     userType: {
         type: String,
         required: [true, 'User type is required'],
-        enum: ['individual', 'corporate', 'dealer'],
+        enum: ['individual', 'corporate', 'dealer', 'admin'],
         default: 'individual'
     },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user'
-    },
-    
-    // Verification and Status
-    policeVerification: {
-        type: Boolean,
-        default: false
-    },
-    isEmailVerified: {
-        type: Boolean,
-        default: false
-    },
-    isPhoneVerified: {
-        type: Boolean,
-        default: false
-    },
-    verificationStatus: {
-        type: String,
-        enum: ['Verified', 'Unverified', 'Pending'],
-        default: 'Unverified'
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
-    
-    // Corporate/Dealer Specific Fields
+    // Corporate user fields
     companyName: {
         type: String,
         trim: true,
@@ -136,32 +67,17 @@ const UserSchema = new mongoose.Schema({
             return this.userType === 'corporate';
         }
     },
-    companyAddress: {
-        street: { type: String, trim: true },
-        city: { type: String, trim: true },
-        state: { type: String, trim: true },
-        zipCode: { type: String, trim: true },
-        country: { type: String, trim: true }
-    },
-    companyWebsite: {
-        type: String,
-        trim: true
-    },
-    companyLogo: {
-        type: String
-    },
-    
-    // Dealer Specific Fields
+    // Dealer user fields
     dealerLicense: {
         type: String,
-        trim: true,
         required: function() {
             return this.userType === 'dealer';
         }
     },
-    dealerSpecialization: {
-        type: [String],
-        default: []
+    // Address fields
+    address: {
+        city: { type: String },
+        state: { type: String }
     },
     
     // Security and Authentication
@@ -170,95 +86,98 @@ const UserSchema = new mongoose.Schema({
     emailVerificationToken: String,
     lastLogin: Date,
     passwordChangedAt: Date,
-    
-    // Preferences
-    preferences: {
-        notifications: {
-            email: { type: Boolean, default: true },
-            sms: { type: Boolean, default: true }
-        },
-        language: {
-            type: String,
-            default: 'en'
-        }
-    },
-    
-    // References
-    properties: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Property'
-    }],
-    favorites: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Property'
-    }],
-    wallet: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Wallet'
-    },
-    threeDMappingRequests: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ThreeDMappingRequest'
-    }],
     createdAt: {
         type: Date,
         default: Date.now
     },
-    isVerified: {
+    isActive: {
         type: Boolean,
-        default: false
-    },
-    verificationToken: String
+        default: true
+    }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
+
+UserSchema.methods.hasPermission = async function(permission) {
+    await this.populate('role');
+    return this.role.permissions.includes(permission);
+};
+
 // Indexes for better query performance
+UserSchema.index({ email: 1 });
 UserSchema.index({ phone: 1 });
 UserSchema.index({ userType: 1 });
 UserSchema.index({ 'address.city': 1, 'address.state': 1 });
 
+// Virtual for full name
+UserSchema.virtual('name').get(function() {
+    return `${this.firstName} ${this.lastName}`;
+});
+
 // Encrypt password before saving
 UserSchema.pre('save', async function(next) {
     if (!this.isModified('password')) {
-        next();
+        return next();
     }
-
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
 
 // Update passwordChangedAt when password is changed
 UserSchema.pre('save', function(next) {
     if (!this.isModified('password') || this.isNew) return next();
-    
-    this.passwordChangedAt = Date.now() - 1000; // Subtract 1 second to ensure token is created after password change
+    this.passwordChangedAt = Date.now() - 1000;
+    next();
+});
+
+// Validate user type specific fields
+UserSchema.pre('validate', function(next) {
+    if (this.userType === 'corporate') {
+        if (!this.companyName || !this.registrationNumber) {
+            return next(new Error('Company name and registration number are required for corporate users'));
+        }
+    }
+    if (this.userType === 'dealer') {
+        if (!this.dealerLicense) {
+            return next(new Error('Dealer license is required for dealer users'));
+        }
+    }
     next();
 });
 
 // Match password
 UserSchema.methods.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+    try {
+        return await bcrypt.compare(enteredPassword, this.password);
+    } catch (error) {
+        throw new Error('Password comparison failed');
+    }
 };
-
-// Validate user type specific fields
-UserSchema.pre('validate', function(next) {
-    if (this.userType === 'corporate' && (!this.companyName || !this.registrationNumber)) {
-        next(new Error('Company name and registration number are required for corporate users'));
-    }
-    if (this.userType === 'dealer' && !this.dealerLicense) {
-        next(new Error('Dealer license is required for dealer users'));
-    }
-    next();
-});
 
 // Method to generate JWT token
 UserSchema.methods.generateAuthToken = function() {
-    return jwt.sign(
-        { id: this._id, userType: this.userType, role: this.role },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
+    try {
+        return jwt.sign(
+            {
+                id: this._id,
+                userType: this.userType,
+                role: this.role,
+                email: this.email
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN }
+        );
+    } catch (error) {
+        throw new Error('Token generation failed');
+    }
 };
 
 // Method to check if password was changed after token was issued
@@ -270,11 +189,6 @@ UserSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
     return false;
 };
 
-// Virtual for full name
-UserSchema.virtual('fullName').get(function() {
-    return `${this.firstName} ${this.lastName}`;
-});
-
 // Method to get user's active properties
 UserSchema.methods.getActiveProperties = function() {
     return this.model('Property').find({
@@ -285,17 +199,32 @@ UserSchema.methods.getActiveProperties = function() {
 
 // Method to check if user is admin
 UserSchema.methods.isAdmin = function() {
-    return this.userType === 'admin' || this.role === 'admin';
+    return this.role === 'admin';
 };
 
-// Method to check if user is dealer
 UserSchema.methods.isDealer = function() {
     return this.userType === 'dealer';
 };
 
-// Method to check if user is corporate
 UserSchema.methods.isCorporate = function() {
     return this.userType === 'corporate';
+};
+
+// Method to safely return user data (excluding sensitive information)
+UserSchema.methods.toSafeObject = function() {
+    return {
+        id: this._id,
+        firstName: this.firstName,
+        lastName: this.lastName,
+        email: this.email,
+        phone: this.phone,
+        gender: this.gender,
+        role: this.role,
+        userType: this.userType,
+        address: this.address,
+        companyName: this.companyName,
+        createdAt: this.createdAt
+    };
 };
 
 const User = mongoose.model('User', UserSchema);

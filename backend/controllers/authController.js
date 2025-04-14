@@ -1,8 +1,17 @@
 import authService from '../services/authService.js';
-import User from '../models/Usermodel.js'; // Add User model import if needed
 
 export const register = async (req, res) => {
   try {
+    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'phone'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
     const { user, token } = await authService.register(req.body);
 
     res.status(201).json({
