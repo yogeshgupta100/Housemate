@@ -1,6 +1,7 @@
 import express from 'express';
 import * as authController from '../controllers/authController.js';
-
+import { protect } from '../middleware/authmiddleware.js';
+import * as roleController from "../controllers/roleController.js";
 const router = express.Router();
 
 router.post('/register', authController.register);
@@ -10,5 +11,8 @@ router.post('/login', authController.login);
 router.get('/me', authController.getCurrentUser);
 router.put('/profile', authController.updateProfile);
 router.put('/password', authController.updatePassword);
+
+router.get('/', roleController.getRoles);
+router.post('/assign', protect, roleController.assignRole);
 
 export default router;

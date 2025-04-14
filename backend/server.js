@@ -13,6 +13,7 @@ import newsrouter from './routes/newsRoute.js';
 import appointmentRouter from './routes/appointmentRoute.js';
 import adminRouter from './routes/adminRoute.js';
 import propertyRoutes from './routes/propertyRoutes.js';
+import {initializeRoles} from "./scripts/initRoles.js";
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use(cors({
 
 // Database connection
 connectdb().then(() => {
+  initializeRoles().then(r => console.log('Roles initialized'));
   console.log('Database connected successfully');
 }).catch(err => {
   console.error('Database connection error:', err);
@@ -69,6 +71,7 @@ app.use('/api/news', newsrouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', propertyRoutes);
+app.use('/api/auth/roles', propertyRoutes);
 
 
 app.use((err, req, res, next) => {

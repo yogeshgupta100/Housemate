@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import User from '../models/Usermodel.js'; // Direct model import
-import sendEmail from '../utils/sendEmail.js';
+import User from '../models/Usermodel.js';
+import Role from "../models/role.js";
 
 class AuthService {
   async register(userData) {
@@ -11,10 +11,36 @@ class AuthService {
       throw new Error('Email already registered');
     }
 
-    const user = await User.create(userData);
-    const token = this.generateToken(user._id);
+    try {
+      const defaultRole = await Role.findOne({ name: 'individual' });
+      if (!defaultRole) {
+        throw new Error('Default role not found');
+      }
 
-    return { user, token };
+      const user = await User.create({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone,
+        gender: userData.gender,
+        role: defaultRole._id,
+        companyName: userData.companyName,
+        registrationNumber: userData.registrationNumber,
+        dealerLicense: userData.dealerLicense
+      });
+
+      const token = this.generateToken(user._id);
+      await user.populate('role');
+
+      return { user, token };
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(err => err.message);
+        throw new Error(messages.join(', '));
+      }
+      throw error;
+    }
   }
 
   async login(email, password) {
@@ -66,16 +92,17 @@ class AuthService {
 
     // Send email with reset token
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    await sendEmail({
-      email: user.email,
-      subject: 'Password Reset Request',
-      message: `You requested a password reset. Please go to: ${resetUrl}`
-    });
+    // await sendEmail({
+    //   email: user.email,
+    //   subject: 'Password Reset Request',
+    //   message: `You requested a password reset. Please go to: ${resetUrl}`
+    // });
   }
 
   generateToken(userId) {
-    return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRE
+    return jwt.sign({ id: userId },
+        process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE
     });
   }
 

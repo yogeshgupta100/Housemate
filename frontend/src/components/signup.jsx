@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Loader, UserPlus, Mail, Lock, Phone, User, Building, Briefcase } from 'lucide-react';
+import { Loader, UserPlus, Mail, Lock, Phone, User, Building } from 'lucide-react';
 import { Backendurl } from '../App';
 import { toast } from 'react-toastify';
 import './signup.css';
@@ -16,7 +16,6 @@ const Signup = () => {
     password: '',
     phone: '',
     gender: '',
-    userType: 'individual', // Default to individual
     companyName: '',
     registrationNumber: '',
     dealerLicense: ''
@@ -24,8 +23,30 @@ const Signup = () => {
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // For multi-step form
+  const [step, setStep] = useState(1);
   const navigate = useNavigate();
+  const [roles, setRoles] = useState([]);
+  const [selectedRole, setSelectedRole] = useState('')
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await axios.get(`${Backendurl}/api/auth/roles`);
+        if (response.data.success) {
+          setRoles(response.data.data);
+          const defaultRole = response.data.data.find(role => role.name === 'individual');
+          if (defaultRole) {
+            setSelectedRole(defaultRole._id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+        toast.error('Error loading roles');
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -136,17 +157,18 @@ const Signup = () => {
         password: formData.password,
         phone: formData.phone,
         gender: formData.gender,
-        userType: formData.userType
+        userType: formData.userType || 'individual',
+        role: selectedRole
       };
-      
-      // Add corporate/dealer specific fields if applicable
-      if (formData.userType === 'corporate') {
+
+      const selectedRoleData = roles.find(role => role._id === selectedRole);
+      if (selectedRoleData?.name === 'corporate') {
         userData.companyName = formData.companyName;
         userData.registrationNumber = formData.registrationNumber;
-      } else if (formData.userType === 'dealer') {
+      } else if (selectedRoleData?.name === 'dealer') {
         userData.dealerLicense = formData.dealerLicense;
       }
-      
+
       const response = await axios.post(
         `${Backendurl}/api/auth/register`,
         userData,
@@ -378,31 +400,44 @@ const Signup = () => {
 
             {/* Step 3: Account Type */}
             {step === 3 && (
-              <div className="space-y-6">
-                {/* User Type Selection */}
-                <div>
-                  <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
-                    Account Type *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <select
-                      name="userType"
-                      id="userType"
-                      required
-                      value={formData.userType}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                    >
-                      <option value="individual">Individual</option>
-                      <option value="corporate">Corporate</option>
-                      <option value="dealer">Property Dealer</option>
-                    </select>
+                <div className="space-y-6">
+                  {/* Role Selection */}
+                  <div>
+                    <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
+                      Account Type *
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <select
+                          name="roleId"
+                          id="roleId"
+                          required
+                          value={selectedRole}
+                          onChange={(e) => {
+                            setSelectedRole(e.target.value);
+                            setFormData(prev => ({
+                              ...prev,
+                              companyName: '',
+                              registrationNumber: '',
+                              dealerLicense: ''
+                            }));
+                          }}
+                          className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      >
+                        <option value="">Select Account Type</option>
+                        {roles.map((role) => (
+                            <option key={role._id} value={role._id}>
+                              {role.name === 'individual' && 'Individual'}
+                              {role.name === 'corporate' && 'Corporate'}
+                              {role.name === 'dealer' && 'Property Dealer'}
+                              {role.name === 'admin' && 'Property admin'}
+                            </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                {/* Conditional Fields for Corporate Users */}
-                {formData.userType === 'corporate' && (
+                {selectedRole && roles.find(role => role._id === selectedRole)?.name === 'corporate' && (
                   <>
                     <div>
                       <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -445,13 +480,13 @@ const Signup = () => {
                 )}
 
                 {/* Conditional Fields for Dealer Users */}
-                {formData.userType === 'dealer' && (
+                  {selectedRole && roles.find(role => role._id === selectedRole)?.name === 'dealer' && (
                   <div>
                     <label htmlFor="dealerLicense" className="block text-sm font-medium text-gray-700 mb-1">
                       Dealer License Number *
                     </label>
                     <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                       <input
                         type="text"
                         name="dealerLicense"
