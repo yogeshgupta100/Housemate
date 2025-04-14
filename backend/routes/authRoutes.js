@@ -12,7 +12,7 @@ router.get('/me', authController.getCurrentUser);
 router.put('/profile', authController.updateProfile);
 router.put('/password', authController.updatePassword);
 
-router.get('/', roleController.getRoles);
+router.get('/get-roles', roleController.getRoles);
 router.post('/assign', protect, roleController.assignRole);
 
 export default router;

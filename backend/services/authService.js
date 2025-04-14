@@ -31,7 +31,6 @@ class AuthService {
       });
 
       const token = this.generateToken(user._id);
-      await user.populate('role');
 
       return { user, token };
     } catch (error) {
@@ -44,7 +43,7 @@ class AuthService {
   }
 
   async login(email, password) {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('password');
     if (!user || !(await this.comparePasswords(password, user.password))) {
       throw new Error('Invalid credentials');
     }

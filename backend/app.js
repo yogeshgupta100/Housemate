@@ -44,7 +44,6 @@ app.use('/api/news', newsRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/auth/roles', authRoutes);
 
 // Error handling
 app.use(errorHandler);
