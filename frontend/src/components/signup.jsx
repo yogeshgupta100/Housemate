@@ -31,7 +31,7 @@ const Signup = () => {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await axios.get(`${Backendurl}/api/auth/roles`);
+        const response = await axios.get(`${Backendurl}/api/auth/get-roles`);
         if (response.data.success) {
           setRoles(response.data.data);
           const defaultRole = response.data.data.find(role => role.name === 'individual');
