@@ -4,8 +4,8 @@ import axios from 'axios';
 import { backendurl } from '../App';
 import { Upload, X } from 'lucide-react';
 
-const PROPERTY_TYPES = ['House', 'Apartment', 'Office', 'Villa'];
-const AVAILABILITY_TYPES = ['rent', 'buy'];
+const PROPERTY_TYPES = ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk']; // Updated to match model
+const AVAILABILITY_TYPES = ['rent', 'sale','buy']; // Changed to match model
 const AMENITIES = ['Lake View', 'Fireplace', 'Central heating and air conditioning', 'Dock', 'Pool', 'Garage', 'Garden', 'Gym', 'Security system', 'Master bathroom', 'Guest bathroom', 'Home theater', 'Exercise room/gym', 'Covered parking', 'High-speed internet ready'];
 
 const PropertyForm = () => {
@@ -21,7 +21,8 @@ const PropertyForm = () => {
     phone: '',
     availability: '',
     amenities: [],
-    images: []
+    images: [],
+    listingType: 'rent' // Added default listing type
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -47,11 +48,6 @@ const PropertyForm = () => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length + previewUrls.length > 4) {
-      alert('Maximum 4 images allowed');
-      return;
-    }
-
     const newPreviewUrls = files.map(file => URL.createObjectURL(file));
     setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
     setFormData(prev => ({
@@ -85,7 +81,7 @@ const PropertyForm = () => {
     try {
       const formdata = new FormData();
       formdata.append('title', formData.title);
-      formdata.append('type', formData.type);
+      formdata.append('type', formData.type.toLowerCase()); // Ensure lowercase
       formdata.append('price', formData.price);
       formdata.append('location', formData.location);
       formdata.append('description', formData.description);
@@ -93,22 +89,28 @@ const PropertyForm = () => {
       formdata.append('baths', formData.baths);
       formdata.append('sqft', formData.sqft);
       formdata.append('phone', formData.phone);
-      formdata.append('availability', formData.availability);
-      formData.amenities.forEach((amenity, index) => {
-        formdata.append(`amenities[${index}]`, amenity);
-      });
-      formData.images.forEach((image, index) => {
-        formdata.append(`image${index + 1}`, image);
+      formdata.append('listingType', formData.availability.toLowerCase()); // Changed to listingType
+      formdata.append('amenities', JSON.stringify(formData.amenities));
+      
+      // Add default userId and createdBy if not available
+      formdata.append('userId', localStorage.getItem('userId') || '659ab1e0c45b9768e01c9652');
+      formdata.append('createdBy', localStorage.getItem('userId') || '659ab1e0c45b9768e01c9652');
+      
+      // Handle images
+      formData.images.forEach((image) => {
+        formdata.append('images', image);
       });
 
-      const response = await axios.post(`${backendurl}/api/products/add`, formdata, {
+      const response = await axios.post(`${backendurl}/api/properties/add`, formdata, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
       if (response.data.success) {
-        toast.success(response.data.message);
+        toast.success('Property added successfully');
+        // Reset form
         setFormData({
           title: '',
           type: '',
@@ -124,119 +126,48 @@ const PropertyForm = () => {
           images: []
         });
         setPreviewUrls([]);
-        toast.success('Property added successfully');
-      } else {
-        toast.error(response.data.message);
       }
     } catch (error) {
       console.error('Error adding property:', error);
-      toast.error('An error occurred. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to add property');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen pt-32 px-4 bg-gray-50">
-      <div className="max-w-2xl mx-auto rounded-lg shadow-xl bg-white p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Property</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Property Title
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                required
-                value={formData.title}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border border-gray-100 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              />
+    <div className="min-h-screen pt-24 pb-12 bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Add New Property</h1>
+          <p className="mt-2 text-gray-600">Fill in the details to list a new property</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-xl shadow-lg p-6 md:p-8">
+          {/* Basic Information Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Basic Information</h2>
             </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                required
-                value={formData.description}
-                onChange={handleInputChange}
-                rows={3}
-                className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                  Property Type
-                </label>
-                <select
-                  id="type"
-                  name="type"
-                  required
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="">Select Type</option>
-                  {PROPERTY_TYPES.map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="availability" className="block text-sm font-medium text-gray-700">
-                  Availability
-                </label>
-                <select
-                  id="availability"
-                  name="availability"
-                  required
-                  value={formData.availability}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="">Select Availability</option>
-                  {AVAILABILITY_TYPES.map(type => (
-                    <option key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                  Price
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                  Property Title
                 </label>
                 <input
-                  type="number"
-                  id="price"
-                  name="price"
+                  type="text"
+                  id="title"
+                  name="title"
                   required
-                  min="0"
-                  value={formData.price}
+                  value={formData.title}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter property title"
                 />
               </div>
-
               <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
                   Location
                 </label>
                 <input
@@ -246,14 +177,69 @@ const PropertyForm = () => {
                   required
                   value={formData.location}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter property location"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                required
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={4}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Describe the property..."
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Property Details</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <label htmlFor="beds" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                  Type
+                </label>
+                <select
+                  id="type"
+                  name="type"
+                  required
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Type</option>
+                  {PROPERTY_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price
+                </label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  required
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="₹"
+                />
+              </div>
+              <div>
+                <label htmlFor="beds" className="block text-sm font-medium text-gray-700 mb-1">
                   Bedrooms
                 </label>
                 <input
@@ -261,15 +247,13 @@ const PropertyForm = () => {
                   id="beds"
                   name="beds"
                   required
-                  min="0"
                   value={formData.beds}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
               <div>
-                <label htmlFor="baths" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="baths" className="block text-sm font-medium text-gray-700 mb-1">
                   Bathrooms
                 </label>
                 <input
@@ -277,15 +261,19 @@ const PropertyForm = () => {
                   id="baths"
                   name="baths"
                   required
-                  min="0"
                   value={formData.baths}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+            </div>
+          </div>
 
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 pb-2 border-b">Additional Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="sqft" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="sqft" className="block text-sm font-medium text-gray-700 mb-1">
                   Square Feet
                 </label>
                 <input
@@ -293,126 +281,94 @@ const PropertyForm = () => {
                   id="sqft"
                   name="sqft"
                   required
-                  min="0"
                   value={formData.sqft}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Contact Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                required
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              />
+              <div>
+                <label htmlFor="availability" className="block text-sm font-medium text-gray-700 mb-1">
+                  Availability Status
+                </label>
+                <select
+                  id="availability"
+                  name="availability"
+                  required
+                  value={formData.availability}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Status</option>
+                  {AVAILABILITY_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Amenities */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amenities
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {formData.amenities.map((amenity, index) => (
-                <div key={index} className="flex items-center">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Amenities</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {AMENITIES.map(amenity => (
+                <label key={amenity} className="flex items-center space-x-2 text-sm hover:bg-gray-50 p-2 rounded-lg transition-colors">
                   <input
                     type="checkbox"
-                    id={`amenity-${index}`}
-                    name="amenities"
                     value={amenity}
                     checked={formData.amenities.includes(amenity)}
                     onChange={() => handleAmenityToggle(amenity)}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <label htmlFor={`amenity-${index}`} className="ml-2 block text-sm text-gray-700">
-                    {amenity}
-                  </label>
-                </div>
+                  <span>{amenity}</span>
+                </label>
               ))}
-            </div>
-            <div className="mt-4 flex items-center">
-              <input
-                type="text"
-                value={newAmenity}
-                onChange={(e) => setNewAmenity(e.target.value)}
-                placeholder="Add new amenity"
-                className="mt-1 block w-full rounded-md border border-gray-100 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              />
-              <button
-                type="button"
-                onClick={handleAddAmenity}
-                className="ml-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-              >
-                Add
-              </button>
             </div>
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Property Images (Max 4)
-            </label>
-            <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Property Images</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {previewUrls.map((url, index) => (
-                <div key={index} className="relative">
+                <div key={index} className="relative group aspect-video">
                   <img
                     src={url}
                     alt={`Preview ${index + 1}`}
-                    className="h-40 w-full object-cover rounded-lg"
+                    className="h-full w-full object-cover rounded-lg"
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 </div>
               ))}
+              <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                <span className="text-sm text-gray-500">Upload Images</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
             </div>
-            {previewUrls.length < 4 && (
-              <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="flex text-sm text-gray-600">
-                    <label htmlFor="images" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                      <span>Upload images</span>
-                      <input
-                        id="images"
-                        name="images"
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="sr-only"
-                      />
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Submit Button */}
-          <div>
+          <div className="pt-6">
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               disabled={loading}
+              className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Submitting...' : 'Submit Property'}
+              {loading ? 'Adding Property...' : 'Add Property'}
             </button>
           </div>
         </form>

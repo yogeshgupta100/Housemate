@@ -1,4 +1,4 @@
-import User from '../models/usermodel.js'; // Fix import path
+import User from '../models/userModel.js'; 
 
 class UserService {
   async getAllUsers() {
@@ -23,6 +23,17 @@ class UserService {
 
   async deleteUser(id) {
     return await User.findByIdAndDelete(id);
+  }
+
+  async getPaginatedUsers(query = {}, skip = 0, limit = 10) {
+    return await User.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  }
+
+  async getTotalUsers(query = {}) {
+    return await User.countDocuments(query);
   }
 }
 

@@ -17,45 +17,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Backendurl } from '../App';
 import PropTypes from "prop-types";
 
-// Sample featured properties for fallback
-const sampleProperties = [
-  {
-    _id: "sample1",
-    title: "Luxury Beachfront Villa",
-    location: "Juhu Beach, Mumbai",
-    price: 25000000,
-    beds: 4,
-    baths: 3,
-    sqft: 2800,
-    type: "Villa",
-    availability: "Buy",
-    image: ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
-  },
-  {
-    _id: "sample2",
-    title: "Modern Highrise Apartment",
-    location: "Bandra West, Mumbai",
-    price: 18500000,
-    beds: 3,
-    baths: 2,
-    sqft: 1800,
-    type: "Apartment",
-    availability: "Rent",
-    image: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
-  },
-  {
-    _id: "sample3",
-    title: "Riverside Townhouse",
-    location: "Koramangala, Bangalore",
-    price: 12000000,
-    beds: 3,
-    baths: 2.5,
-    sqft: 2200,
-    type: "House",
-    availability: "Buy",
-    image: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
-  }
-];
+// const sampleProperties = [
+//   {
+//     _id: "sample1",
+//     title: "Luxury Beachfront Villa",
+//     location: "Juhu Beach, Mumbai",
+//     price: 25000000,
+//     beds: 4,
+//     baths: 3,
+//     sqft: 2800,
+//     type: "Villa",
+//     availability: "Buy",
+//     image: ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
+//   },
+//   {
+//     _id: "sample2",
+//     title: "Modern Highrise Apartment",
+//     location: "Bandra West, Mumbai",
+//     price: 18500000,
+//     beds: 3,
+//     baths: 2,
+//     sqft: 1800,
+//     type: "Apartment",
+//     availability: "Rent",
+//     image: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
+//   },
+//   {
+//     _id: "sample3",
+//     title: "Riverside Townhouse",
+//     location: "Koramangala, Bangalore",
+//     price: 12000000,
+//     beds: 3,
+//     baths: 2.5,
+//     sqft: 2200,
+//     type: "House",
+//     availability: "Buy",
+//     image: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
+//   }
+// ];
 
 const PropertyCard = ({ property }) => {
   const navigate = useNavigate();
@@ -69,7 +68,40 @@ const PropertyCard = ({ property }) => {
   const toggleFavorite = (e) => {
     e.stopPropagation();
     setIsFavorite(!isFavorite);
-    // Here you would typically call an API to save to user's favorites
+  };
+
+  const getListingStatus = () => {
+    if (typeof property.availability === 'object' && property.availability?.status) {
+      return property.availability.status;
+    }
+    if (typeof property.availability === 'string') {
+      return property.availability;
+    }
+    return property.listingType || 'Sale';
+  };
+
+  const getBadgeColor = () => {
+    const status = getListingStatus().toLowerCase();
+    if (status === 'rented' || status === 'sold') {
+      return 'bg-gray-600 text-white';
+    }
+    if (status === 'rent' || status === 'rental' || status === 'available') {
+      return 'bg-green-600 text-white';
+    }
+    return 'bg-purple-600 text-white';
+  };
+
+  // Helper to format listing type for display
+  const formatListingType = (status) => {
+    const statusMap = {
+      'rent': 'Rental',
+      'sale': 'Sale',
+      'buy': 'Sale',
+      'available': 'Available',
+      'rented': 'Rented',
+      'sold': 'Sold'
+    };
+    return statusMap[status.toLowerCase()] || status;
   };
 
   return (
@@ -83,28 +115,22 @@ const PropertyCard = ({ property }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Property Image */}
       <div className="relative h-64">
         <img
-          src={property.image[0]}
+          src={property.images?.[0] || property.image?.[0] || "/placeholder.jpg"}
           alt={property.title}
           className="w-full h-full object-cover"
         />
         
-        {/* Property badges */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="absolute top-6 left-4 flex flex-col gap-2">
           <span className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
             {property.type}
           </span>
-          <span className={`text-xs font-medium px-3 py-1.5 rounded-full shadow-md 
-            ${property.availability === 'Rent' 
-              ? 'bg-green-600 text-white' 
-              : 'bg-purple-600 text-white'}`}>
-            For {property.availability}
-          </span>
+          {/* <span className={`text-xs font-medium px-3 py-1.5 rounded-full shadow-md ${getBadgeColor()}`}>
+            For {formatListingType(getListingStatus())}
+          </span> */}
         </div>
         
-        {/* Favorite button */}
         <button 
           onClick={toggleFavorite}
           className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 
@@ -115,7 +141,6 @@ const PropertyCard = ({ property }) => {
           <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
         </button>
         
-        {/* View overlay on hover */}
         <AnimatePresence>
           {isHovered && (
             <motion.div 
@@ -174,7 +199,7 @@ const PropertyCard = ({ property }) => {
           
           <div className="text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-md flex items-center">
             <Building className="w-3.5 h-3.5 mr-1" />
-            {property.availability === 'Rent' ? 'Rental' : 'Purchase'}
+            {formatListingType(getListingStatus())}
           </div>
         </div>
       </div>
@@ -223,22 +248,18 @@ const PropertiesShow = () => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${Backendurl}/api/products/list`);
+        const response = await axios.get(`${Backendurl}/api/properties`);
         
         if (response.data.success) {
-          // Take only the first 6 properties for featured section
-          // console.log(response.data.property[0],'hello');
-          const featuredProperties = response.data.property.slice(0, 6);
+          const featuredProperties = response.data.data.slice(0, 6);
           setProperties(featuredProperties);
         } else {
           setError('Failed to fetch properties');
-          // Fallback to sample data in case of API error
           setProperties(sampleProperties);
         }
       } catch (err) {
         console.error('Error fetching properties:', err);
         setError('Failed to load properties. Using sample data instead.');
-        // Fallback to sample data
         setProperties(sampleProperties);
       } finally {
         setLoading(false);
@@ -250,7 +271,7 @@ const PropertiesShow = () => {
 
   const filteredProperties = activeCategory === 'all' 
     ? properties 
-    : properties.filter(property => property.type.toLowerCase() === activeCategory);
+    : properties.filter(property => property.type?.toLowerCase() === activeCategory);
 
   const viewAllProperties = () => {
     navigate('/properties');

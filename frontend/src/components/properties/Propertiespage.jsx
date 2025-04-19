@@ -43,84 +43,12 @@ const PropertiesPage = () => {
   const fetchProperties = async () => {
     try {
       setPropertyState((prev) => ({ ...prev, loading: true }));
-      
-      // Convert filters to query parameters
-      const queryParams = new URLSearchParams();
-      
-      if (filters.propertyType) {
-        queryParams.append('type', filters.propertyType);
-      }
-      
-      if (filters.priceRange[0] > 0) {
-        queryParams.append('minPrice', filters.priceRange[0]);
-      }
-      
-      if (filters.priceRange[1] < Number.MAX_SAFE_INTEGER) {
-        queryParams.append('maxPrice', filters.priceRange[1]);
-      }
-      
-      if (filters.bedrooms && filters.bedrooms !== "0") {
-        queryParams.append('beds', filters.bedrooms);
-      }
-      
-      if (filters.bathrooms && filters.bathrooms !== "0") {
-        queryParams.append('baths', filters.bathrooms);
-      }
-      
-      if (filters.availability) {
-        queryParams.append('listingType', filters.availability);
-      }
-      
-      if (filters.searchQuery) {
-        queryParams.append('search', filters.searchQuery);
-      }
-      
-      if (filters.furnishing) {
-        queryParams.append('furnishing', filters.furnishing);
-      }
-      
-      if (filters.propertyCondition) {
-        queryParams.append('condition', filters.propertyCondition);
-      }
-      
-      if (filters.propertyStatus) {
-        queryParams.append('status', filters.propertyStatus);
-      }
-      
-      if (filters.amenities.length > 0) {
-        queryParams.append('amenities', JSON.stringify(filters.amenities));
-      }
-      
-      if (filters.minArea) {
-        queryParams.append('minArea', filters.minArea);
-      }
-      
-      if (filters.maxArea) {
-        queryParams.append('maxArea', filters.maxArea);
-      }
-      
-      if (filters.floorNo) {
-        queryParams.append('floorNo', filters.floorNo);
-      }
-      
-      if (filters.totalFloors) {
-        queryParams.append('totalFloors', filters.totalFloors);
-      }
-      
-      if (filters.verifiedOnly) {
-        queryParams.append('verified', 'true');
-      }
-      
-      if (filters.sortBy) {
-        queryParams.append('sortBy', filters.sortBy);
-      }
-
-      const response = await axios.get(`${Backendurl}/api/products/list?${queryParams.toString()}`);
+      const response = await axios.get(`${Backendurl}/api/properties`);
       
       if (response.data.success) {
         setPropertyState((prev) => ({
           ...prev,
-          properties: response.data.property,
+          properties: response.data.data,
           error: null,
           loading: false,
         }));

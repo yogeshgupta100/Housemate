@@ -24,13 +24,13 @@ const propertySchema = new mongoose.Schema({
   listingType: {
     type: String,
     required: [true, 'Listing type is required'],
-    enum: ['sale', 'rent'],
+    enum: ['sale', 'rent', 'buy'], 
     lowercase: true
   },
   type: {
     type: String,
     required: [true, 'Property type is required'],
-    enum: ['PG', 'flat', 'RK', 'house', 'apartment', 'villa'],
+    enum: ['pg', 'flat', 'rk', 'house', 'apartment', 'villa', 'office'], 
     lowercase: true
   },
   price: {
@@ -80,33 +80,29 @@ const propertySchema = new mongoose.Schema({
   coordinates: {
     latitude: {
       type: Number,
-      required: true
+      default: 0 
     },
     longitude: {
       type: Number,
-      required: true
+      default: 0 
     }
   },
   address: {
     street: {
       type: String,
-      required: [true, 'Street address is required'],
-      trim: true
+      default: ''
     },
     city: {
       type: String,
-      required: [true, 'City is required'],
-      trim: true
+      default: '' 
     },
     state: {
       type: String,
-      required: [true, 'State is required'],
-      trim: true
+      default: '' // Changed from required
     },
     pincode: {
       type: String,
-      required: [true, 'Pincode is required'],
-      match: [/^\d{6}$/, 'Please enter a valid 6-digit pincode']
+      default: '' // Changed from required
     },
     country: {
       type: String,
@@ -118,8 +114,7 @@ const propertySchema = new mongoose.Schema({
   // Property Features
   floorArea: {
     type: Number,
-    required: [true, 'Floor area is required'],
-    min: [0, 'Floor area cannot be negative']
+    default: 0 // Changed from required
   },
   sqft: {
     type: Number,
@@ -236,8 +231,6 @@ const propertySchema = new mongoose.Schema({
   // Media
   images: {
     type: [String],
-    required: [true, 'At least one image is required'],
-    validate: [arr => arr.length > 0, 'At least one image is required']
   },
   imageUrl: {
     type: String
@@ -247,50 +240,38 @@ const propertySchema = new mongoose.Schema({
   description: {
     type: String,
     required: [true, 'Description is required'],
-    minLength: [50, 'Description must be at least 50 characters'],
-    maxLength: [2000, 'Description cannot be more than 2000 characters']
+    // minLength: [50, 'Description must be at least 50 characters'],
+    // maxLength: [2000, 'Description cannot be more than 2000 characters']
   },
   
   // Contact Information
   contact: {
     phone: {
       type: String,
-      required: [true, 'Contact phone is required'],
+      // required: [true, 'Contact phone is required'],
       trim: true
     },
     email: {
       type: String,
-      required: [true, 'Contact email is required'],
+      // required: [true, 'Contact email is required'],
       lowercase: true,
       trim: true
     }
   },
   
-  // Owner & Creator
-  owner: {
+  // Owner & Creator (Updated)
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Owner information is required']
   },
   createdBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
-    required: [true, 'Creator information is required']
   },
   threeDMappingRequests: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ThreeDMappingRequest'
   }],
-  threeDModel: {
-    modelUrl: String,
-    thumbnailUrl: String,
-    lastUpdated: Date
-  },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User',
-    required: [true, 'Creator information is required']
-  },
   
   // Availability
   availability: {
@@ -394,7 +375,7 @@ propertySchema.pre('save', function(next) {
 propertySchema.index({ title: 'text', description: 'text', 'address.city': 'text' });
 propertySchema.index({ listingType: 1, type: 1, 'availability.status': 1 });
 propertySchema.index({ price: 1 });
-propertySchema.index({ owner: 1 });
+propertySchema.index({ userId: 1 });
 propertySchema.index({ 'address.city': 1, 'address.state': 1 });
 propertySchema.index({ featured: 1, status: 1 });
 propertySchema.index({ createdBy: 1 });
@@ -443,4 +424,4 @@ propertySchema.statics.getPropertiesForSale = function() {
 
 const Property = mongoose.model('Property', propertySchema);
 
-export default Property; 
+export default Property;

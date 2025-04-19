@@ -4,15 +4,7 @@ import { Search, MapPin, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import heroimage from "../assets/images/heroimage.png";
-import { RadialGradient } from "react-text-gradients";
-
-const popularLocations = [
-  "Mumbai",
-  "Delhi",
-  "Bangalore",
-  "Hyderabad",
-  "Chennai"
-];
+import { RadialGradient } from "react-text-gradients";;
 
 export const AnimatedContainer = ({ children, distance = 100, direction = "vertical", reverse = false }) => {
   const [inView, setInView] = useState(false);
@@ -59,9 +51,52 @@ const Hero = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const autocompleteService = useRef(null);
+  const sessionToken = useRef(null);
+
+  // Initialize Google Maps Places Autocomplete Service
+  useEffect(() => {
+    if (window.google && window.google.maps) {
+      autocompleteService.current = new window.google.maps.places.AutocompleteService();
+      sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
+    }
+  }, []);
+
+  // Fetch suggestions based on search query
+  useEffect(() => {
+    if (!searchQuery || !autocompleteService.current) {
+      setSuggestions([]);
+      return;
+    }
+
+    autocompleteService.current.getPlacePredictions(
+      {
+        input: searchQuery,
+        sessionToken: sessionToken.current,
+        types: ["geocode"],
+        componentRestrictions: { country: "in" }
+      },
+      (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSuggestions(predictions);
+        } else {
+          setSuggestions([]);
+        }
+      }
+    );
+  }, [searchQuery]);
 
   const handleSubmit = (location = searchQuery) => {
     navigate(`/properties?location=${encodeURIComponent(location)}`);
+    setShowSuggestions(false);
+    // Reset session token after search
+    sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
+  };
+
+  const handleSuggestionClick = (description) => {
+    setSearchQuery(description);
+    handleSubmit(description);
   };
 
   return (
@@ -121,6 +156,7 @@ const Hero = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder="Enter location..."
                     className="w-full pl-10 pr-4 py-3 rounded-xl border-0 bg-white/90 shadow-sm focus:ring-2 focus:ring-blue-500 transition-all"
                   />
@@ -146,25 +182,28 @@ const Hero = () => {
                   >
                     <div className="p-2">
                       <h3 className="text-xs font-medium text-gray-500 px-3 mb-2">
-                        Popular Locations
+                        Suggested Locations
                       </h3>
-                      {popularLocations.map((location) => (
-                        <button
-                          key={location}
-                          onClick={() => {
-                            setSearchQuery(location);
-                            handleSubmit(location);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg flex items-center 
-                            justify-between text-gray-700 transition-colors"
-                        >
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                            <span>{location}</span>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-gray-400" />
-                        </button>
-                      ))}
+                      {suggestions.length > 0 ? (
+                        suggestions.map((suggestion) => (
+                          <button
+                            key={suggestion.place_id}
+                            onClick={() => handleSuggestionClick(suggestion.description)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg flex items-center 
+                              justify-between text-gray-700 transition-colors"
+                          >
+                            <div className="flex items-center">
+                              <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                              <span>{suggestion.description}</span>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-gray-400" />
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500">
+                          No suggestions found
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

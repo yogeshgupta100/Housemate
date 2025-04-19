@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../models/Usermodel.js"; // Fix import path
+import User from "../models/userModel.js"; // Fix import path
 import Appointment from "../models/appointmentModel.js"; // Add missing import
 
 export const protect = async (req, res, next) => {

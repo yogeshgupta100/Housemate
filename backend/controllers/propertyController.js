@@ -18,33 +18,68 @@ export const getAllProperties = async (req, res) => {
 
 export const getPropertyById = async (req, res) => {
   try {
-    const property = await propertyService.getPropertyById(req.params.id);
-    res.status(200).json({
+    const { id } = req.params;
+    const property = await propertyService.getPropertyById(id);
+
+    res.json({
       success: true,
-      data: property
+      property: property
     });
   } catch (error) {
-    res.status(404).json({
-      success: false,
-      message: error.message
+    console.error('Error fetching property:', error);
+    res.status(error.message.includes('not found') ? 404 : 500).json({ 
+      success: false, 
+      message: error.message 
     });
   }
 };
 
 export const createProperty = async (req, res) => {
   try {
-    const property = await propertyService.createProperty({
-      ...req.body,
-      createdBy: req.user.id
-    });
+    const images = req.files ? req.files.map(file => file.path) : [];
+    const amenities = req.body.amenities ? JSON.parse(req.body.amenities) : [];
+    
+    const propertyData = {
+      title: req.body.title,
+      type: req.body.type.toLowerCase(),
+      price: Number(req.body.price),
+      location: req.body.location,
+      description: req.body.description,
+      beds: Number(req.body.beds),
+      baths: Number(req.body.baths),
+      sqft: Number(req.body.sqft),
+      phone: req.body.phone,
+      listingType: req.body.listingType.toLowerCase(),
+      amenities: amenities,
+      images: images,
+      userId: req.body.userId || req.user?._id,
+      createdBy: req.body.createdBy || req.user?._id,
+      coordinates: {
+        latitude: 0,
+        longitude: 0
+      },
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'India'
+      },
+      floorArea: Number(req.body.sqft) || 0
+    };
+
+    const property = await propertyService.createProperty(propertyData);
+
     res.status(201).json({
       success: true,
-      data: property
+      data: property,
+      message: 'Property created successfully'
     });
   } catch (error) {
+    console.error('Property creation error:', error);
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to create property'
     });
   }
 };

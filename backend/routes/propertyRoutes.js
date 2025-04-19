@@ -38,11 +38,13 @@ const upload = multer({
   }
 });
 
+
+router.post('/add', upload.array('images', 5), propertyController.createProperty);
+
 router.get('/', propertyController.getAllProperties);
 router.get('/search', propertyController.searchProperties);
 router.get('/:id', propertyController.getPropertyById);
 
-router.post('/', propertyController.createProperty);
 router.put('/:id', propertyController.updateProperty);
 router.delete('/:id', propertyController.deleteProperty);
 
