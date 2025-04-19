@@ -1,4 +1,4 @@
-import User from '../models/Usermodel.js'; // Fix import path
+import User from '../models/usermodel.js'; // Fix import path
 
 class UserService {
   async getAllUsers() {
