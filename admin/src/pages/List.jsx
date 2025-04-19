@@ -29,9 +29,10 @@ const PropertyListings = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${backendurl}/api/products/list`);
+      const response = await axios.get(`${backendurl}/api/properties`);
+      
       if (response.data.success) {
-        const parsedProperties = response.data.property.map(property => ({
+        const parsedProperties = response.data.data.map(property => ({
           ...property,
           amenities: parseAmenities(property.amenities)
         }));
@@ -49,10 +50,15 @@ const PropertyListings = () => {
 
   const parseAmenities = (amenities) => {
     if (!amenities || !Array.isArray(amenities)) return [];
+    
+    // If amenities is already an array of strings, return it
+    if (typeof amenities[0] === 'string') {
+      return amenities;
+    }
+    
+    // If it's a JSON string, try to parse it
     try {
-      return typeof amenities[0] === "string" 
-        ? JSON.parse(amenities[0].replace(/'/g, '"'))
-        : amenities;
+      return Array.isArray(amenities) ? amenities : JSON.parse(amenities);
     } catch (error) {
       console.error("Error parsing amenities:", error);
       return [];
@@ -197,7 +203,7 @@ const PropertyListings = () => {
                 {/* Property Image */}
                 <div className="relative h-48">
                   <img
-                    src={property.image[0] || "/placeholder.jpg"}
+                    src={property.images?.[0] || property.image?.[0] || "/placeholder.jpg"}
                     alt={property.title}
                     className="w-full h-full object-cover"
                   />
@@ -240,11 +246,11 @@ const PropertyListings = () => {
                       ₹{property.price.toLocaleString()}
                     </p>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      property.availability === 'rent' 
+                      property.listingType === 'rent' 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-blue-100 text-blue-800'
                     }`}>
-                      For {property.availability}
+                      For {property.listingType === 'rent' ? 'Rent' : 'Sale'}
                     </span>
                   </div>
 

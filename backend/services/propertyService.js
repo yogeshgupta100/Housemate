@@ -1,3 +1,4 @@
+import Property from '../models/propertymodel.js';
 import propertyRepository from '../repositories/propertyRepository.js';
 // import cloudinary from '../utils/cloudinary.js';
 
@@ -7,14 +8,23 @@ class PropertyService {
   }
 
   async getPropertyById(id) {
-    const property = await propertyRepository.findById(id);
-    if (!property) {
-      throw new Error('Property not found');
+    try {
+      const property = await Property.findById(id);
+      if (!property) {
+        throw new Error('Property not found');
+      }
+      return property;
+    } catch (error) {
+      throw new Error(`Error fetching property: ${error.message}`);
     }
-    return property;
   }
 
   async createProperty(propertyData) {
+    // Ensure userId is set to the authenticated user's ID
+    if (!propertyData.userId) {
+      propertyData.userId = propertyData.createdBy;
+    }
+
     // Handle image uploads if any
     // if (propertyData.images && propertyData.images.length > 0) {
     //   const uploadPromises = propertyData.images.map(image => 
@@ -30,6 +40,9 @@ class PropertyService {
   }
 
   async updateProperty(id, updateData) {
+    // Prevent modification of userId to protect ownership
+    delete updateData.userId;
+
     // Handle image updates if any
     // if (updateData.images && updateData.images.length > 0) {
     //   const uploadPromises = updateData.images.map(image => 

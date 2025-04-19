@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import connectdb from './config/mongodb.js';
 import { trackAPIStats } from './middleware/statsMiddleware.js';
-import propertyrouter from './routes/ProductRouter.js';
+// import propertyrouter from './routes/ProductRouter.js';
 import authRouter from './routes/authRoutes.js';
 import formrouter from './routes/formrouter.js';
 import newsrouter from './routes/newsRoute.js';
@@ -14,6 +14,9 @@ import appointmentRouter from './routes/appointmentRoute.js';
 import adminRouter from './routes/adminRoute.js';
 import propertyRoutes from './routes/propertyRoutes.js';
 import {initializeRoles} from "./scripts/initRoles.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 dotenv.config();
 
@@ -62,15 +65,20 @@ connectdb().then(() => {
   console.error('Database connection error:', err);
 });
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
-app.use('/api/products', propertyrouter);
+// app.use('/api/products', propertyrouter);
 app.use('/api/auth', authRouter);
 app.use('/api/forms', formrouter);
 app.use('/api/news', newsrouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api', propertyRoutes);
+app.use('/api/properties', propertyRoutes);
 app.use('/api/auth/roles', propertyRoutes);
 
 

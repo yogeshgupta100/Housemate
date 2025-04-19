@@ -20,6 +20,21 @@ const PropertyCard = ({ property, viewType }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showControls, setShowControls] = useState(false);
 
+  const propertyImages = property.images || property.image || [];
+
+  // Handle image navigation - todo:
+  const handleImageNavigation = (e, direction) => {
+    e.stopPropagation();
+    const imagesCount = propertyImages.length;
+    if (imagesCount === 0) return;
+    
+    if (direction === 'next') {
+      setCurrentImageIndex((prev) => (prev + 1) % imagesCount);
+    } else {
+      setCurrentImageIndex((prev) => (prev - 1 + imagesCount) % imagesCount);
+    }
+  };
+
   const handleNavigateToDetails = () => {
     navigate(`/properties/single/${property._id}`);
   };
@@ -42,14 +57,37 @@ const PropertyCard = ({ property, viewType }) => {
     }
   };
 
-  const handleImageNavigation = (e, direction) => {
-    e.stopPropagation();
-    const imagesCount = property.image.length;
-    if (direction === 'next') {
-      setCurrentImageIndex((prev) => (prev + 1) % imagesCount);
-    } else {
-      setCurrentImageIndex((prev) => (prev - 1 + imagesCount) % imagesCount);
+  const getListingStatus = () => {
+    if (typeof property.availability === 'object' && property.availability?.status) {
+      return property.availability.status;
     }
+    if (typeof property.availability === 'string') {
+      return property.availability;
+    }
+    return property.listingType === 'rent' ? 'Rental' : 'Sale';
+  };
+
+  const getBadgeColor = () => {
+    const status = getListingStatus().toLowerCase();
+    if (status === 'rented' || status === 'sold') {
+      return 'bg-gray-600 text-white';
+    }
+    if (status === 'rent' || status === 'rental' || status === 'available') {
+      return 'bg-green-600 text-white';
+    }
+    return 'bg-purple-600 text-white';
+  };
+
+  const formatListingType = (status) => {
+    const statusMap = {
+      'rent': 'Rental',
+      'sale': 'Sale',
+      'buy': 'Sale',
+      'available': 'Available',
+      'rented': 'Rented',
+      'sold': 'Sold'
+    };
+    return statusMap[status.toLowerCase()] || status;
   };
 
   return (
@@ -71,7 +109,7 @@ const PropertyCard = ({ property, viewType }) => {
         <AnimatePresence mode="wait">
           <motion.img
             key={currentImageIndex}
-            src={property.image[currentImageIndex]}
+            src={propertyImages[currentImageIndex] || '/placeholder.jpg'}
             alt={property.title}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -82,7 +120,7 @@ const PropertyCard = ({ property, viewType }) => {
         </AnimatePresence>
 
         {/* Image Navigation Controls */}
-        {showControls && property.image.length > 1 && (
+        {showControls && propertyImages.length > 1 && (
           <div className="absolute inset-0 flex items-center justify-between px-2">
             <motion.button
               initial={{ opacity: 0 }}
@@ -106,9 +144,9 @@ const PropertyCard = ({ property, viewType }) => {
         )}
 
         {/* Image Indicators */}
-        {property.image.length > 1 && (
+        {propertyImages.length > 1 && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-            {property.image.map((_, index) => (
+            {propertyImages.map((_, index) => (
               <div
                 key={index}
                 className={`w-1.5 h-1.5 rounded-full transition-all duration-300
@@ -143,10 +181,9 @@ const PropertyCard = ({ property, viewType }) => {
           <motion.span 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-gradient-to-r from-green-600 to-green-500 text-white 
-              px-3 py-1 rounded-full text-sm font-medium shadow-lg"
+            className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${getBadgeColor()}`}
           >
-            {property.availability}
+            {formatListingType(getListingStatus())}
           </motion.span>
         </div>
       </div>

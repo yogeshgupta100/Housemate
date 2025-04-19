@@ -16,7 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
-  Compass
+  Compass,
+  AlertTriangle,
+  Home
 } from "lucide-react";
 import { Backendurl } from "../../App.jsx";
 import ScheduleViewing from "./ScheduleViewing";
@@ -35,27 +37,24 @@ const PropertyDetails = () => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${Backendurl}/api/products/single/${id}`);
-
+        const response = await axios.get(`${Backendurl}/api/properties/${id}`);
+        
         if (response.data.success) {
-          const propertyData = response.data.property;
-          setProperty({
-            ...propertyData,
-            amenities: parseAmenities(propertyData.amenities)
-          });
-          setError(null);
+          setProperty(response.data.property);
         } else {
-          setError(response.data.message || "Failed to load property details.");
+          setError(response.data.message);
         }
       } catch (err) {
-        console.error("Error fetching property details:", err);
-        setError("Failed to load property details. Please try again.");
+        console.error('Error fetching property:', err);
+        setError('Failed to fetch property details');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProperty();
+    if (id) {
+      fetchProperty();
+    }
   }, [id]);
 
   useEffect(() => {
@@ -64,18 +63,28 @@ const PropertyDetails = () => {
     setActiveImage(0);
   }, [id]);
 
+  const getPropertyImages = (property) => {
+    if (!property) return [];
+    return property.images || property.image || [];
+  };
+
   const parseAmenities = (amenities) => {
-    if (!amenities || !Array.isArray(amenities)) return [];
-    
+    if (!amenities) return [];
+    if (Array.isArray(amenities)) return amenities;
     try {
-      if (typeof amenities[0] === "string") {
-        return JSON.parse(amenities[0].replace(/'/g, '"'));
-      }
-      return amenities;
+      return typeof amenities === 'string' ? JSON.parse(amenities) : [];
     } catch (error) {
       console.error("Error parsing amenities:", error);
       return [];
     }
+  };
+
+  const getPropertyStatus = (property) => {
+    if (!property) return 'N/A';
+    if (typeof property.availability === 'object' && property.availability?.status) {
+      return property.availability.status;
+    }
+    return property.availability || property.listingType || 'N/A';
   };
 
   const handleKeyNavigation = useCallback((e) => {
@@ -207,21 +216,32 @@ const PropertyDetails = () => {
     );
   }
 
-  if (error) {
+  if (error || !property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Link
+      <div className="min-h-screen pt-20 px-4 bg-gray-50">
+        <div className="max-w-3xl mx-auto text-center py-12 bg-white rounded-lg shadow">
+          <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {error || 'Property Not Found'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            We couldn't find the property you're looking for.
+          </p>
+          <Link 
             to="/properties"
-            className="text-blue-600 hover:underline flex items-center justify-center"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Properties
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Properties
           </Link>
         </div>
       </div>
     );
   }
+
+  const images = getPropertyImages(property);
+  const amenities = parseAmenities(property.amenities);
+  const status = getPropertyStatus(property);
 
   return (
     <motion.div 
@@ -263,7 +283,7 @@ const PropertyDetails = () => {
             <AnimatePresence mode="wait">
               <motion.img
                 key={activeImage}
-                src={property.image[activeImage]}
+                src={images[activeImage]}
                 alt={`${property.title} - View ${activeImage + 1}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -274,11 +294,11 @@ const PropertyDetails = () => {
             </AnimatePresence>
 
             {/* Image Navigation */}
-            {property.image.length > 1 && (
+            {images.length > 1 && (
               <>
                 <button
                   onClick={() => setActiveImage(prev => 
-                    prev === 0 ? property.image.length - 1 : prev - 1
+                    prev === 0 ? images.length - 1 : prev - 1
                   )}
                   className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full
                     bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
@@ -287,7 +307,7 @@ const PropertyDetails = () => {
                 </button>
                 <button
                   onClick={() => setActiveImage(prev => 
-                    prev === property.image.length - 1 ? 0 : prev + 1
+                    prev === images.length - 1 ? 0 : prev + 1
                   )}
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full
                     bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
@@ -300,7 +320,7 @@ const PropertyDetails = () => {
             {/* Image Counter */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 
               bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm">
-              {activeImage + 1} / {property.image.length}
+              {activeImage + 1} / {images.length}
             </div>
           </div>
 
@@ -330,7 +350,7 @@ const PropertyDetails = () => {
                     ₹{Number(property.price).toLocaleString('en-IN')}
                   </p>
                   <p className="text-gray-600">
-                    Available for {property.availability}
+                    Available for {status}
                   </p>
                 </div>
 
@@ -383,7 +403,7 @@ const PropertyDetails = () => {
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-4">Amenities</h2>
                   <div className="grid grid-cols-2 gap-4">
-                    {property.amenities.map((amenity, index) => (
+                    {amenities.map((amenity, index) => (
                       <div 
                         key={index}
                         className="flex items-center text-gray-600"

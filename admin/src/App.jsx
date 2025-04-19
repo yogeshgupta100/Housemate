@@ -15,6 +15,7 @@ import List from "./pages/List";
 import Add from "./pages/Add";
 import Update from "./pages/Update";
 import Appointments from "./pages/Appointments";
+import Users from "./pages/Users"; // Add this import at the top
 
 // Config
 export const backendurl = import.meta.env.VITE_BACKEND_URL;
@@ -54,6 +55,7 @@ const App = () => {
                 <Route path="/add" element={<Add />} />
                 <Route path="/update/:id" element={<Update />} />
                 <Route path="/appointments" element={<Appointments />} />
+                <Route path="/users" element={<Users />} />
               </Route>
 
               {/* 404 Route */}

@@ -32,10 +32,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 import authRoutes from './routes/authRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
 import newsRoutes from './routes/newsRoute.js';
-import userRoutes from './routes/userRoutes.js'; // Fix casing
+import userRoutes from './routes/userRoutes.js'; 
 import appointmentRoutes from './routes/appointmentRoute.js';
 import adminRoutes from './routes/adminRoute.js';
-import productRoutes from './routes/productRoute.js'; // Fix casing
+// import productRoutes from './routes/productRoute.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -43,18 +43,17 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/products', productRoutes);
 
 // Error handling
 app.use(errorHandler);
 
-// Handle 404 routes
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
+// // Handle 404 routes
+// app.use((req, res) => {
+//   res.status(404).json({
+//     success: false,
+//     message: 'Route not found'
+//   });
+// });
 
 const PORT = process.env.PORT || 5000;
 
