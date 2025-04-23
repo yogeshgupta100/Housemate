@@ -444,6 +444,9 @@ const PropertyDetails = () => {
           {showSchedule && (
             <ScheduleViewing
               propertyId={property._id}
+              propertyTitle={property.title}
+              propertyLocation={property.location}
+              // propertyImage={property.image[0]}
               onClose={() => setShowSchedule(false)}
             />
           )}

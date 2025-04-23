@@ -17,14 +17,14 @@ const router = express.Router();
 
 // User routes
 router.post("/schedule", protect, scheduleViewing);  // Add protect middleware
-router.get("/user", getAppointmentsByUser);
-router.put("/cancel/:id", cancelAppointment);
-router.put("/feedback/:id", submitAppointmentFeedback);
-router.get("/upcoming", getUpcomingAppointments);
+router.get("/user", protect, getAppointmentsByUser);
+router.put("/cancel/:id", protect, cancelAppointment);
+router.put("/feedback/:id", protect, submitAppointmentFeedback);
+router.get("/upcoming", protect, getUpcomingAppointments);
 
 // Admin routes
 router.get("/all", getAllAppointments);
-router.get("/stats", getAppointmentStats);
+router.get("/stats",  getAppointmentStats);
 router.put("/status", updateAppointmentStatus);
 router.put("/update-meeting", updateAppointmentMeetingLink);
 

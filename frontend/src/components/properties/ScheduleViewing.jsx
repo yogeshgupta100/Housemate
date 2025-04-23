@@ -111,7 +111,6 @@ const ScheduleViewing = ({ propertyId, propertyTitle, propertyLocation, property
     }
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
