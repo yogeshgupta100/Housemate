@@ -79,87 +79,39 @@ export const getEmailTemplate = (appointment, status) => `
     <!-- Header with Background -->
     <div style="background: linear-gradient(135deg, #2563eb, #1e40af); padding: 40px 20px; border-radius: 15px 15px 0 0; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Appointment ${status.charAt(0).toUpperCase() + status.slice(1)}</h1>
-      <p style="color: #ffffff; opacity: 0.9; margin: 10px 0 0 0; font-size: 16px;">BuildEstate Property Viewing</p>
     </div>
 
-    <!-- Main Content -->
     <div style="background: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);">
       <!-- Appointment Details -->
-      <div style="background: #f0f7ff; border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-        <h2 style="color: #1e40af; margin: 0 0 15px 0; font-size: 20px;">Appointment Details</h2>
+      <div style="background: ${status === 'rejected' ? '#fee2e2' : '#f0f7ff'}; border-left: 4px solid ${status === 'rejected' ? '#dc2626' : '#2563eb'}; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+        <h2 style="color: ${status === 'rejected' ? '#991b1b' : '#1e40af'}; margin: 0 0 15px 0; font-size: 20px;">
+          ${status === 'rejected' ? 'Appointment Request Declined' : 'Appointment Details'}
+        </h2>
         <p style="margin: 8px 0; color: #374151;">
           <strong>Property:</strong> ${appointment.propertyId.title}
         </p>
         <p style="margin: 8px 0; color: #374151;">
-          <strong>Date:</strong> ${new Date(appointment.date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
+          <strong>Date:</strong> ${new Date(appointment.date).toLocaleDateString()}
         </p>
         <p style="margin: 8px 0; color: #374151;">
           <strong>Time:</strong> ${appointment.time}
         </p>
-        <p style="margin: 8px 0; color: #374151;">
-          <strong>Status:</strong> <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 14px; background: ${
-            status === 'confirmed' ? '#dcfce7' : status === 'cancelled' ? '#fee2e2' : '#fef3c7'
-          }; color: ${
-            status === 'confirmed' ? '#166534' : status === 'cancelled' ? '#991b1b' : '#854d0e'
-          };">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
-        </p>
+        ${status === 'rejected' ? 
+          `<p style="margin: 16px 0 0 0; color: #991b1b;">
+            Unfortunately, we cannot accommodate this viewing request. Please try scheduling for a different time or contact our support team for assistance.
+          </p>` 
+          : ''
+        }
       </div>
-
-      <!-- Next Steps -->
-      <div style="margin-top: 30px;">
-        <h3 style="color: #1e40af; margin: 0 0 15px 0; font-size: 18px;">What's Next?</h3>
-        <ul style="list-style: none; padding: 0; margin: 0;">
-          ${status === 'confirmed' ? `
-            <li style="margin-bottom: 10px; display: flex; align-items: center;">
-              <span style="display: inline-block; width: 24px; height: 24px; background: #dcfce7; border-radius: 50%; margin-right: 10px; text-align: center; line-height: 24px; color: #166534;">✓</span>
-              Arrive 10 minutes before your scheduled time
-            </li>
-            <li style="margin-bottom: 10px; display: flex; align-items: center;">
-              <span style="display: inline-block; width: 24px; height: 24px; background: #dcfce7; border-radius: 50%; margin-right: 10px; text-align: center; line-height: 24px; color: #166534;">✓</span>
-              Bring valid identification
-            </li>
-          ` : status === 'cancelled' ? `
-            <li style="margin-bottom: 10px; display: flex; align-items: center;">
-              <span style="display: inline-block; width: 24px; height: 24px; background: #fee2e2; border-radius: 50%; margin-right: 10px; text-align: center; line-height: 24px; color: #991b1b;">i</span>
-              You can schedule another viewing at any time
-            </li>
-          ` : `
-            <li style="margin-bottom: 10px; display: flex; align-items: center;">
-              <span style="display: inline-block; width: 24px; height: 24px; background: #fef3c7; border-radius: 50%; margin-right: 10px; text-align: center; line-height: 24px; color: #854d0e;">!</span>
-              We will confirm your appointment shortly
-            </li>
-          `}
-        </ul>
-      </div>
-
-      <!-- Contact Support -->
-      <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 8px;">
-        <h3 style="color: #1e40af; margin: 0 0 15px 0; font-size: 18px;">Need Help?</h3>
-        <p style="margin: 0; color: #4b5563;">
-          Our support team is available 24/7 to assist you:
-          <br>
-          📧 <a href="mailto:support@buildestate.com" style="color: #2563eb; text-decoration: none;">support@buildestate.com</a>
-          <br>
-          📞 <a href="tel:+1234567890" style="color: #2563eb; text-decoration: none;">+1 (234) 567-890</a>
-        </p>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div style="text-align: center; margin-top: 30px;">
-      <p style="color: #6b7280; font-size: 14px;">
-        © ${new Date().getFullYear()} BuildEstate. All rights reserved.
-      </p>
-      <div style="margin-top: 10px;">
-        <a href="https://real-estate-website-sepia-two.vercel.app" style="color: #2563eb; text-decoration: none; margin: 0 10px;">Website</a>
-        <a href="#" style="color: #2563eb; text-decoration: none; margin: 0 10px;">Privacy Policy</a>
-        <a href="#" style="color: #2563eb; text-decoration: none; margin: 0 10px;">Terms of Service</a>
-      </div>
+      <!-- Call to Action -->
+      ${status === 'rejected' ? 
+        `<div style="text-align: center; margin-top: 30px;">
+          <a href="/properties" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            View Other Properties
+          </a>
+        </div>`
+        : ''
+      }
     </div>
   </div>
 `;

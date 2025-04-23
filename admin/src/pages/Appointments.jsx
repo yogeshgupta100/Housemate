@@ -177,8 +177,10 @@ const Appointments = () => {
                 className="rounded-lg border border-gray-200 px-4 py-2 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Appointments</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
+                <option value="pending">Pending Requests</option>
+                <option value="confirmed">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
@@ -234,16 +236,31 @@ const Appointments = () => {
                     </td>
 
                     {/* Client Details */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 relative group">
                       <div className="flex items-center">
                         <User className="w-5 h-5 text-gray-400 mr-2" />
                         <div>
                           <p className="font-medium text-gray-900">
-                            {appointment.userId?.name || "Unknown"}
+                            {`${appointment.userId?.firstName} ${appointment.userId?.lastName}` || "Unknown"}
                           </p>
                           <p className="text-sm text-gray-500">
                             {appointment.userId?.email || "Unknown"}
                           </p>
+                          <p className="text-xs text-gray-400">
+                            {appointment.userId?.phone || "No phone"}
+                          </p>
+                          {/* Notes hover section */}
+                          {appointment.notes && (
+                            <>
+                              <div className="hidden group-hover:block absolute z-10 bg-gray-800 text-white text-sm rounded-lg py-2 px-3 w-64 mt-2 left-0">
+                                <p className="font-medium mb-1">Notes:</p>
+                                <p className="text-gray-200">{appointment.notes}</p>
+                              </div>
+                              <div className="mt-1 text-xs text-blue-600 cursor-help">
+                                View Notes
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -343,19 +360,35 @@ const Appointments = () => {
                             onClick={() =>
                               handleStatusChange(appointment._id, "confirmed")
                             }
-                            className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                            className="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
+                            title="Approve Request"
                           >
                             <Check className="w-4 h-4" />
+                            <span className="text-xs">Approve</span>
                           </button>
                           <button
                             onClick={() =>
-                              handleStatusChange(appointment._id, "cancelled")
+                              handleStatusChange(appointment._id, "rejected")
                             }
-                            className="p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                            className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1"
+                            title="Reject Request"
                           >
                             <X className="w-4 h-4" />
+                            <span className="text-xs">Reject</span>
                           </button>
                         </div>
+                      )}
+                      {appointment.status === "confirmed" && (
+                        <button
+                          onClick={() =>
+                            handleStatusChange(appointment._id, "completed")
+                          }
+                          className="p-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                          title="Mark as Completed"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span className="text-xs">Complete</span>
+                        </button>
                       )}
                     </td>
                   </motion.tr>
