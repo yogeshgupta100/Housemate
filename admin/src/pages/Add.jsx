@@ -89,12 +89,11 @@ const PropertyForm = () => {
       formdata.append('baths', formData.baths);
       formdata.append('sqft', formData.sqft);
       formdata.append('phone', formData.phone);
-      formdata.append('listingType', formData.availability.toLowerCase()); // Changed to listingType
+      formdata.append('listingType', formData.availability.toLowerCase()); 
       formdata.append('amenities', JSON.stringify(formData.amenities));
       
-      // Add default userId and createdBy if not available
-      formdata.append('userId', localStorage.getItem('userId') || '659ab1e0c45b9768e01c9652');
-      formdata.append('createdBy', localStorage.getItem('userId') || '659ab1e0c45b9768e01c9652');
+      formdata.append('userId', localStorage.getItem('userId'));
+      formdata.append('createdBy', localStorage.getItem('userId'));
       
       // Handle images
       formData.images.forEach((image) => {
