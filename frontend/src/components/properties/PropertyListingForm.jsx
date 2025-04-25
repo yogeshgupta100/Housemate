@@ -16,7 +16,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const PROPERTY_TYPES = ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk'];
+const PROPERTY_TYPES = [
+  'house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 
+  'residential', 'commercial' 
+];
 const AVAILABILITY_TYPES = ['rent', 'sale', 'buy'];
 const AMENITIES = ['Lake View', 'Fireplace', 'Central heating and air conditioning', 'Dock', 'Pool', 'Garage', 'Garden', 'Gym', 'Security system', 'Master bathroom', 'Guest bathroom', 'Home theater', 'Exercise room/gym', 'Covered parking', 'High-speed internet ready'];
 
@@ -212,6 +215,12 @@ const PropertyListingForm = () => {
       }
 
       const formDataToSend = new FormData();
+      
+    
+      formDataToSend.append('type', formData.type.toLowerCase());
+      
+      
+      formDataToSend.append('title', `${formData.title}-${Date.now()}`);
       
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'images') {

@@ -43,7 +43,48 @@ const PropertiesPage = () => {
   const fetchProperties = async () => {
     try {
       setPropertyState((prev) => ({ ...prev, loading: true }));
-      const response = await axios.get(`${Backendurl}/api/properties`);
+      
+
+      const queryParams = new URLSearchParams();
+      
+      if (filters.propertyType) {
+        queryParams.append('type', filters.propertyType);
+      }
+      if (filters.availability) {
+        queryParams.append('listingType', filters.availability);
+      }
+      if (filters.searchQuery) {
+        queryParams.append('search', filters.searchQuery);
+      }
+      if (filters.bedrooms && filters.bedrooms !== "0") {
+        queryParams.append('beds', filters.bedrooms);
+      }
+      if (filters.bathrooms && filters.bathrooms !== "0") {
+        queryParams.append('baths', filters.bathrooms);
+      }
+      if (filters.priceRange[0] > 0) {
+        queryParams.append('minPrice', filters.priceRange[0]);
+      }
+      if (filters.priceRange[1] < Number.MAX_SAFE_INTEGER) {
+        queryParams.append('maxPrice', filters.priceRange[1]);
+      }
+      if (filters.minArea) {
+        queryParams.append('minArea', filters.minArea);
+      }
+      if (filters.maxArea) {
+        queryParams.append('maxArea', filters.maxArea);
+      }
+      if (filters.amenities.length > 0) {
+        queryParams.append('amenities', JSON.stringify(filters.amenities));
+      }
+      if (filters.sortBy) {
+        queryParams.append('sort', filters.sortBy);
+      }
+      if (filters.verifiedOnly) {
+        queryParams.append('verified', true);
+      }
+
+      const response = await axios.get(`${Backendurl}/api/properties/search?${queryParams}`);
       
       if (response.data.success) {
         setPropertyState((prev) => ({
@@ -81,7 +122,7 @@ const PropertiesPage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen bg-gray-50 py-8"
+      className="min-h-screen bg-gray-50 pt-20" 
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* View Controls */}
@@ -139,6 +180,7 @@ const PropertiesPage = () => {
               </motion.aside>
             )}
           </AnimatePresence>
+          
 
           <div className={`${viewState.showFilters ? "lg:col-span-3" : "lg:col-span-4"}`}>
             <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
