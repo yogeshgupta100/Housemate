@@ -17,7 +17,12 @@ const propertySchema = new mongoose.Schema({
   slug: {
     type: String,
     unique: true,
-    lowercase: true
+    lowercase: true,
+    default: function() {
+      return `${this.title}-${Date.now()}`.toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-');
+    }
   },
   
   // Property Details
@@ -30,7 +35,7 @@ const propertySchema = new mongoose.Schema({
   type: {
     type: String,
     required: [true, 'Property type is required'],
-    enum: ['pg', 'flat', 'rk', 'house', 'apartment', 'villa', 'office'], 
+    enum: ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 'residential', 'commercial'],
     lowercase: true
   },
   price: {
@@ -148,7 +153,6 @@ const propertySchema = new mongoose.Schema({
   },
   amenities: {
     type: [String],
-    required: [true, 'At least one amenity is required'],
     default: []
   },
   
@@ -358,15 +362,14 @@ const propertySchema = new mongoose.Schema({
 // Pre-save hook to update updatedAt
 propertySchema.pre('save', function(next) {
   this.updatedAt = Date.now();
-  if (!this.isModified('title')) {
-    next();
-    return;
+  
+  // Only update slug if title changed
+  if (this.isModified('title')) {
+    this.slug = `${this.title}-${Date.now()}`
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-');
   }
-
-  this.slug = this.title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-');
   
   next();
 });
