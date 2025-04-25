@@ -197,12 +197,6 @@ const PropertyListingForm = () => {
       return;
     }
 
-    if (user?.userType === "corporate") {
-      setError("Corporate users cannot list properties. Please contact support for assistance.");
-      toast.error("Corporate users cannot list properties");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     
@@ -216,22 +210,22 @@ const PropertyListingForm = () => {
 
       const formDataToSend = new FormData();
       
-    
+      // Remove the timestamp modification and simplify form data
+      formDataToSend.append('title', formData.title);
       formDataToSend.append('type', formData.type.toLowerCase());
-      
-      
-      formDataToSend.append('title', `${formData.title}-${Date.now()}`);
-      
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'images') {
-          value.forEach(file => {
-            formDataToSend.append('images', file);
-          });
-        } else if (typeof value === 'object') {
-          formDataToSend.append(key, JSON.stringify(value));
-        } else {
-          formDataToSend.append(key, value);
-        }
+      formDataToSend.append('price', formData.price);
+      formDataToSend.append('location', formData.location);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('beds', formData.beds);
+      formDataToSend.append('baths', formData.baths);
+      formDataToSend.append('sqft', formData.sqft);
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('listingType', formData.availability.toLowerCase());
+      formDataToSend.append('amenities', JSON.stringify(formData.amenities));
+
+      // Handle images
+      formData.images.forEach((image, index) => {
+        formDataToSend.append(`images`, image);
       });
 
       const response = await axios.post(

@@ -92,8 +92,8 @@ const PropertyForm = () => {
       formdata.append('listingType', formData.availability.toLowerCase()); 
       formdata.append('amenities', JSON.stringify(formData.amenities));
       
-      formdata.append('userId', localStorage.getItem('userId'));
-      formdata.append('createdBy', localStorage.getItem('userId'));
+      formdata.append('userId', '657089f229c2df66a7ea7c0d'); 
+      formdata.append('createdBy', '657089f229c2df66a7ea7c0d');
       
       // Handle images
       formData.images.forEach((image) => {

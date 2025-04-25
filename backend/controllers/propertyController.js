@@ -40,21 +40,27 @@ export const createProperty = async (req, res) => {
     const images = req.files ? req.files.map(file => file.path) : [];
     const amenities = req.body.amenities ? JSON.parse(req.body.amenities) : [];
     
+    // Log the incoming data for debugging
+    console.log("Incoming property data:", req.body);
+    
+    // Use mongoose.Types.ObjectId to ensure proper ObjectId casting
+    const defaultAdminId = '657089f229c2df66a7ea7c0d'; // Replace with your admin user ID
+    
     const propertyData = {
-      title: req.body.title,
-      type: req.body.type.toLowerCase(),
+      title: req.body.title?.toString(), // Ensure string
+      type: req.body.type?.toString()?.toLowerCase(), // Ensure string and lowercase
       price: Number(req.body.price),
-      location: req.body.location,
-      description: req.body.description,
+      location: req.body.location?.toString(),
+      description: req.body.description?.toString(),
       beds: Number(req.body.beds),
       baths: Number(req.body.baths),
       sqft: Number(req.body.sqft),
-      phone: req.body.phone,
-      listingType: req.body.listingType.toLowerCase(),
+      phone: req.body.phone?.toString(),
+      listingType: req.body.listingType?.toString()?.toLowerCase(),
       amenities: amenities,
       images: images,
-      userId: req.body.userId || req.user?._id,
-      createdBy: req.body.createdBy || req.user?._id,
+      userId: req.body.userId || defaultAdminId,
+      createdBy: req.body.createdBy || defaultAdminId,
       coordinates: {
         latitude: 0,
         longitude: 0
@@ -68,6 +74,11 @@ export const createProperty = async (req, res) => {
       },
       floorArea: Number(req.body.sqft) || 0
     };
+
+    // Validate required fields
+    if (!propertyData.title || !propertyData.type) {
+      throw new Error('Title and type are required fields');
+    }
 
     const property = await propertyService.createProperty(propertyData);
 
