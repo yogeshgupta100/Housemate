@@ -17,6 +17,7 @@ import {initializeRoles} from "./scripts/initRoles.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import favoritesRoutes from "./routes/favoritesRoutes.js";
 
 dotenv.config();
 
@@ -80,6 +81,7 @@ app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/auth/roles', propertyRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 
 app.use((err, req, res, next) => {

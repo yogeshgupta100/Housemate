@@ -84,6 +84,12 @@ export const getCurrentUser = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const user = await authService.updateProfile(req.user.id, req.body);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
     res.status(200).json({
       success: true,
       data: user

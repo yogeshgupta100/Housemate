@@ -61,7 +61,30 @@ class AuthService {
   }
 
   async updateProfile(userId, updateData) {
-    return await User.findByIdAndUpdate(userId, updateData, { new: true });
+    const allowedUpdates = {
+      firstName: updateData.firstName,
+      lastName: updateData.lastName,
+      phone: updateData.phone,
+      gender: updateData.gender,
+      address: {
+        city: updateData.address?.city,
+        state: updateData.address?.state
+      },
+      bio: updateData.bio
+    };
+
+    Object.keys(allowedUpdates).forEach(key =>
+        allowedUpdates[key] === undefined && delete allowedUpdates[key]
+    );
+
+    return await User.findByIdAndUpdate(
+        userId,
+        allowedUpdates,
+        {
+          new: true,
+          runValidators: true
+        }
+    );
   }
 
   async updatePassword(userId, currentPassword, newPassword) {

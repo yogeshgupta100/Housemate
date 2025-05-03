@@ -78,7 +78,15 @@ const UserSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    favorites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Property'
+    }],
+    bio: {
+        type: String,
+        trim: true
+    },
 }, {
     timestamps: true
 });

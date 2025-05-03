@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Backendurl } from '../App';
 import PropTypes from "prop-types";
+import {toast} from "react-toastify";
 
 // const sampleProperties = [
 //   {
@@ -59,16 +60,64 @@ import PropTypes from "prop-types";
 const PropertyCard = ({ property }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   const handleNavigate = () => {
     navigate(`/properties/single/${property._id}`);
   };
 
-  const toggleFavorite = (e) => {
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      try {
+        const response = await axios.get(
+            `${Backendurl}/api/favorites/${property._id}/check`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('token')}`
+              },
+            }
+        );
+        if (response.data.success) {
+          setIsFavorite(response.data.isFavorited);
+        }
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+      }
+    };
+    checkFavoriteStatus();
+  }, [property._id]);
+
+  const toggleFavorite = async (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    setLoading(true);
+    try {
+      const response = await axios.post(
+          `${Backendurl}/api/favorites/${property._id}`,
+          {},
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem('token')}`
+            },
+          }
+      );
+      if (response.status === 200) {
+        setIsFavorite(!isFavorite);
+        toast.success(response.message);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Error updating favorite:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const getListingStatus = () => {
     if (typeof property.availability === 'object' && property.availability?.status) {
@@ -105,105 +154,95 @@ const PropertyCard = ({ property }) => {
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -8 }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
-      onClick={handleNavigate}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="relative h-64">
-        <img
-          src={property.images?.[0] || property.image?.[0] || "/placeholder.jpg"}
-          alt={property.title}
-          className="w-full h-full object-cover"
-        />
-        
-        <div className="absolute top-6 left-4 flex flex-col gap-2">
-          <span className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
-            {property.type}
-          </span>
-          {/* <span className={`text-xs font-medium px-3 py-1.5 rounded-full shadow-md ${getBadgeColor()}`}>
-            For {formatListingType(getListingStatus())}
-          </span> */}
+      <motion.div
+          whileHover={{y: -8}}
+          initial={{opacity: 0, y: 20}}
+          animate={{opacity: 1, y: 0}}
+          transition={{duration: 0.4}}
+          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
+          onClick={handleNavigate}
+          onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="relative h-64"><img src={property.images?.[0] || property.image?.[0] || "/placeholder.jpg"} alt={property.title} className="w-full h-full object-cover"/>
+          <div className="absolute top-6 left-4 flex flex-col gap-2">
+      <span className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
+        {property.type}
+      </span>
+          </div>
+
+          <button
+              onClick={toggleFavorite}
+              className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 cursor-pointer z-20
+        ${isFavorite
+                  ? 'bg-red-500 text-white'
+                  : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:text-red-500'}`}
+          >
+            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`}/>
+          </button>
+
+          <AnimatePresence>
+            {isHovered && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent flex items-center justify-center z-10"
+                >
+                  <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      className="px-5 py-3 bg-white text-blue-600 rounded-lg font-medium flex items-center gap-2 shadow-lg"
+                  >
+                    <Eye className="w-5 h-5" />
+                    View Details
+                  </motion.div>
+                </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        
-        <button 
-          onClick={toggleFavorite}
-          className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 
-            ${isFavorite 
-              ? 'bg-red-500 text-white' 
-              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:text-red-500'}`}
-        >
-          <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-        </button>
-        
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent flex items-center justify-center"
-            >
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                className="px-5 py-3 bg-white text-blue-600 rounded-lg font-medium flex items-center gap-2 shadow-lg"
-              >
-                <Eye className="w-5 h-5" />
-                View Details
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      
-      {/* Property Content */}
-      <div className="p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
-          {property.title}
-        </h3>
-        
-        <div className="flex items-center text-gray-600 mb-4">
-          <MapPin className="h-4 w-4 mr-2 flex-shrink-0 text-blue-500" />
-          <span className="line-clamp-1">{property.location}</span>
-        </div>
-        
-        {/* Property Features */}
-        <div className="flex justify-between items-center py-3 border-y border-gray-100 mb-4">
-          <div className="flex items-center gap-1">
-            <BedDouble className="w-4 h-4 text-blue-500" />
-            <span className="text-sm text-gray-600">{property.beds} {property.beds > 1 ? 'Beds' : 'Bed'}</span>
+
+        {/* Property Content */}
+        <div className="p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
+            {property.title}
+          </h3>
+
+          <div className="flex items-center text-gray-600 mb-4">
+            <MapPin className="h-4 w-4 mr-2 flex-shrink-0 text-blue-500"/>
+            <span className="line-clamp-1">{property.location}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Bath className="w-4 h-4 text-blue-500" />
-            <span className="text-sm text-gray-600">{property.baths} {property.baths > 1 ? 'Baths' : 'Bath'}</span>
+
+          {/* Property Features */}
+          <div className="flex justify-between items-center py-3 border-y border-gray-100 mb-4">
+            <div className="flex items-center gap-1">
+              <BedDouble className="w-4 h-4 text-blue-500"/>
+              <span className="text-sm text-gray-600">{property.beds} {property.beds > 1 ? 'Beds' : 'Bed'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Bath className="w-4 h-4 text-blue-500"/>
+              <span className="text-sm text-gray-600">{property.baths} {property.baths > 1 ? 'Baths' : 'Bath'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Maximize className="w-4 h-4 text-blue-500"/>
+              <span className="text-sm text-gray-600">{property.sqft} sqft</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Maximize className="w-4 h-4 text-blue-500" />
-            <span className="text-sm text-gray-600">{property.sqft} sqft</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center text-blue-600 font-bold">
-            <IndianRupee className="h-5 w-5 mr-1" />
-            <span className="text-xl">{Number(property.price).toLocaleString('en-IN')}</span>
-          </div>
-          
-          <div className="text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-md flex items-center">
-            <Building className="w-3.5 h-3.5 mr-1" />
-            {formatListingType(getListingStatus())}
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center text-blue-600 font-bold">
+              <IndianRupee className="h-5 w-5 mr-1"/>
+              <span className="text-xl">{Number(property.price).toLocaleString('en-IN')}</span>
+            </div>
+
+            <div className="text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-md flex items-center">
+              <Building className="w-3.5 h-3.5 mr-1"/>
+              {formatListingType(getListingStatus())}
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
   );
 };
 
