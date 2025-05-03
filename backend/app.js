@@ -6,7 +6,13 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import connectDB from './config/db.js';
 import { errorHandler } from './utils/error.js';
-
+import authRoutes from './routes/authRoutes.js';
+import propertyRoutes from './routes/propertyRoutes.js';
+import newsRoutes from './routes/newsRoute.js';
+import userRoutes from './routes/userRoutes.js';
+import appointmentRoutes from './routes/appointmentRoute.js';
+import adminRoutes from './routes/adminRoute.js';
+import favoritesRoutes from './routes/favoritesRoutes.js';
 // Load env vars
 dotenv.config();
 
@@ -29,12 +35,7 @@ app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-import authRoutes from './routes/authRoutes.js';
-import propertyRoutes from './routes/propertyRoutes.js';
-import newsRoutes from './routes/newsRoute.js';
-import userRoutes from './routes/userRoutes.js'; 
-import appointmentRoutes from './routes/appointmentRoute.js';
-import adminRoutes from './routes/adminRoute.js';
+
 // import productRoutes from './routes/productRoute.js';
 
 app.use('/api/auth', authRoutes);
@@ -43,6 +44,7 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 // Error handling
 app.use(errorHandler);
