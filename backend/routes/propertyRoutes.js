@@ -43,6 +43,7 @@ router.post('/add', upload.array('images', 5), propertyController.createProperty
 
 router.get('/', propertyController.getAllProperties);
 router.get('/search', propertyController.searchProperties);
+router.get('/searchByCoordinates', propertyController.searchPropertiesByCoordinates);
 router.get('/:id', propertyController.getPropertyById);
 
 router.put('/:id', propertyController.updateProperty);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect, useRef} from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -36,6 +36,17 @@ const PropertyListingForm = () => {
     type: '',
     price: '',
     location: '',
+    coordinates: {
+      latitude: 0,
+      longitude: 0
+    },
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      pincode: '',
+      country: 'India'
+    },
     description: '',
     beds: '',
     baths: '',
@@ -49,7 +60,78 @@ const PropertyListingForm = () => {
 
   const [previewUrls, setPreviewUrls] = useState([]);
 
-  // Check if user is allowed to list property and load draft if exists
+  const locationInputRef = useRef(null);
+
+// Add useEffect to initialize Google Places Autocomplete
+  useEffect(() => {
+    if (!locationInputRef.current || !window.google) return;
+
+    const autocomplete = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+      componentRestrictions: { country: 'IN' },
+      fields: ['address_components', 'geometry', 'formatted_address']
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+
+      if (!place.geometry) {
+        toast.error('Please select a location from the suggestions');
+        return;
+      }
+
+      // Extract address components
+      const addressComponents = {
+        street: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'India'
+      };
+
+      place.address_components.forEach(component => {
+        const types = component.types;
+
+        if (types.includes('street_number') || types.includes('route')) {
+          addressComponents.street += component.long_name + ' ';
+        }
+        if (types.includes('locality')) {
+          addressComponents.city = component.long_name;
+        }
+        if (types.includes('administrative_area_level_1')) {
+          addressComponents.state = component.long_name;
+        }
+        if (types.includes('postal_code')) {
+          addressComponents.pincode = component.long_name;
+        }
+      });
+
+      // Update form data with location details
+      setFormData(prev => ({
+        ...prev,
+        location: place.formatted_address,
+        coordinates: {
+          latitude: place.geometry.location.lat(),
+          longitude: place.geometry.location.lng()
+        },
+        address: {
+          street: addressComponents.street.trim(),
+          city: addressComponents.city,
+          state: addressComponents.state,
+          pincode: addressComponents.pincode,
+          country: 'India'
+        }
+      }));
+    });
+
+    return () => {
+      // Cleanup
+      if (autocomplete) {
+        google.maps.event.clearInstanceListeners(autocomplete);
+      }
+    };
+  }, []);
+
+    // Check if user is allowed to list property and load draft if exists
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
@@ -100,7 +182,7 @@ const PropertyListingForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -190,7 +272,17 @@ const PropertyListingForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!formData.coordinates.latitude || !formData.coordinates.longitude) {
+      toast.error("Please select a location from the suggestions dropdown");
+      return;
+    }
+
+    if (!formData.location || !formData.address.city || !formData.address.state) {
+      toast.error("Please select a complete address from the suggestions");
+      return;
+    }
+
     if (!isLoggedIn) {
       toast.info("Please login to list a property");
       navigate("/login");
@@ -209,8 +301,7 @@ const PropertyListingForm = () => {
       }
 
       const formDataToSend = new FormData();
-      
-      // Remove the timestamp modification and simplify form data
+
       formDataToSend.append('title', formData.title);
       formDataToSend.append('type', formData.type.toLowerCase());
       formDataToSend.append('price', formData.price);
@@ -223,9 +314,23 @@ const PropertyListingForm = () => {
       formDataToSend.append('listingType', formData.availability.toLowerCase());
       formDataToSend.append('amenities', JSON.stringify(formData.amenities));
 
+      // Coordinates and address
+      formDataToSend.append('coordinates', JSON.stringify({
+        latitude: formData.coordinates.latitude,
+        longitude: formData.coordinates.longitude
+      }));
+
+      formDataToSend.append('address', JSON.stringify({
+        street: formData.address.street,
+        city: formData.address.city,
+        state: formData.address.state,
+        pincode: formData.address.pincode,
+        country: formData.address.country
+      }));
+
       // Handle images
-      formData.images.forEach((image, index) => {
-        formDataToSend.append(`images`, image);
+      formData.images.forEach((image) => {
+        formDataToSend.append('images', image);
       });
 
       const response = await axios.post(
@@ -242,12 +347,12 @@ const PropertyListingForm = () => {
       if (response.data.success) {
         setSuccess(true);
         toast.success('Property listed successfully!');
-        // navigate(`/properties/${response.data.property._id}`);
       }
     } catch (error) {
       console.error('Error listing property:', error);
-      setError(error.response?.data?.message || 'Failed to list property');
-      toast.error(error.response?.data?.message || 'Failed to list property');
+      const errorMessage = error.response?.data?.message || 'Failed to list property';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -383,15 +488,20 @@ const PropertyListingForm = () => {
                   Location
                 </label>
                 <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  required
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter property location"
+                    ref={locationInputRef}
+                    type="text"
+                    id="location"
+                    name="location"
+                    required
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Search and select location from suggestions"
+                    autoComplete="off"
                 />
+                <small className="text-gray-500 mt-1 block">
+                  Please select a location from the dropdown suggestions
+                </small>
               </div>
             </div>
 

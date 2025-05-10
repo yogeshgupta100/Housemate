@@ -83,14 +83,8 @@ const propertySchema = new mongoose.Schema({
     trim: true
   },
   coordinates: {
-    latitude: {
-      type: Number,
-      default: 0 
-    },
-    longitude: {
-      type: Number,
-      default: 0 
-    }
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true }
   },
   address: {
     street: {
@@ -382,6 +376,11 @@ propertySchema.index({ userId: 1 });
 propertySchema.index({ 'address.city': 1, 'address.state': 1 });
 propertySchema.index({ featured: 1, status: 1 });
 propertySchema.index({ createdBy: 1 });
+propertySchema.index({
+  "coordinates": "2dsphere",
+  "address.city": 1,
+  "address.state": 1
+});
 
 // Method to check if property is available
 propertySchema.methods.isAvailable = function() {

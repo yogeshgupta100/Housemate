@@ -3,8 +3,7 @@ import authService from "../services/authService.js";
 
 export const getRoles = async (req, res) => {
     try {
-        const roles = await Role.find({ isActive: true });
-        console.log("roles",roles);
+        const roles = await Role.find({ isActive: true, name: 'individual' });
         res.json({
             success: true,
             data: roles
@@ -16,6 +15,22 @@ export const getRoles = async (req, res) => {
         });
     }
 };
+
+export const getAllRoles = async (req, res) => {
+    try {
+        const roles = await Role.find({ isActive: true});
+        res.json({
+            success: true,
+            data: roles
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 
 export const assignRole = async (req, res) => {
     try {

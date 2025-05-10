@@ -39,16 +39,15 @@ export const createProperty = async (req, res) => {
   try {
     const images = req.files ? req.files.map(file => file.path) : [];
     const amenities = req.body.amenities ? JSON.parse(req.body.amenities) : [];
-    
-    // Log the incoming data for debugging
-    console.log("Incoming property data:", req.body);
-    
-    // Use mongoose.Types.ObjectId to ensure proper ObjectId casting
-    const defaultAdminId = '657089f229c2df66a7ea7c0d'; // Replace with your admin user ID
-    
+
+    const coordinates = req.body.coordinates ? JSON.parse(req.body.coordinates) : null;
+    const address = req.body.address ? JSON.parse(req.body.address) : null;
+
+    const defaultAdminId = '657089f229c2df66a7ea7c0d';
+
     const propertyData = {
-      title: req.body.title?.toString(), // Ensure string
-      type: req.body.type?.toString()?.toLowerCase(), // Ensure string and lowercase
+      title: req.body.title?.toString(),
+      type: req.body.type?.toString()?.toLowerCase(),
       price: Number(req.body.price),
       location: req.body.location?.toString(),
       description: req.body.description?.toString(),
@@ -61,11 +60,11 @@ export const createProperty = async (req, res) => {
       images: images,
       userId: req.body.userId || defaultAdminId,
       createdBy: req.body.createdBy || defaultAdminId,
-      coordinates: {
+      coordinates: coordinates || {
         latitude: 0,
         longitude: 0
       },
-      address: {
+      address: address || {
         street: '',
         city: '',
         state: '',
@@ -75,9 +74,16 @@ export const createProperty = async (req, res) => {
       floorArea: Number(req.body.sqft) || 0
     };
 
-    // Validate required fields
     if (!propertyData.title || !propertyData.type) {
       throw new Error('Title and type are required fields');
+    }
+
+    if (coordinates && (!coordinates.latitude || !coordinates.longitude)) {
+      throw new Error('Invalid coordinates provided');
+    }
+
+    if (address && (!address.city || !address.state)) {
+      throw new Error('City and state are required in address');
     }
 
     const property = await propertyService.createProperty(propertyData);
@@ -233,6 +239,86 @@ export const searchProperties = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Error searching properties'
+    });
+  }
+};
+
+export const searchPropertiesByCoordinates = async (req, res) => {
+  try {
+    const { location, coordinates, city, state, country } = req.query;
+
+    let lat, lng;
+    try {
+      const coords = typeof coordinates === 'string' ? JSON.parse(coordinates) : coordinates;
+      lat = parseFloat(coords.latitude);
+      lng = parseFloat(coords.longitude);
+    } catch (error) {
+      console.error('Error parsing coordinates:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid coordinates format'
+      });
+    }
+
+    // Validate coordinates
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid coordinates values'
+      });
+    }
+
+    // Define the search radius (in kilometers)
+    const radiusInKm = 5;
+
+    // First try to find properties by coordinates
+    let properties = await Property.find({
+      coordinates: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lng, lat]
+          },
+          $maxDistance: radiusInKm * 1000 // Convert km to meters
+        }
+      }
+    }).limit(20);
+
+    if (properties.length === 0 && (city || state)) {
+      const textQuery = {
+        $or: []
+      };
+
+      if (city) {
+        textQuery.$or.push({
+          'address.city': {
+            $regex: new RegExp(city, 'i')
+          }
+        });
+      }
+
+      if (state) {
+        textQuery.$or.push({
+          'address.state': {
+            $regex: new RegExp(state, 'i')
+          }
+        });
+      }
+
+      properties = await Property.find(textQuery).limit(20);
+    }
+
+    res.json({
+      success: true,
+      properties,
+      count: properties.length
+    });
+
+  } catch (error) {
+    console.error('Search properties error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };
