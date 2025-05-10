@@ -4,7 +4,10 @@ import { Search, MapPin, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import heroimage from "../assets/images/heroimage.png";
-import { RadialGradient } from "react-text-gradients";;
+import { RadialGradient } from "react-text-gradients";
+import {Backendurl} from "@/App.jsx";
+import axios from "axios";
+import {toast} from "react-toastify";
 
 export const AnimatedContainer = ({ children, distance = 100, direction = "vertical", reverse = false }) => {
   const [inView, setInView] = useState(false);
@@ -54,6 +57,8 @@ const Hero = () => {
   const [suggestions, setSuggestions] = useState([]);
   const autocompleteService = useRef(null);
   const sessionToken = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [properties, setProperties] = useState([]);
 
   // Initialize Google Maps Places Autocomplete Service
   useEffect(() => {
@@ -87,11 +92,85 @@ const Hero = () => {
     );
   }, [searchQuery]);
 
-  const handleSubmit = (location = searchQuery) => {
-    navigate(`/properties?location=${encodeURIComponent(location)}`);
-    setShowSuggestions(false);
-    // Reset session token after search
-    sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
+  const handleSubmit = async (location = searchQuery) => {
+    try {
+      if (!location) {
+        toast.error("Please enter a location");
+        return;
+      }
+
+      setLoading(true);
+      const geocoder = new window.google.maps.Geocoder();
+
+      const geocodeResult = await new Promise((resolve, reject) => {
+        geocoder.geocode({ address: location }, (results, status) => {
+          if (status === 'OK') {
+            resolve(results[0]);
+          } else {
+            reject(new Error('Location not found'));
+          }
+        });
+      });
+
+      const searchCoordinates = {
+        latitude: geocodeResult.geometry.location.lat(),
+        longitude: geocodeResult.geometry.location.lng()
+      };
+
+      const addressComponents = {
+        city: '',
+        state: '',
+        country: ''
+      };
+
+      geocodeResult.address_components.forEach(component => {
+        if (component.types.includes('locality')) {
+          addressComponents.city = component.long_name;
+        }
+        if (component.types.includes('administrative_area_level_1')) {
+          addressComponents.state = component.long_name;
+        }
+        if (component.types.includes('country')) {
+          addressComponents.country = component.long_name;
+        }
+      });
+
+      navigate(`/properties?location=${encodeURIComponent(location)}&lat=${searchCoordinates.latitude}&lng=${searchCoordinates.longitude}`);
+
+      // Fetch properties based on location
+      const properties = await fetchProperties(location, searchCoordinates, addressComponents);
+
+      if (properties && properties.length > 0) {
+        // Handle properties found
+        setProperties(properties);
+      } else {
+        toast.info("No properties found in this location");
+      }
+
+    } catch (error) {
+      console.error('Error during property search:', error);
+      toast.error(error.message || 'Error searching properties');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProperties = async (location, coordinates, addressComponents) => {
+    try {
+      const response = await axios.get(`${Backendurl}/api/properties/searchByCoordinates`, {
+        params: {
+          location,
+          coordinates,
+          city: addressComponents.city,
+          state: addressComponents.state,
+          country: addressComponents.country
+        }
+      });
+      return response.data.properties;
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      throw error;
+    }
   };
 
   const handleSuggestionClick = (description) => {
