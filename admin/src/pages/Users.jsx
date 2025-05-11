@@ -29,6 +29,16 @@ const Users = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
+    const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+    const [newUser, setNewUser] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        userType: "",
+        isVerified: false,
+        password: "123456",
+    });
 
     const searchTimeout = useRef(null);
 
@@ -138,6 +148,38 @@ const Users = () => {
         }
     };
 
+    const handleCreateUser = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.post(
+                `${backendurl}/api/auth/register`,
+                newUser,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            if (response.data.success) {
+                toast.success("User created successfully with temporary password '123456'");
+                setShowCreateUserModal(false);
+                setNewUser({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    phone: "",
+                    userType: "",
+                    isVerified: false,
+                    password: "123456",
+                });
+                fetchUsers();
+            }
+        } catch (error) {
+            console.error("Error creating user:", error);
+            toast.error(error.response?.data?.message || "Failed to create user");
+        }
+    };
+
     useEffect(() => {
         fetchRoles();
         fetchUsers();
@@ -152,8 +194,8 @@ const Users = () => {
         try {
             const response = await axios.delete(`${backendurl}/api/admin/users/${userToDelete.id}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
             });
 
             if (response.data.success) {
@@ -203,9 +245,18 @@ const Users = () => {
         <div className="min-h-screen pt-32 px-4 bg-gray-50">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-1">User Management</h1>
-                    <p className="text-gray-600">{filteredUsers.length} Users Found</p>
+                <div className="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-1">User Management</h1>
+                        <p className="text-gray-600">{filteredUsers.length} Users Found</p>
+                    </div>
+                    <button
+                        onClick={() => setShowCreateUserModal(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                        <UsersIcon className="w-5 h-5" />
+                        Create New User
+                    </button>
                 </div>
 
                 {/* Filters */}
@@ -238,6 +289,108 @@ const Users = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Create User Modal */}
+                {showCreateUserModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+                            <h2 className="text-2xl font-bold mb-4">Create New User</h2>
+                            <form onSubmit={handleCreateUser}>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                                    <input
+                                        type="text"
+                                        value={newUser.firstName}
+                                        onChange={(e) =>
+                                            setNewUser({ ...newUser, firstName: e.target.value })
+                                        }
+                                        className="w-full p-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                                    <input
+                                        type="text"
+                                        value={newUser.lastName}
+                                        onChange={(e) =>
+                                            setNewUser({ ...newUser, lastName: e.target.value })
+                                        }
+                                        className="w-full p-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                                    <input
+                                        type="email"
+                                        value={newUser.email}
+                                        onChange={(e) =>
+                                            setNewUser({ ...newUser, email: e.target.value })
+                                        }
+                                        className="w-full p-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                                    <input
+                                        type="text"
+                                        value={newUser.phone}
+                                        onChange={(e) =>
+                                            setNewUser({ ...newUser, phone: e.target.value })
+                                        }
+                                        className="w-full p-2 border rounded-lg"
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                                    <select
+                                        value={newUser.userType}
+                                        onChange={(e) =>
+                                            setNewUser({ ...newUser, userType: e.target.value })
+                                        }
+                                        className="w-full p-2 border rounded-lg"
+                                        required
+                                    >
+                                        <option value="">Select Role</option>
+                                        {roles.map((role) => (
+                                            <option key={role} value={role}>
+                                                {role.charAt(0).toUpperCase() + role.slice(1)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mb-4 flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={newUser.isVerified}
+                                        onChange={(e) =>
+                                            setNewUser({ ...newUser, isVerified: e.target.checked })
+                                        }
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <label className="ml-2 text-sm text-gray-700">Verified</label>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCreateUserModal(false)}
+                                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Create User
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
@@ -313,22 +466,24 @@ const Users = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                user.isActive
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                            }`}
-                        >
-                          {user.isActive ? "Active" : "Inactive"}
-                        </span>
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    user.isActive
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
+                                            >
+                                                {user.isActive ? "Active" : "Inactive"}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={user.isVerified || false}
-                                                    onChange={() => handleVerificationToggle(user._id, user.isVerified)}
+                                                    onChange={() =>
+                                                        handleVerificationToggle(user._id, user.isVerified)
+                                                    }
                                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                 />
                                                 <span
@@ -338,14 +493,17 @@ const Users = () => {
                                                             : "bg-gray-100 text-gray-600"
                                                     }`}
                                                 >
-                            {user.isVerified ? "Verified" : "Unverified"}
-                          </span>
+                                                    {user.isVerified ? "Verified" : "Unverified"}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
                                                 onClick={() =>
-                                                    handleDeleteUser(user._id, `${user.firstName} ${user.lastName}`)
+                                                    handleDeleteUser(
+                                                        user._id,
+                                                        `${user.firstName} ${user.lastName}`
+                                                    )
                                                 }
                                                 className="text-red-600 hover:text-red-900 transition-colors"
                                             >
