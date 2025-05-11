@@ -44,14 +44,17 @@ app.use(trackAPIStats);
 
 // CORS Configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'development' 
-    ? ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:4000']
-    : ['https://buildestate.vercel.app', 'https://real-estate-website-admin.onrender.com'],
+  origin: [
+    'http://localhost:4000',
+    'http://localhost:5174',
+    'http://localhost:5173',
+    'https://buildestate.vercel.app',
+    'https://real-estate-website-admin.onrender.com',
+    'https://real-estate-website-backend-zfu7.onrender.com',
+  ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'], // Added HEAD
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Database connection
