@@ -5,12 +5,15 @@ import propertyRepository from '../repositories/propertyRepository.js';
 
 class PropertyService {
   async getAllProperties(filters, page = 1, limit = 10) {
-    return await propertyRepository.findAll(filters, page, limit);
+    const allProperties = await propertyRepository.findAll(filters, page, limit);
+    console.log('All Properties:', allProperties.length); // Debugging line
+    return allProperties;
   }
 
   async getPropertyById(id) {
     try {
       const property = await Property.findById(id);
+
       if (!property) {
         throw new Error('Property not found');
       }

@@ -44,52 +44,104 @@ const PropertiesPage = () => {
     try {
       setPropertyState((prev) => ({ ...prev, loading: true }));
       
+      const urlParams = new URLSearchParams(window.location.search);
+      const lat = urlParams.get('lat');
+      const lng = urlParams.get('lng');
+      const location = urlParams.get('location');
 
-      const queryParams = new URLSearchParams();
-      
-      if (filters.propertyType) {
-        queryParams.append('type', filters.propertyType);
-      }
-      if (filters.availability) {
-        queryParams.append('listingType', filters.availability);
-      }
-      if (filters.searchQuery) {
-        queryParams.append('search', filters.searchQuery);
-      }
-      if (filters.bedrooms && filters.bedrooms !== "0") {
-        queryParams.append('beds', filters.bedrooms);
-      }
-      if (filters.bathrooms && filters.bathrooms !== "0") {
-        queryParams.append('baths', filters.bathrooms);
-      }
-      if (filters.priceRange[0] > 0) {
-        queryParams.append('minPrice', filters.priceRange[0]);
-      }
-      if (filters.priceRange[1] < Number.MAX_SAFE_INTEGER) {
-        queryParams.append('maxPrice', filters.priceRange[1]);
-      }
-      if (filters.minArea) {
-        queryParams.append('minArea', filters.minArea);
-      }
-      if (filters.maxArea) {
-        queryParams.append('maxArea', filters.maxArea);
-      }
-      if (filters.amenities.length > 0) {
-        queryParams.append('amenities', JSON.stringify(filters.amenities));
-      }
-      if (filters.sortBy) {
-        queryParams.append('sort', filters.sortBy);
-      }
-      if (filters.verifiedOnly) {
-        queryParams.append('verified', true);
-      }
+      let response;
 
-      const response = await axios.get(`${Backendurl}/api/properties/search?${queryParams}`);
+      if (lat && lng) {
+        const geocoder = new window.google.maps.Geocoder();
+        const geocodeResult = await new Promise((resolve, reject) => {
+          geocoder.geocode({ location: { lat: parseFloat(lat), lng: parseFloat(lng) } }, (results, status) => {
+            if (status === 'OK') {
+              resolve(results[0]);
+            } else {
+              reject(new Error('Location not found'));
+            }
+          });
+        });
+
+        // Extract address components
+        const addressComponents = {
+          city: '',
+          state: '',
+          country: ''
+        };
+
+        geocodeResult.address_components.forEach(component => {
+          if (component.types.includes('locality')) {
+            addressComponents.city = component.long_name;
+          }
+          if (component.types.includes('administrative_area_level_1')) {
+            addressComponents.state = component.long_name;
+          }
+          if (component.types.includes('country')) {
+            addressComponents.country = component.long_name;
+          }
+        });
+
+        response = await axios.get(`${Backendurl}/api/properties/searchByCoordinates`, {
+          params: {
+            location,
+            coordinates: {
+              latitude: parseFloat(lat),
+              longitude: parseFloat(lng)
+            },
+            city: addressComponents.city,
+            state: addressComponents.state,
+            country: addressComponents.country
+          }
+        });
+      } else {
+        // Otherwise use the regular search endpoint with filters
+        const queryParams = new URLSearchParams();
+        
+        if (filters.propertyType) {
+          queryParams.append('type', filters.propertyType);
+        }
+        if (filters.availability) {
+          queryParams.append('listingType', filters.availability);
+        }
+        if (filters.searchQuery) {
+          queryParams.append('search', filters.searchQuery);
+        }
+        if (filters.bedrooms && filters.bedrooms !== "0") {
+          queryParams.append('beds', filters.bedrooms);
+        }
+        if (filters.bathrooms && filters.bathrooms !== "0") {
+          queryParams.append('baths', filters.bathrooms);
+        }
+        if (filters.priceRange[0] > 0) {
+          queryParams.append('minPrice', filters.priceRange[0]);
+        }
+        if (filters.priceRange[1] < Number.MAX_SAFE_INTEGER) {
+          queryParams.append('maxPrice', filters.priceRange[1]);
+        }
+        if (filters.minArea) {
+          queryParams.append('minArea', filters.minArea);
+        }
+        if (filters.maxArea) {
+          queryParams.append('maxArea', filters.maxArea);
+        }
+        if (filters.amenities.length > 0) {
+          queryParams.append('amenities', JSON.stringify(filters.amenities));
+        }
+        if (filters.sortBy) {
+          queryParams.append('sort', filters.sortBy);
+        }
+        if (filters.verifiedOnly) {
+          queryParams.append('verified', true);
+        }
+
+        response = await axios.get(`${Backendurl}/api/properties/search?${queryParams}`);
+      }
       
       if (response.data.success) {
         setPropertyState((prev) => ({
           ...prev,
-          properties: response.data.data,
+          properties: response.data.properties || response.data.data,
           error: null,
           loading: false,
         }));
@@ -106,9 +158,10 @@ const PropertiesPage = () => {
     }
   };
 
+  // Modify useEffect to also listen for URL changes
   useEffect(() => {
     fetchProperties();
-  }, [filters]); // Re-fetch when filters change
+  }, [filters, window.location.search]); // Add location.search as dependency
 
   const handleFilterChange = (newFilters) => {
     setFilters(prev => ({

@@ -308,7 +308,7 @@ const NavLinks = ({ currentPath }) => {
         </Link>
 
         {/* AI Property Hub Link */}
-        <Link
+        {/* <Link
           to="/ai-property-hub"
           className={`relative font-medium transition-all duration-300 flex items-center gap-2 px-3 py-2 rounded-md ${
             isAIHubActive
@@ -332,7 +332,7 @@ const NavLinks = ({ currentPath }) => {
               NEW
             </span>
           )}
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

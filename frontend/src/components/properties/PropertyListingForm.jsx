@@ -16,12 +16,60 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const PROPERTY_TYPES = [
-  'house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 
-  'residential', 'commercial' 
-];
+const PROPERTY_TYPES = {
+  rent: ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 'commercial'],
+  sale: ['house', 'apartment', 'office', 'villa', 'flat', 'commercial', 
+         'residential plot', 'commercial plot']
+};
+
+const LISTING_TYPES = ['rent', 'sale'];
 const AVAILABILITY_TYPES = ['rent', 'sale', 'buy'];
+const LEASE_PERIODS = ['3 months', '6 months', '12 months', '18 months', '24 months'];
 const AMENITIES = ['Lake View', 'Fireplace', 'Central heating and air conditioning', 'Dock', 'Pool', 'Garage', 'Garden', 'Gym', 'Security system', 'Master bathroom', 'Guest bathroom', 'Home theater', 'Exercise room/gym', 'Covered parking', 'High-speed internet ready'];
+const PROPERTY_CONDITIONS = ['new', 'good', 'average', 'needs_repair'];
+const PROPERTY_STATUSES = ['ready_to_move', 'under_construction', 'renovated'];
+
+const DIAL_CODES = [
+  { code: '+91', country: 'India' },
+  { code: '+1', country: 'USA' },
+  { code: '+44', country: 'UK' },
+  { code: '+61', country: 'Australia' },
+  { code: '+86', country: 'China' },
+  { code: '+81', country: 'Japan' },
+  { code: '+82', country: 'South Korea' },
+  { code: '+65', country: 'Singapore' },
+  { code: '+971', country: 'UAE' },
+  { code: '+33', country: 'France' },
+  { code: '+49', country: 'Germany' },
+  { code: '+39', country: 'Italy' },
+  { code: '+34', country: 'Spain' },
+  { code: '+7', country: 'Russia' },
+  { code: '+55', country: 'Brazil' },
+  { code: '+52', country: 'Mexico' },
+  { code: '+20', country: 'Egypt' },
+  { code: '+27', country: 'South Africa' },
+  { code: '+60', country: 'Malaysia' },
+  { code: '+66', country: 'Thailand' },
+];
+
+const validateField = (name, value) => {
+  switch (name) {
+    case 'price':
+      return value <= 0 ? 'Price must be greater than 0' : '';
+    case 'beds':
+    case 'baths':
+      return value < 0 ? 'Cannot be negative' : 
+             !Number.isInteger(Number(value)) ? 'Must be a whole number' : '';
+    case 'sqft':
+      return value <= 0 ? 'Area must be greater than 0' : '';
+    case 'title':
+      return value.length < 5 ? 'Title must be at least 5 characters' : '';
+    case 'phone':
+      return !/^\d{10}$/.test(value) ? 'Enter valid 10-digit phone number' : '';
+    default:
+      return '';
+  }
+};
 
 const PropertyListingForm = () => {
   const { isLoggedIn, user } = useAuth();
@@ -52,13 +100,23 @@ const PropertyListingForm = () => {
     baths: '',
     sqft: '',
     phone: '',
-    availability: '',
+    dialCode: '+91',
+    availability: {
+      status: 'Available',
+      availableFrom: '',
+      minLeasePeriod: '12 months'
+    },
     amenities: [],
     images: [],
-    listingType: 'rent'
+    listingType: 'rent',
+    propertyAge: '',
+    propertyCondition: '',
+    propertyStatus: ''
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [calculatedDeposit, setCalculatedDeposit] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const locationInputRef = useRef(null);
 
@@ -180,6 +238,23 @@ const PropertyListingForm = () => {
     }
   };
 
+  // Calculate deposit when price or type changes for rent listings
+  useEffect(() => {
+    if (formData.listingType === 'rent' && formData.price && formData.type) {
+      const multipliers = {
+        'house': 2,
+        'apartment': 3,
+        'office': 3,
+        'villa': 3,
+        'commercial': 3,
+        'flat': 2,
+        'pg': 1,
+        'rk': 1
+      };
+      setCalculatedDeposit(formData.price * (multipliers[formData.type] || 2));
+    }
+  }, [formData.price, formData.type, formData.listingType]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -189,13 +264,45 @@ const PropertyListingForm = () => {
         ...prev,
         [parent]: {
           ...prev[parent],
-          [child]: type === 'checkbox' ? checked : value
+          [child]: value
         }
       }));
     } else {
-      setFormData(prev => ({
+      // Validate numeric fields
+      if (type === 'number') {
+        const numValue = Number(value);
+        if (numValue < 0) {
+          return; // Prevent negative values
+        }
+        if (name === 'beds' || name === 'baths') {
+          if (!Number.isInteger(numValue)) {
+            return; // Only allow whole numbers
+          }
+        }
+      }
+
+      // Update form data
+      if (name === 'listingType') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          type: '',
+          propertyAge: value === 'sale' ? '' : undefined,
+          propertyCondition: value === 'sale' ? '' : undefined,
+          propertyStatus: value === 'sale' ? '' : undefined
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value
+        }));
+      }
+
+      // Validate field
+      const error = validateField(name, value);
+      setFieldErrors(prev => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: error
       }));
     }
   };
@@ -273,6 +380,25 @@ const PropertyListingForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate all fields
+    const errors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) errors[key] = error;
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast.error('Please fix the errors before submitting');
+      return;
+    }
+
+    // Add validation for listingType
+    if (!formData.listingType) {
+      toast.error("Please select a listing type (Rent/Sale)");
+      return;
+    }
+
     if (!formData.coordinates.latitude || !formData.coordinates.longitude) {
       toast.error("Please select a location from the suggestions dropdown");
       return;
@@ -287,6 +413,22 @@ const PropertyListingForm = () => {
       toast.info("Please login to list a property");
       navigate("/login");
       return;
+    }
+
+    // Add sale-specific validation
+    if (formData.listingType === 'sale') {
+      if (!formData.propertyAge || formData.propertyAge < 0) {
+        toast.error("Please enter a valid property age");
+        return;
+      }
+      if (!formData.propertyCondition) {
+        toast.error("Please select property condition");
+        return;
+      }
+      if (!formData.propertyStatus) {
+        toast.error("Please select property status");
+        return;
+      }
     }
 
     setLoading(true);
@@ -310,8 +452,9 @@ const PropertyListingForm = () => {
       formDataToSend.append('beds', formData.beds);
       formDataToSend.append('baths', formData.baths);
       formDataToSend.append('sqft', formData.sqft);
-      formDataToSend.append('phone', formData.phone);
-      formDataToSend.append('listingType', formData.availability.toLowerCase());
+      formDataToSend.append('phone', `${formData.dialCode}${formData.phone}`);
+      // Change this line to use listingType instead of availability
+      formDataToSend.append('listingType', formData.listingType.toLowerCase());
       formDataToSend.append('amenities', JSON.stringify(formData.amenities));
 
       // Coordinates and address
@@ -332,6 +475,25 @@ const PropertyListingForm = () => {
       formData.images.forEach((image) => {
         formDataToSend.append('images', image);
       });
+
+      // Add sale-specific fields only for sale listings
+      if (formData.listingType === 'sale') {
+        formDataToSend.append('propertyAge', formData.propertyAge);
+        formDataToSend.append('propertyCondition', formData.propertyCondition);
+        formDataToSend.append('propertyStatus', formData.propertyStatus);
+      }
+
+      // Add availability data for rental properties
+      if (formData.listingType === 'rent') {
+        // Convert local date string to ISO format
+        const availableFromISO = new Date(formData.availability.availableFrom).toISOString();
+        
+        formDataToSend.append('availability', JSON.stringify({
+          status: 'Available',
+          availableFrom: availableFromISO,
+          minLeasePeriod: formData.availability.minLeasePeriod
+        }));
+      }
 
       const response = await axios.post(
         `${Backendurl}/api/properties/add`,
@@ -356,6 +518,33 @@ const PropertyListingForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Add this new function for handling amenities
+  const handleAmenityChange = (amenity) => {
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(item => item !== amenity)
+        : [...prev.amenities, amenity]
+    }));
+  };
+
+  // nice input style
+  const inputStyles = {
+    padding: '0.75rem 1rem',
+    fontSize: '1rem',
+    lineHeight: '1.5',
+    borderRadius: '0.5rem',
+    width: '100%',
+    transition: 'all 0.2s',
+    outline: 'none',
+  };
+
+  const textareaStyles = {
+    ...inputStyles,
+    minHeight: '120px',
+    resize: 'vertical'
   };
 
   //will user latwr
@@ -450,287 +639,503 @@ const PropertyListingForm = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-gray-50 pt-16"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen bg-gray-50 pt-16 pb-12"
     >
       <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">List Your Property</h1>
-          <p className="mt-2 text-gray-600">Fill in the details to list your property</p>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">List Your Property</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Fill in the details below to list your property. All fields marked with * are required.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-xl shadow-lg p-6 md:p-8">
-          {/* Basic Information Section */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Basic Information</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Property Classification
+            </h2>
+            
+            <div className="space-y-6">
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Property Title
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  What would you like to do with your property? *
                 </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  required
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter property title"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {LISTING_TYPES.map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handleChange({ target: { name: 'listingType', value: type }})}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        formData.listingType === type 
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50/50'
+                      }`}
+                    >
+                      <div className="font-medium text-lg mb-1">
+                        {type === 'rent' ? 'For Rent' : 'For Sale'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {type === 'rent' ? 'List your property for rental' : 'List your property for sale'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                    ref={locationInputRef}
-                    type="text"
-                    id="location"
-                    name="location"
-                    required
-                    value={formData.location}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Search and select location from suggestions"
-                    autoComplete="off"
-                />
-                <small className="text-gray-500 mt-1 block">
-                  Please select a location from the dropdown suggestions
-                </small>
-              </div>
-            </div>
 
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                required
-                value={formData.description}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Describe the property..."
-              />
+              {formData.listingType && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Select Property Type *
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {PROPERTY_TYPES[formData.listingType].map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => handleChange({ target: { name: 'type', value: type }})}
+                        className={`p-3 rounded-lg border text-sm transition-all ${
+                          formData.type === type
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-blue-200'
+                        }`}
+                      >
+                        {type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Basic Information Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Basic Information
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Property Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className={`border ${
+                      fieldErrors.title ? 'border-red-300' : 'border-gray-300'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    placeholder="Enter a descriptive title"
+                  />
+                  {fieldErrors.title && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.title}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.listingType === 'rent' ? 'Monthly Rent *' : 'Selling Price *'}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" >
+                      <IndianRupee className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      min="0"
+                      style={{padding
+                        : '0.75rem 2rem', fontSize: '1rem', lineHeight: '1.5', borderRadius: '0.5rem', width: '100%', transition: 'all 0.2s', outline: 'none'
+                                            }}
+                      className={`pl-10 border ${
+                        fieldErrors.price ? 'border-red-300' : 'border-gray-300'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      placeholder="Enter amount"
+                    />
+                  </div>
+                  {fieldErrors.price && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.price}</p>
+                  )}
+                </div>
+              </div>
+
+              {formData.listingType === 'rent' && formData.price > 0 && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700">Security Deposit</span>
+                    <span className="text-lg font-semibold text-blue-700">
+                      ₹{calculatedDeposit.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Security deposit is automatically calculated based on property type
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {formData.listingType === 'rent' && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Availability Details
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Available From *
+                  </label>
+                  <input
+                    type="date"
+                    name="availability.availableFrom"
+                    value={formData.availability.availableFrom 
+                      ? new Date(formData.availability.availableFrom).toISOString().split('T')[0]
+                      : ''}
+                    onChange={handleChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    max={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Max 1 year ahead
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Lease Period *
+                  </label>
+                  <select
+                    name="availability.minLeasePeriod"
+                    value={formData.availability.minLeasePeriod}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    {LEASE_PERIODS.map(period => (
+                      <option key={period} value={period}>{period}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sale---------------- */}
+          {formData.listingType === 'sale' && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Sale-Specific Details
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Property Age (years) *
+                  </label>
+                  <input
+                    type="number"
+                    name="propertyAge"
+                    value={formData.propertyAge}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter property age"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Property Condition *
+                  </label>
+                  <select
+                    name="propertyCondition"
+                    value={formData.propertyCondition}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select condition</option>
+                    {PROPERTY_CONDITIONS.map(condition => (
+                      <option key={condition} value={condition}>
+                        {condition.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Property Status *
+                  </label>
+                  <select
+                    name="propertyStatus"
+                    value={formData.propertyStatus}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select status</option>
+                    {PROPERTY_STATUSES.map(status => (
+                      <option key={status} value={status}>
+                        {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Location Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Location Details
+            </h2>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Property Location *
+                </label>
+                <input
+                  ref={locationInputRef}
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  style={inputStyles}
+                  className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Search for location"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Start typing and select from the dropdown suggestions
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Property Details Section */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Property Details</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                  Type
-                </label>
-                <select
-                  id="type"
-                  name="type"
-                  required
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Type</option>
-                  {PROPERTY_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  required
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="₹"
-                />
-              </div>
-              <div>
-                <label htmlFor="beds" className="block text-sm font-medium text-gray-700 mb-1">
-                  Bedrooms
-                </label>
-                <input
-                  type="number"
-                  id="beds"
-                  name="beds"
-                  required
-                  value={formData.beds}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label htmlFor="baths" className="block text-sm font-medium text-gray-700 mb-1">
-                  Bathrooms
-                </label>
-                <input
-                  type="number"
-                  id="baths"
-                  name="baths"
-                  required
-                  value={formData.baths}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Property Details
+            </h2>
+            
+            <div className="space-y-6">
+              {/* First row - Property metrics */}
+              <div className={`grid grid-cols-1 ${
+                formData.type?.includes('plot') 
+                  ? 'md:grid-cols-1' 
+                  : 'md:grid-cols-3'
+              } gap-6`}>
+                {/* Area Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Area (sq ft) *
+                  </label>
+                  <input
+                    type="number"
+                    name="sqft"
+                    value={formData.sqft}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
-          {/* Additional Information Section */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900 pb-2 border-b">Additional Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="sqft" className="block text-sm font-medium text-gray-700 mb-1">
-                  Square Feet
-                </label>
-                <input
-                  type="number"
-                  id="sqft"
-                  name="sqft"
-                  required
-                  value={formData.sqft}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                {/* Only show beds/baths for non-plot properties */}
+                {!formData.type?.includes('plot') && (
+                  <>
+                    {/* Bedrooms Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bedrooms *
+                      </label>
+                      <input
+                        type="number"
+                        name="beds"
+                        value={formData.beds}
+                        onChange={handleChange}
+                        min="0"
+                        style={inputStyles}
+                        className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Bathrooms Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bathrooms *
+                      </label>
+                      <input
+                        type="number"
+                        name="baths"
+                        value={formData.baths}
+                        onChange={handleChange}
+                        min="0"
+                        style={inputStyles} 
+                        className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Phone
+
+              {/* Second row - Contact number */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Number *
                 </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="flex gap-4">
+                  <select
+                    name="dialCode"
+                    value={formData.dialCode}
+                    onChange={handleChange}
+                    className="w-[180px] px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {DIAL_CODES.map(({code, country}) => (
+                      <option key={code} value={code}>
+                        {code} {country}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="relative flex-1">
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 border ${
+                        fieldErrors.phone ? 'border-red-300' : 'border-gray-300'
+                      } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      placeholder="Enter phone number"
+                      maxLength={15}
+                    />
+                    {fieldErrors.phone && (
+                      <p className="absolute -bottom-6 left-0 text-sm text-red-600">
+                        {fieldErrors.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <label htmlFor="availability" className="block text-sm font-medium text-gray-700 mb-1">
-                  Availability Status
+
+              {/* Description Field */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Property Description *
                 </label>
-                <select
-                  id="availability"
-                  name="availability"
-                  required
-                  value={formData.availability}
+                <textarea
+                  name="description"
+                  value={formData.description}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Status</option>
-                  {AVAILABILITY_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                  style={textareaStyles}
+                  className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Describe your property..."
+                />
               </div>
             </div>
           </div>
 
           {/* Amenities Section */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Amenities</h2>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm p-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Amenities & Features
+            </h2>
+            
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {AMENITIES.map(amenity => (
-                <label key={amenity} className="flex items-center space-x-2 text-sm hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                <button
+                  key={amenity}
+                  type="button"
+                  onClick={() => handleAmenityChange(amenity)}
+                  className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-all ${
+                    formData.amenities.includes(amenity)
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
+                  }`}
+                >
                   <input
                     type="checkbox"
-                    value={amenity}
                     checked={formData.amenities.includes(amenity)}
-                    onChange={() => {
-                      const value = amenity;
-                      setFormData(prev => ({
-                        ...prev,
-                        amenities: formData.amenities.includes(value)
-                          ? formData.amenities.filter(item => item !== value)
-                          : [...formData.amenities, value]
-                      }));
-                    }}
+                    onChange={() => {}} // Empty handler since parent button handles the click
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span>{amenity}</span>
-                </label>
+                  <span className="text-sm font-medium">{amenity}</span>
+                </button>
               ))}
             </div>
           </div>
 
           {/* Images Section */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Property Images</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {previewUrls.map((url, index) => (
-                <div key={index} className="relative group aspect-video">
-                  <img
-                    src={url}
-                    alt={`Preview ${index + 1}`}
-                    className="h-full w-full object-cover rounded-lg"
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Property Images
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {previewUrls.map((url, index) => (
+                  <div key={index} className="relative group aspect-video rounded-lg overflow-hidden">
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                <label className="aspect-video flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">Upload Images</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        images: prev.images.filter((_, i) => i !== index)
-                      }));
-                      setPreviewUrls(prev => prev.filter((_, i) => i !== index));
-                    }}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-              <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-500">Upload Images</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
+                </label>
+              </div>
+              <p className="text-sm text-gray-500">
+                You can upload up to 10 images. Each image should be less than 5MB.
+              </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-6 flex gap-4">
+          <div className="flex gap-4 pt-6">
             <button
               type="button"
               onClick={handleSaveDraft}
               disabled={loading}
-              className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors disabled:opacity-50"
             >
-              {draftId ? 'Update Draft' : 'Save as Draft'}
+              Save as Draft
             </button>
-            
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
               {loading ? 'Submitting...' : 'List Property'}
             </button>

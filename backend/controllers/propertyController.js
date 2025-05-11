@@ -43,7 +43,7 @@ export const createProperty = async (req, res) => {
     const coordinates = req.body.coordinates ? JSON.parse(req.body.coordinates) : null;
     const address = req.body.address ? JSON.parse(req.body.address) : null;
 
-    const defaultAdminId = '657089f229c2df66a7ea7c0d';
+    const defaultAdminId = '657089f229c2df66a7ea7c0d'; //for case of admin , will replace it after admin auth fix.
 
     const propertyData = {
       title: req.body.title?.toString(),
@@ -73,6 +73,23 @@ export const createProperty = async (req, res) => {
       },
       floorArea: Number(req.body.sqft) || 0
     };
+
+    // Adding sale-specific fields only if listingType is 'sale'
+    if (req.body.listingType?.toString()?.toLowerCase() === 'sale') {
+      propertyData.propertyAge = Number(req.body.propertyAge);
+      propertyData.propertyCondition = req.body.propertyCondition?.toString();
+      propertyData.propertyStatus = req.body.propertyStatus?.toString();
+    }
+
+    // Adding rental-specific fields only if listingType is 'rent'
+    if (req.body.listingType?.toString()?.toLowerCase() === 'rent') {
+      const availability = req.body.availability ? JSON.parse(req.body.availability) : {};
+      propertyData.availability = {
+        status: 'Available',
+        availableFrom: new Date(availability.availableFrom),
+        minLeasePeriod: availability.minLeasePeriod || '12 months'
+      };
+    }
 
     if (!propertyData.title || !propertyData.type) {
       throw new Error('Title and type are required fields');
