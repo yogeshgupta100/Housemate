@@ -57,6 +57,8 @@ const PropertyDetails = () => {
     }
   }, [id]);
 
+  console.log("Property Details:", property,1); 
+
   useEffect(() => {
     // Reset scroll position and active image when component mounts
     window.scrollTo(0, 0);
@@ -345,13 +347,88 @@ const PropertyDetails = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
+                {/* Property Type Badge */}
+                <div className="mb-4">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    property.listingType === 'rent' 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-purple-100 text-purple-800'
+                  }`}>
+                    <Home className="w-4 h-4 mr-1" />
+                    {property.listingType === 'rent' ? 'Rental Property' : 'Sale Property'}
+                  </span>
+                </div>
+
                 <div className="bg-blue-50 rounded-lg p-6 mb-6">
-                  <p className="text-3xl font-bold text-blue-600 mb-2">
-                    ₹{Number(property.price).toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-gray-600">
-                    Available for {status}
-                  </p>
+                  {property.listingType === 'rent' ? (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-3xl font-bold text-blue-600">
+                          ₹{Number(property.price).toLocaleString('en-IN')}
+                          <span className="text-sm text-gray-600 font-normal">/{property.rentType}</span>
+                        </p>
+                      </div>
+                      <div className="border-t border-blue-100 pt-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-600">Security Deposit</span>
+                          <span className="font-semibold text-gray-800">
+                            ₹{Number(property.deposit).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        {property.availability?.availableFrom && (
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-600">Available From</span>
+                            <span className="font-semibold text-gray-800">
+                              {new Date(property.availability.availableFrom).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        {property.availability?.minLeasePeriod && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Minimum Lease</span>
+                            <span className="font-semibold text-gray-800">
+                              {property.availability.minLeasePeriod}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-3xl font-bold text-blue-600">
+                          ₹{Number(property.price).toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                      <div className="border-t border-blue-100 pt-3 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Property Age</span>
+                          <span className="font-semibold text-gray-800">
+                            {property.propertyAge} years
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Condition</span>
+                          <span className="font-semibold text-gray-800 capitalize">
+                            {property.propertyCondition.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Status</span>
+                          <span className="font-semibold text-gray-800 capitalize">
+                            {property.propertyStatus.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {/* <p className="text-gray-600 mt-3">
+                   {status}
+                  </p> */}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-6">

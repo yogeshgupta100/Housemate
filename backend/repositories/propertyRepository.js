@@ -17,7 +17,7 @@ class PropertyRepository {
   async findAll(filter, skip, limit, sort = { createdAt: -1 }) {
     return await Property.find(filter)
       .sort(sort)
-      .skip(skip)
+      // .skip(skip)
       .limit(limit);
   }
 

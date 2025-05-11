@@ -1,5 +1,6 @@
 import { Home, IndianRupee, Filter, Bed, Bath, Calendar, MapPin, Building, Star } from "lucide-react";
 import { motion } from "framer-motion";
+import React, { useRef, useEffect, useCallback } from "react";
 
 const propertyTypes = ["House", "Apartment", "Villa", "Office", "PG", "Flat", "RK"];
 const availabilityTypes = ["Rent", "Buy", "Lease"];
@@ -7,12 +8,9 @@ const furnishingTypes = ["Furnished", "Semi-Furnished", "Unfurnished"];
 const propertyConditions = ["New", "Good", "Average", "Needs Repair"];
 const propertyStatuses = ["Ready to Move", "Under Construction", "Renovated"];
 
-const priceRanges = [
-  { min: 0, max: 5000000, label: "Under ₹50L" },
-  { min: 5000000, max: 10000000, label: "₹50L - ₹1Cr" },
-  { min: 10000000, max: 20000000, label: "₹1Cr - ₹2Cr" },
-  { min: 20000000, max: Number.MAX_SAFE_INTEGER, label: "Above ₹2Cr" }
-];
+const MIN_PRICE = 0;
+const MAX_PRICE = 50000000;
+const STEP = 50000;
 
 const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
   const handleChange = (e) => {
@@ -23,11 +21,34 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
     }));
   };
 
-  const handlePriceRangeChange = (min, max) => {
-    setFilters(prev => ({
-      ...prev,
-      priceRange: [min, max]
-    }));
+  const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  const debouncedPriceUpdate = useCallback(
+    debounce((value) => {
+      setFilters(prev => ({
+        ...prev,
+        priceRange: [MIN_PRICE, value]
+      }));
+    }, 300),
+    []
+  );
+
+  const handlePriceSlider = (e) => {
+    const value = Number(e.target.value);
+
+    document.getElementById('maxPriceDisplay').textContent = value.toLocaleString();
+    
+    debouncedPriceUpdate(value);
   };
 
   const handleAmenityChange = (amenity) => {
@@ -58,6 +79,20 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
       totalFloors: "",
       verifiedOnly: false
     });
+  };
+
+  const rangeRef = useRef(null);
+
+  // Ensure min <= max and max >= min
+  const minValue = Math.min(filters.priceRange[0], filters.priceRange[1]);
+  const maxValue = Math.max(filters.priceRange[0], filters.priceRange[1]);
+
+  const handleRangeChange = (e) => {
+    const [min, max] = e.target.value.split(',').map(Number);
+    setFilters(prev => ({
+      ...prev,
+      priceRange: [min, max]
+    }));
   };
 
   return (
@@ -112,19 +147,20 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             <IndianRupee className="w-4 h-4 mr-2" />
             Price Range
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            {priceRanges.map(({ min, max, label }) => (
-              <button
-                key={label}
-                onClick={() => handlePriceRangeChange(min, max)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-                  ${filters.priceRange[0] === min && filters.priceRange[1] === max
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex flex-col gap-2">
+            <input
+              type="range"
+              min={MIN_PRICE}
+              max={MAX_PRICE}
+              step={STEP}
+              value={filters.priceRange[1]}
+              onChange={handlePriceSlider}
+              className="w-full accent-blue-600"
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>₹{MIN_PRICE.toLocaleString()}</span>
+              <span>₹<span id="maxPriceDisplay">{Number(filters.priceRange[1]).toLocaleString()}</span></span>
+            </div>
           </div>
         </div>
 

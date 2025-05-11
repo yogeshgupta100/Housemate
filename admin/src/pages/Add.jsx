@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { backendurl } from '../App';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, IndianRupee } from 'lucide-react';
 
-const PROPERTY_TYPES = ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk']; // Updated to match model
-const AVAILABILITY_TYPES = ['rent', 'sale','buy']; // Changed to match model
+const PROPERTY_TYPES = {
+  rent: ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 'commercial'],
+  sale: ['house', 'apartment', 'office', 'villa', 'flat', 'commercial', 
+         'residential plot', 'commercial plot']
+};
+
+const LISTING_TYPES = ['rent', 'sale'];
+const LEASE_PERIODS = ['3 months', '6 months', '12 months', '18 months', '24 months'];
 const AMENITIES = ['Lake View', 'Fireplace', 'Central heating and air conditioning', 'Dock', 'Pool', 'Garage', 'Garden', 'Gym', 'Security system', 'Master bathroom', 'Guest bathroom', 'Home theater', 'Exercise room/gym', 'Covered parking', 'High-speed internet ready'];
+const PROPERTY_CONDITIONS = ['new', 'good', 'average', 'needs_repair'];
+const PROPERTY_STATUSES = ['ready_to_move', 'under_construction', 'renovated'];
 
 const PropertyForm = () => {
   const [formData, setFormData] = useState({
@@ -14,36 +22,163 @@ const PropertyForm = () => {
     type: '',
     price: '',
     location: '',
+    coordinates: {
+      latitude: 0,
+      longitude: 0
+    },
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      pincode: '',
+      country: 'India'
+    },
     description: '',
     beds: '',
     baths: '',
     sqft: '',
     phone: '',
-    availability: '',
+    availability: {
+      status: 'Available',
+      availableFrom: '',
+      minLeasePeriod: '12 months'
+    },
     amenities: [],
     images: [],
-    listingType: 'rent' // Added default listing type
+    listingType: 'rent',
+    propertyAge: '',
+    propertyCondition: '',
+    propertyStatus: ''
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [newAmenity, setNewAmenity] = useState('');
+  const [calculatedDeposit, setCalculatedDeposit] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const locationInputRef = useRef(null);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Add Google Places Autocomplete
+  useEffect(() => {
+    if (!locationInputRef.current || !window.google) return;
 
-  const handleAmenityToggle = (amenity) => {
-    setFormData(prev => ({
-      ...prev,
-      amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter(a => a !== amenity)
-        : [...prev.amenities, amenity]
-    }));
+    const autocomplete = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+      componentRestrictions: { country: 'IN' },
+      fields: ['address_components', 'geometry', 'formatted_address']
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+
+      if (!place.geometry) {
+        toast.error('Please select a location from the suggestions');
+        return;
+      }
+
+      // Extract address components
+      const addressComponents = {
+        street: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'India'
+      };
+
+      place.address_components.forEach(component => {
+        const types = component.types;
+
+        if (types.includes('street_number') || types.includes('route')) {
+          addressComponents.street += component.long_name + ' ';
+        }
+        if (types.includes('locality')) {
+          addressComponents.city = component.long_name;
+        }
+        if (types.includes('administrative_area_level_1')) {
+          addressComponents.state = component.long_name;
+        }
+        if (types.includes('postal_code')) {
+          addressComponents.pincode = component.long_name;
+        }
+      });
+
+      // Update form data with location details
+      setFormData(prev => ({
+        ...prev,
+        location: place.formatted_address,
+        coordinates: {
+          latitude: place.geometry.location.lat(),
+          longitude: place.geometry.location.lng()
+        },
+        address: {
+          street: addressComponents.street.trim(),
+          city: addressComponents.city,
+          state: addressComponents.state,
+          pincode: addressComponents.pincode,
+          country: 'India'
+        }
+      }));
+    });
+
+    return () => {
+      if (autocomplete) {
+        google.maps.event.clearInstanceListeners(autocomplete);
+      }
+    };
+  }, []);
+
+  // Calculate deposit when price or type changes
+  useEffect(() => {
+    if (formData.listingType === 'rent' && formData.price && formData.type) {
+      const multipliers = {
+        'house': 2,
+        'apartment': 3,
+        'office': 3,
+        'villa': 3,
+        'commercial': 3,
+        'flat': 2,
+        'pg': 1,
+        'rk': 1
+      };
+      setCalculatedDeposit(formData.price * (multipliers[formData.type] || 2));
+    }
+  }, [formData.price, formData.type, formData.listingType]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      // Validate numeric fields
+      if (type === 'number') {
+        const numValue = Number(value);
+        if (numValue < 0) return;
+        if ((name === 'beds' || name === 'baths') && !Number.isInteger(numValue)) return;
+      }
+
+      // Update form data
+      if (name === 'listingType') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          type: '',
+          propertyAge: value === 'sale' ? '' : undefined,
+          propertyCondition: value === 'sale' ? '' : undefined,
+          propertyStatus: value === 'sale' ? '' : undefined
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value
+        }));
+      }
+    }
   };
 
   const handleImageChange = (e) => {
@@ -64,43 +199,62 @@ const PropertyForm = () => {
     }));
   };
 
-  const handleAddAmenity = () => {
-    if (newAmenity && !formData.amenities.includes(newAmenity)) {
-      setFormData(prev => ({
-        ...prev,
-        amenities: [...prev.amenities, newAmenity]
-      }));
-      setNewAmenity('');
-    }
+  const handleAmenityToggle = (amenity) => {
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(a => a !== amenity)
+        : [...prev.amenities, amenity]
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+
     try {
-      const formdata = new FormData();
-      formdata.append('title', formData.title);
-      formdata.append('type', formData.type.toLowerCase()); // Ensure lowercase
-      formdata.append('price', formData.price);
-      formdata.append('location', formData.location);
-      formdata.append('description', formData.description);
-      formdata.append('beds', formData.beds);
-      formdata.append('baths', formData.baths);
-      formdata.append('sqft', formData.sqft);
-      formdata.append('phone', formData.phone);
-      formdata.append('listingType', formData.availability.toLowerCase()); 
-      formdata.append('amenities', JSON.stringify(formData.amenities));
-      
-      formdata.append('userId', '657089f229c2df66a7ea7c0d'); 
-      formdata.append('createdBy', '657089f229c2df66a7ea7c0d');
-      
-      // Handle images
+      const formDataToSend = new FormData();
+
+      // Basic info
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('type', formData.type.toLowerCase());
+      formDataToSend.append('price', formData.price);
+      formDataToSend.append('location', formData.location);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('beds', formData.beds);
+      formDataToSend.append('baths', formData.baths);
+      formDataToSend.append('sqft', formData.sqft);
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('listingType', formData.listingType.toLowerCase());
+      formDataToSend.append('amenities', JSON.stringify(formData.amenities));
+
+      // Location data
+      formDataToSend.append('coordinates', JSON.stringify(formData.coordinates));
+      formDataToSend.append('address', JSON.stringify(formData.address));
+
+      // Images
       formData.images.forEach((image) => {
-        formdata.append('images', image);
+        formDataToSend.append('images', image);
       });
 
-      const response = await axios.post(`${backendurl}/api/properties/add`, formdata, {
+      if (formData.listingType === 'sale') {
+        formDataToSend.append('propertyAge', formData.propertyAge);
+        formDataToSend.append('propertyCondition', formData.propertyCondition);
+        formDataToSend.append('propertyStatus', formData.propertyStatus);
+      }
+
+      if (formData.listingType === 'rent') {
+        formDataToSend.append('availability', JSON.stringify({
+          status: 'Available',
+          availableFrom: new Date(formData.availability.availableFrom).toISOString(),
+          minLeasePeriod: formData.availability.minLeasePeriod
+        }));
+      }
+
+      formDataToSend.append('userId', '657089f229c2df66a7ea7c0d');
+      formDataToSend.append('createdBy', '657089f229c2df66a7ea7c0d');
+
+      const response = await axios.post(`${backendurl}/api/properties/add`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -115,14 +269,33 @@ const PropertyForm = () => {
           type: '',
           price: '',
           location: '',
+          coordinates: {
+            latitude: 0,
+            longitude: 0
+          },
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            pincode: '',
+            country: 'India'
+          },
           description: '',
           beds: '',
           baths: '',
           sqft: '',
           phone: '',
-          availability: '',
+          availability: {
+            status: 'Available',
+            availableFrom: '',
+            minLeasePeriod: '12 months'
+          },
           amenities: [],
-          images: []
+          images: [],
+          listingType: 'rent',
+          propertyAge: '',
+          propertyCondition: '',
+          propertyStatus: ''
         });
         setPreviewUrls([]);
       }
@@ -160,7 +333,7 @@ const PropertyForm = () => {
                   name="title"
                   required
                   value={formData.title}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter property title"
                 />
@@ -175,7 +348,8 @@ const PropertyForm = () => {
                   name="location"
                   required
                   value={formData.location}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
+                  ref={locationInputRef}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter property location"
                 />
@@ -191,7 +365,7 @@ const PropertyForm = () => {
                 name="description"
                 required
                 value={formData.description}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 rows={4}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe the property..."
@@ -213,11 +387,11 @@ const PropertyForm = () => {
                   name="type"
                   required
                   value={formData.type}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select Type</option>
-                  {PROPERTY_TYPES.map(type => (
+                  {PROPERTY_TYPES[formData.listingType].map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
@@ -232,7 +406,7 @@ const PropertyForm = () => {
                   name="price"
                   required
                   value={formData.price}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="₹"
                 />
@@ -247,7 +421,7 @@ const PropertyForm = () => {
                   name="beds"
                   required
                   value={formData.beds}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -261,7 +435,7 @@ const PropertyForm = () => {
                   name="baths"
                   required
                   value={formData.baths}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -281,28 +455,113 @@ const PropertyForm = () => {
                   name="sqft"
                   required
                   value={formData.sqft}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label htmlFor="availability" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="availability.status" className="block text-sm font-medium text-gray-700 mb-1">
                   Availability Status
                 </label>
                 <select
-                  id="availability"
-                  name="availability"
+                  id="availability.status"
+                  name="availability.status"
                   required
-                  value={formData.availability}
-                  onChange={handleInputChange}
+                  value={formData.availability.status}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Select Status</option>
-                  {AVAILABILITY_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
+                  <option value="Available">Available</option>
+                  <option value="Unavailable">Unavailable</option>
                 </select>
               </div>
+              {formData.listingType === 'rent' && (
+                <>
+                  <div>
+                    <label htmlFor="availability.availableFrom" className="block text-sm font-medium text-gray-700 mb-1">
+                      Available From
+                    </label>
+                    <input
+                      type="date"
+                      id="availability.availableFrom"
+                      name="availability.availableFrom"
+                      required
+                      value={formData.availability.availableFrom}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="availability.minLeasePeriod" className="block text-sm font-medium text-gray-700 mb-1">
+                      Minimum Lease Period
+                    </label>
+                    <select
+                      id="availability.minLeasePeriod"
+                      name="availability.minLeasePeriod"
+                      required
+                      value={formData.availability.minLeasePeriod}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {LEASE_PERIODS.map(period => (
+                        <option key={period} value={period}>{period}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+              {formData.listingType === 'sale' && (
+                <>
+                  <div>
+                    <label htmlFor="propertyAge" className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Age
+                    </label>
+                    <input
+                      type="number"
+                      id="propertyAge"
+                      name="propertyAge"
+                      required
+                      value={formData.propertyAge}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="propertyCondition" className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Condition
+                    </label>
+                    <select
+                      id="propertyCondition"
+                      name="propertyCondition"
+                      required
+                      value={formData.propertyCondition}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {PROPERTY_CONDITIONS.map(condition => (
+                        <option key={condition} value={condition}>{condition}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="propertyStatus" className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Status
+                    </label>
+                    <select
+                      id="propertyStatus"
+                      name="propertyStatus"
+                      required
+                      value={formData.propertyStatus}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {PROPERTY_STATUSES.map(status => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

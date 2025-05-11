@@ -29,14 +29,27 @@ const propertySchema = new mongoose.Schema({
   listingType: {
     type: String,
     required: [true, 'Listing type is required'],
-    enum: ['sale', 'rent', 'buy'], 
+    enum: ['sale', 'rent'],
     lowercase: true
   },
   type: {
     type: String,
     required: [true, 'Property type is required'],
-    enum: ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 'residential', 'commercial'],
-    lowercase: true
+    enum: [
+      'house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk',
+      'commercial', 'residential plot', 'commercial plot'
+    ],
+    lowercase: true,
+    validate: {
+      validator: function(type) {
+        if (this.listingType === 'sale') {
+          return ['house', 'apartment', 'office', 'villa', 'flat', 'commercial', 
+                 'residential plot', 'commercial plot'].includes(type);
+        }
+        return true;
+      },
+      message: 'Invalid property type for sale listing'
+    }
   },
   price: {
     type: Number,
@@ -51,25 +64,45 @@ const propertySchema = new mongoose.Schema({
   },
   deposit: {
     type: Number,
-    min: [0, 'Deposit cannot be negative']
+    min: [0, 'Deposit cannot be negative'],
+    default: function() {
+      if (this.listingType !== 'rent') return undefined;
+      
+      const multipliers = {
+        'house': 2,
+        'apartment': 3,
+        'office': 3,
+        'villa': 3,
+        'commercial': 3,
+        'flat': 2,
+        'pg': 1,
+        'rk': 1
+      };
+      return this.price * (multipliers[this.type] || 2);
+    }
   },
   
   // Sale-specific fields
   propertyAge: {
     type: Number,
-    min: [0, 'Property age cannot be negative']
+    min: [0, 'Property age cannot be negative'],
+    required: function() {
+      return this.listingType === 'sale';
+    }
   },
   propertyCondition: {
     type: String,
     enum: ['new', 'good', 'average', 'needs_repair'],
-    default: 'good',
-    lowercase: true
+    required: function() {
+      return this.listingType === 'sale';
+    }
   },
   propertyStatus: {
     type: String,
     enum: ['ready_to_move', 'under_construction', 'renovated'],
-    default: 'ready_to_move',
-    lowercase: true
+    required: function() {
+      return this.listingType === 'sale';
+    }
   },
   
   // Location
@@ -130,12 +163,16 @@ const propertySchema = new mongoose.Schema({
   },
   beds: {
     type: Number,
-    required: [true, 'Number of beds is required'],
+    required: function() {
+      return !this.type.includes('plot');
+    },
     min: [0, 'Number of beds cannot be negative']
   },
   baths: {
     type: Number,
-    required: [true, 'Number of baths is required'],
+    required: function() {
+      return !this.type.includes('plot');
+    },
     min: [0, 'Number of baths cannot be negative']
   },
   
@@ -243,7 +280,6 @@ const propertySchema = new mongoose.Schema({
   },
   
   // Contact Information
-  contact: {
     phone: {
       type: String,
       // required: [true, 'Contact phone is required'],
@@ -254,8 +290,7 @@ const propertySchema = new mongoose.Schema({
       // required: [true, 'Contact email is required'],
       lowercase: true,
       trim: true
-    }
-  },
+    },
   
   // Owner & Creator (Updated)
   userId: {
@@ -282,14 +317,15 @@ const propertySchema = new mongoose.Schema({
     availableFrom: {
       type: Date,
       required: function() {
-        return this.listingType === 'Rent';
+        return this.listingType === 'rent';
       }
     },
     minLeasePeriod: {
       type: String,
+      enum: ['3 months', '6 months', '12 months', '18 months', '24 months'],
       default: '12 months',
       required: function() {
-        return this.listingType === 'Rent';
+        return this.listingType === 'rent';
       }
     }
   },
