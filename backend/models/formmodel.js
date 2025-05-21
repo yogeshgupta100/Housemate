@@ -1,25 +1,59 @@
-import mongoose from 'mongoose';
+import pool from '../config/postgres.js';
 
-const formSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-  },
-  phone: {
-    type: String,
-  },
-  message: {
-    type: String,
-    required: true,
-  },
-}, {
-  timestamps: true,
-});
+const createFormTable = async () => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS forms (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                phone VARCHAR(20),
+                message TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+    } catch (error) {
+        console.error('Error creating forms table:', error);
+        throw error;
+    }
+};
 
-const Form = mongoose.model('Form', formSchema);
+// Create the table if it doesn't exist
+createFormTable();
 
-export default Form;
+export default {
+    async create(formData) {
+        const { name, email, phone, message } = formData;
+        const { rows } = await pool.query(
+            `INSERT INTO forms (name, email, phone, message)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [name, email, phone, message]
+        );
+        return rows[0];
+    },
+
+    async findById(id) {
+        const { rows } = await pool.query(
+            'SELECT * FROM forms WHERE id = $1',
+            [id]
+        );
+        return rows[0];
+    },
+
+    async findAll() {
+        const { rows } = await pool.query(
+            'SELECT * FROM forms ORDER BY created_at DESC'
+        );
+        return rows;
+    },
+
+    async delete(id) {
+        const { rows } = await pool.query(
+            'DELETE FROM forms WHERE id = $1 RETURNING *',
+            [id]
+        );
+        return rows[0];
+    }
+};

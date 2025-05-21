@@ -4,7 +4,6 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import connectDB from './config/db.js';
 import { errorHandler } from './utils/error.js';
 import authRoutes from './routes/authRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
@@ -13,11 +12,19 @@ import userRoutes from './routes/userRoutes.js';
 import appointmentRoutes from './routes/appointmentRoute.js';
 import adminRoutes from './routes/adminRoute.js';
 import favoritesRoutes from './routes/favoritesRoutes.js';
+import pool from './config/postgres.js';
 // Load env vars
 dotenv.config();
 
 // Connect to database
-connectDB();
+// connectDB();
+
+pool.connect()
+  .then(() => console.log('✅ PostgreSQL Connected'))
+  .catch(err => {
+    console.error('❌ PostgreSQL Connection Error:', err.message);
+    process.exit(1);
+  });
 
 // Create Express app
 const app = express();

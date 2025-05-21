@@ -399,6 +399,12 @@ const PropertyListingForm = () => {
       return;
     }
 
+    // Validate area for apartment
+    if (formData.type === 'apartment' && Number(formData.sqft) < 500) {
+      toast.error("Apartment area seems too small. Please verify the square footage.");
+      return;
+    }
+
     if (!formData.coordinates.latitude || !formData.coordinates.longitude) {
       toast.error("Please select a location from the suggestions dropdown");
       return;
@@ -415,18 +421,20 @@ const PropertyListingForm = () => {
       return;
     }
 
-    // Add sale-specific validation
-    if (formData.listingType === 'sale') {
-      if (!formData.propertyAge || formData.propertyAge < 0) {
-        toast.error("Please enter a valid property age");
+    // Validate images
+    if (!formData.images || formData.images.length === 0) {
+      toast.error("Please upload at least one image of the property");
+      return;
+    }
+
+    // Validate rental-specific fields
+    if (formData.listingType === 'rent') {
+      if (!formData.availability || !formData.availability.availableFrom) {
+        toast.error("Please select when the property will be available");
         return;
       }
-      if (!formData.propertyCondition) {
-        toast.error("Please select property condition");
-        return;
-      }
-      if (!formData.propertyStatus) {
-        toast.error("Please select property status");
+      if (!formData.availability.minLeasePeriod) {
+        toast.error("Please select minimum lease period");
         return;
       }
     }
@@ -442,58 +450,78 @@ const PropertyListingForm = () => {
         return;
       }
 
-      const formDataToSend = new FormData();
-
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('type', formData.type.toLowerCase());
-      formDataToSend.append('price', formData.price);
-      formDataToSend.append('location', formData.location);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('beds', formData.beds);
-      formDataToSend.append('baths', formData.baths);
-      formDataToSend.append('sqft', formData.sqft);
-      formDataToSend.append('phone', `${formData.dialCode}${formData.phone}`);
-      // Change this line to use listingType instead of availability
-      formDataToSend.append('listingType', formData.listingType.toLowerCase());
-      formDataToSend.append('amenities', JSON.stringify(formData.amenities));
-
-      // Coordinates and address
-      formDataToSend.append('coordinates', JSON.stringify({
-        latitude: formData.coordinates.latitude,
-        longitude: formData.coordinates.longitude
-      }));
-
-      formDataToSend.append('address', JSON.stringify({
-        street: formData.address.street,
-        city: formData.address.city,
-        state: formData.address.state,
-        pincode: formData.address.pincode,
-        country: formData.address.country
-      }));
-
-      // Handle images
-      formData.images.forEach((image) => {
-        formDataToSend.append('images', image);
-      });
-
-      // Add sale-specific fields only for sale listings
-      if (formData.listingType === 'sale') {
-        formDataToSend.append('propertyAge', formData.propertyAge);
-        formDataToSend.append('propertyCondition', formData.propertyCondition);
-        formDataToSend.append('propertyStatus', formData.propertyStatus);
-      }
+      console.log('Preparing form data for submission...');
+      
+      // Create the request payload
+      const payload = {
+        title: formData.title,
+        type: formData.type.toLowerCase(),
+        price: formData.price,
+        location: formData.location,
+        description: formData.description,
+        beds: formData.beds,
+        baths: formData.baths,
+        sqft: formData.sqft,
+        phone: formData.phone,
+        listingType: formData.listingType.toLowerCase(),
+        amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
+        coordinates: {
+          latitude: formData.coordinates.latitude,
+          longitude: formData.coordinates.longitude
+        },
+        address: {
+          street: formData.address.street,
+          city: formData.address.city,
+          state: formData.address.state,
+          pincode: formData.address.pincode,
+          country: formData.address.country
+        }
+      };
 
       // Add availability data for rental properties
       if (formData.listingType === 'rent') {
-        // Convert local date string to ISO format
         const availableFromISO = new Date(formData.availability.availableFrom).toISOString();
-        
-        formDataToSend.append('availability', JSON.stringify({
+        payload.availability = {
           status: 'Available',
           availableFrom: availableFromISO,
           minLeasePeriod: formData.availability.minLeasePeriod
-        }));
+        };
       }
+
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData();
+      
+      // Append all non-file data as JSON string
+      formDataToSend.append('data', JSON.stringify(payload));
+
+      // Append images as files
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((file, index) => {
+          // If the image is a base64 object, convert it back to a file
+          if (file.data) {
+            const byteString = atob(file.data);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            
+            const blob = new Blob([ab], { type: file.type });
+            const newFile = new File([blob], file.name, { type: file.type });
+            formDataToSend.append('images', newFile);
+          } else {
+            // If it's already a file, append it directly
+            formDataToSend.append('images', file);
+          }
+        });
+      }
+
+      console.log('Sending request to:', `${Backendurl}/api/properties/add`);
+      console.log('Form data being sent:', {
+        data: payload,
+        images: formData.images.map(img => img.name || img.fileName)
+      });
 
       const response = await axios.post(
         `${Backendurl}/api/properties/add`,
@@ -506,13 +534,25 @@ const PropertyListingForm = () => {
         }
       );
 
+      console.log('Response received:', response.data);
+
       if (response.data.success) {
         setSuccess(true);
         toast.success('Property listed successfully!');
+        navigate('/dashboard');
+      } else {
+        throw new Error(response.data.message || 'Failed to list property');
       }
     } catch (error) {
       console.error('Error listing property:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to list property';
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      });
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to list property';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

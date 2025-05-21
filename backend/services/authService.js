@@ -2,134 +2,228 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/userModel.js';
-import Role from "../models/role.js";
+import pool from '../config/postgres.js';
 
 class AuthService {
   async register(userData) {
-    const existingUser = await User.findOne({ email: userData.email });
-    if (existingUser) {
-      throw new Error('Email already registered');
-    }
-
+    const client = await pool.connect();
     try {
-      const defaultRole = await Role.findOne({ name: 'individual' });
-      if (!defaultRole) {
+      // Check if user exists
+      const { rows: existingUser } = await client.query(
+        'SELECT * FROM users WHERE email = $1',
+        [userData.email]
+      );
+
+      if (existingUser.length > 0) {
+        throw new Error('Email already registered');
+      }
+
+      // Get default role
+      const { rows: defaultRole } = await client.query(
+        'SELECT * FROM roles WHERE name = $1',
+        ['individual']
+      );
+
+      if (!defaultRole.length) {
         throw new Error('Default role not found');
       }
 
-      const user = await User.create({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        password: userData.password,
-        phone: userData.phone,
-        gender: userData.gender,
-        role: defaultRole._id,
-        companyName: userData.companyName,
-        registrationNumber: userData.registrationNumber,
-        dealerLicense: userData.dealerLicense
-      });
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-      const token = this.generateToken(user._id);
+      // Insert user
+      const { rows: [user] } = await client.query(
+        `INSERT INTO users (
+          first_name, last_name, email, password, phone, gender,
+          role_id, user_type, company_name, registration_number,
+          dealer_license
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *`,
+        [
+          userData.firstName,
+          userData.lastName,
+          userData.email,
+          hashedPassword,
+          userData.phone,
+          userData.gender,
+          defaultRole[0].id,
+          userData.userType || 'individual',
+          userData.companyName,
+          userData.registrationNumber,
+          userData.dealerLicense
+        ]
+      );
 
+      const token = this.generateToken(user.id);
       return { user, token };
     } catch (error) {
-      if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map(err => err.message);
-        throw new Error(messages.join(', '));
-      }
       throw error;
+    } finally {
+      client.release();
     }
   }
 
   async login(email, password) {
-    const user = await User.findOne({ email }).select('password');
-    if (!user || !(await this.comparePasswords(password, user.password))) {
-      throw new Error('Invalid credentials');
-    }
+    const client = await pool.connect();
+    try {
+      const { rows: [user] } = await client.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email]
+      );
 
-    const token = this.generateToken(user._id);
-    return { user, token };
+      if (!user) {
+        throw new Error('Invalid email or password');
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        throw new Error('Invalid email or password');
+      }
+
+      // Update last login
+      await client.query(
+        'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
+        [user.id]
+      );
+
+      const token = this.generateToken(user.id);
+      return { user, token };
+    } catch (error) {
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async getCurrentUser(userId) {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
+    const client = await pool.connect();
+    try {
+      const { rows: [user] } = await client.query(
+        'SELECT * FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      return user;
+    } catch (error) {
+      throw error;
+    } finally {
+      client.release();
     }
-    return user;
   }
 
   async updateProfile(userId, updateData) {
-    const allowedUpdates = {
-      firstName: updateData.firstName,
-      lastName: updateData.lastName,
-      phone: updateData.phone,
-      gender: updateData.gender,
-      address: {
-        city: updateData.address?.city,
-        state: updateData.address?.state
-      },
-      bio: updateData.bio
-    };
+    const client = await pool.connect();
+    try {
+      const setClause = [];
+      const values = [];
+      let paramCount = 1;
 
-    Object.keys(allowedUpdates).forEach(key =>
-        allowedUpdates[key] === undefined && delete allowedUpdates[key]
-    );
-
-    return await User.findByIdAndUpdate(
-        userId,
-        allowedUpdates,
-        {
-          new: true,
-          runValidators: true
+      for (const [key, value] of Object.entries(updateData)) {
+        if (value !== undefined) {
+          setClause.push(`${key} = $${paramCount}`);
+          values.push(value);
+          paramCount++;
         }
-    );
+      }
+
+      if (setClause.length === 0) return null;
+
+      values.push(userId);
+      const { rows: [user] } = await client.query(
+        `UPDATE users 
+         SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $${paramCount}
+         RETURNING *`,
+        values
+      );
+
+      return user;
+    } catch (error) {
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async updatePassword(userId, currentPassword, newPassword) {
-    const user = await User.findById(userId);
-    if (!(await this.comparePasswords(currentPassword, user.password))) {
-      throw new Error('Current password is incorrect');
-    }
+    const client = await pool.connect();
+    try {
+      const { rows: [user] } = await client.query(
+        'SELECT * FROM users WHERE id = $1',
+        [userId]
+      );
 
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        throw new Error('Current password is incorrect');
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await client.query(
+        `UPDATE users 
+         SET password = $1, password_changed_at = CURRENT_TIMESTAMP
+         WHERE id = $2`,
+        [hashedPassword, userId]
+      );
+    } catch (error) {
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async forgotPassword(email) {
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new Error('User not found');
+    const client = await pool.connect();
+    try {
+      const { rows: [user] } = await client.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const resetToken = crypto.randomBytes(20).toString('hex');
+      user.resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+      user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      await client.query(
+        'UPDATE users SET reset_password_token = $1, reset_password_expire = $2 WHERE id = $3',
+        [user.resetPasswordToken, user.resetPasswordExpire, user.id]
+      );
+
+      // Send email with reset token
+      const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+      // await sendEmail({
+      //   email: user.email,
+      //   subject: 'Password Reset Request',
+      //   message: `You requested a password reset. Please go to: ${resetUrl}`
+      // });
+    } catch (error) {
+      throw error;
+    } finally {
+      client.release();
     }
-
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    user.resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    await user.save();
-
-    // Send email with reset token
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    // await sendEmail({
-    //   email: user.email,
-    //   subject: 'Password Reset Request',
-    //   message: `You requested a password reset. Please go to: ${resetUrl}`
-    // });
   }
 
   generateToken(userId) {
-    return jwt.sign({ id: userId },
-        process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE
-    });
-  }
-
-  async comparePasswords(enteredPassword, hashedPassword) {
-    return await bcrypt.compare(enteredPassword, hashedPassword);
+    return jwt.sign(
+      { id: userId },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
   }
 }
 

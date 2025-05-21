@@ -4,9 +4,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import compression from 'compression';
-import connectdb from './config/mongodb.js';
 import { trackAPIStats } from './middleware/statsMiddleware.js';
-// import propertyrouter from './routes/ProductRouter.js';
 import authRouter from './routes/authRoutes.js';
 import formrouter from './routes/formrouter.js';
 import newsrouter from './routes/newsRoute.js';
@@ -18,6 +16,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import favoritesRoutes from "./routes/favoritesRoutes.js";
+import pool from './config/postgres.js';
+import Role from './models/role.js';
 
 dotenv.config();
 
@@ -44,45 +44,52 @@ app.use(trackAPIStats);
 
 // CORS Configuration
 app.use(cors({
-  origin: [
-    'http://localhost:4000',
-    'http://localhost:5174',
-    'http://localhost:5173',
-    'https://buildestate.vercel.app',
-    'https://real-estate-website-admin.onrender.com',
-    'https://real-estate-website-backend-zfu7.onrender.com',
-  ],
+  origin: '*', // Allow all origins during development
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'], // Added HEAD
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Database connection
-connectdb().then(() => {
-  initializeRoles().then(r => console.log('Roles initialized'));
-  console.log('Database connected successfully');
-}).catch(err => {
-  console.error('Database connection error:', err);
-});
+// Database connection and initialization
+const initializeDatabase = async () => {
+  try {
+    // Connect to database
+    await pool.connect();
+    console.log('✅ PostgreSQL Connected');
+
+    // Create roles table and initialize roles
+    await initializeRoles();
+    console.log('✅ Roles initialized');
+
+    // Start server
+    const port = process.env.PORT || 4000;
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`✅ Server running on port ${port}`);
+    });
+  } catch (err) {
+    console.error('❌ Database initialization error:', err);
+    process.exit(1);
+  }
+};
+
+// Initialize database and start server
+initializeDatabase();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
-// app.use('/api/products', propertyrouter);
 app.use('/api/auth', authRouter);
 app.use('/api/forms', formrouter);
 app.use('/api/news', newsrouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/properties', propertyRoutes);
-app.use('/api/auth/roles', propertyRoutes);
 app.use('/api/favorites', favoritesRoutes);
 
-
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   const statusCode = err.statusCode || 500;
@@ -94,7 +101,6 @@ app.use((err, req, res, next) => {
     timestamp: new Date().toISOString()
   });
 });
-
 
 // Handle unhandled rejections
 process.on('unhandledRejection', (err) => {
@@ -145,14 +151,5 @@ app.get("/", (req, res) => {
     </html>
   `);
 });
-
-const port = process.env.PORT || 4000;
-
-// Start server
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running on port ${port}`);
-  });
-}
 
 export default app;
