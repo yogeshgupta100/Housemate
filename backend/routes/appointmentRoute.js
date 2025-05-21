@@ -10,22 +10,21 @@ import {
   getAppointmentStats,
   submitAppointmentFeedback,
   getUpcomingAppointments
-} from "../controller/appointmentController.js";
+} from "../controllers/appointmentController.js";
 
 
 const router = express.Router();
 
 // User routes
-router.post("/schedule", protect, scheduleViewing);  // Add protect middleware
+router.post("/schedule", protect, scheduleViewing);
 router.get("/user", protect, getAppointmentsByUser);
-router.put("/cancel/:id", protect, cancelAppointment);
-router.put("/feedback/:id", protect, submitAppointmentFeedback);
 router.get("/upcoming", protect, getUpcomingAppointments);
 
 // Admin routes
-router.get("/all", getAllAppointments);
-router.get("/stats",  getAppointmentStats);
-router.put("/status", updateAppointmentStatus);
-router.put("/update-meeting", updateAppointmentMeetingLink);
+router.get("/all", protect, getAllAppointments);
+router.put("/:id/status", protect, updateAppointmentStatus);
+router.put("/:id/meeting-link", protect, updateAppointmentMeetingLink);
+router.post("/:id/feedback", protect, submitAppointmentFeedback);
+router.get("/stats", protect, getAppointmentStats);
 
 export default router;

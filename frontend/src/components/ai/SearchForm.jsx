@@ -23,6 +23,18 @@ const SearchForm = ({ onSearch, isLoading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!searchParams.city) {
+      alert('Please enter a city');
+      return;
+    }
+    if (!searchParams.maxPrice) {
+      alert('Please enter a maximum price');
+      return;
+    }
+
+    console.log('Submitting search with params:', searchParams); // Debug log
     onSearch(searchParams);
   };
 

@@ -100,11 +100,11 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="bg-white p-6 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto"
+      className="bg-white p-6 pt-0 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto"
     >
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10">
-        <div className="flex items-center space-x-2">
+      <div className="flex justify-between items-center mb-6 pt-6 sticky top-0 bg-white h-full z-10">
+        <div className="flex items-center space-x-2 w-full">
           <Filter className="w-5 h-5 text-blue-600" />
           <h2 className="text-lg font-semibold">Filters</h2>
         </div>
@@ -294,7 +294,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
                 onClick={() => handleChange({
                   target: { name: "furnishing", value: type.toLowerCase() }
                 })}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
+                className={`py-2 rounded-lg text-sm font-medium px-2 transition-all flex justify-center items-center
                   ${filters.furnishing === type.toLowerCase()
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}

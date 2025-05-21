@@ -116,6 +116,7 @@ export const getAllProperties = async (req, res) => {
         if (req.query.city) {
             filter['address.city'] = { $regex: new RegExp(req.query.city, 'i') };
         }
+
         
         // Execute query with pagination
         const properties = await Property.find(filter)

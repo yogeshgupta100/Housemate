@@ -3,7 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import * as propertyController from '../controllers/propertyController.js';
+// import * as propertyController from '../controllers/propertyController.js';
+import { getLocationSuggestions ,createProperty, getAllProperties, searchProperties, searchPropertiesByCoordinates, getPropertyById ,updateProperty, deleteProperty} from '../controllers/propertyController.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -39,14 +40,15 @@ const upload = multer({
 });
 
 
-router.post('/add', upload.array('images', 5), propertyController.createProperty);
+router.post('/add', upload.array('images', 5), createProperty);
 
-router.get('/', propertyController.getAllProperties);
-router.get('/search', propertyController.searchProperties);
-router.get('/searchByCoordinates', propertyController.searchPropertiesByCoordinates);
-router.get('/:id', propertyController.getPropertyById);
+router.get('/', getAllProperties);
+router.get('/search', searchProperties);
+router.get('/searchByCoordinates', searchPropertiesByCoordinates);
+router.get('/locations', getLocationSuggestions);
+router.get('/:id', getPropertyById);
 
-router.put('/:id', propertyController.updateProperty);
-router.delete('/:id', propertyController.deleteProperty);
+router.put('/:id', upload.array('images', 5), updateProperty);
+router.delete('/:id', deleteProperty);
 
 export default router;

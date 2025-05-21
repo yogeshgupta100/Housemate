@@ -25,6 +25,7 @@ import ScheduleViewing from "./ScheduleViewing";
 
 const PropertyDetails = () => {
   const { id } = useParams();
+  console.log("Property ID:", id);
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,7 +68,8 @@ const PropertyDetails = () => {
 
   const getPropertyImages = (property) => {
     if (!property) return [];
-    return property.images || property.image || [];
+    const images = property.images || property.image || [];
+    return images.map(img => img.startsWith('http') ? img : `${Backendurl}${img}`);
   };
 
   const parseAmenities = (amenities) => {
@@ -285,7 +287,8 @@ const PropertyDetails = () => {
             <AnimatePresence mode="wait">
               <motion.img
                 key={activeImage}
-                src={images[activeImage]}
+                // src={images[activeImage]}
+                src={property.images?.[activeImage] ? `${"http://localhost:4000"}/uploads/${property.images[activeImage].split('/uploads/').pop()}` : "/placeholder.jpg"}
                 alt={`${property.title} - View ${activeImage + 1}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -414,13 +417,13 @@ const PropertyDetails = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Condition</span>
                           <span className="font-semibold text-gray-800 capitalize">
-                            {property.propertyCondition.replace(/_/g, ' ')}
+                            {property.propertyCondition ? property.propertyCondition.replace(/_/g, ' ') : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Status</span>
                           <span className="font-semibold text-gray-800 capitalize">
-                            {property.propertyStatus.replace(/_/g, ' ')}
+                            {property.propertyStatus ? property.propertyStatus.replace(/_/g, ' ') : 'N/A'}
                           </span>
                         </div>
                       </div>
@@ -520,7 +523,7 @@ const PropertyDetails = () => {
         <AnimatePresence>
           {showSchedule && (
             <ScheduleViewing
-              propertyId={property._id}
+              propertyId={property.id}
               propertyTitle={property.title}
               propertyLocation={property.location}
               // propertyImage={property.image[0]}

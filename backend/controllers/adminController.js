@@ -4,6 +4,24 @@ import Appointment from "../models/appointmentModel.js";
 import User from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 import { getEmailTemplate } from "../email.js";
+import {
+    getAllUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
+    getAllProperties,
+    getPropertyById,
+    updateProperty,
+    deleteProperty,
+    getAllAppointments,
+    getAppointmentById,
+    updateAppointment,
+    deleteAppointment,
+    getDashboardStats
+} from '../services/adminService.js';
+import catchAsync from '../utils/catchAsync.js';
+import { validateAdmin } from '../utils/validators.js';
+import pool from '../config/postgres.js';
 
 const formatRecentProperties = (properties) => {
   return properties.map((property) => ({
@@ -27,31 +45,19 @@ const formatRecentAppointments = (appointments) => {
 // Add these helper functions before the existing exports
 export const getAdminStats = async (req, res) => {
   try {
-    const [
-      totalProperties,
-      activeListings,
-      totalUsers,
-      pendingAppointments,
-      recentActivity,
-      viewsData,
-    ] = await Promise.all([
-      Property.countDocuments(),
-      Property.countDocuments({ status: "active" }),
-      User.countDocuments(),
-      Appointment.countDocuments({ status: "pending" }),
-      getRecentActivity(),
-      getViewsData(),
-    ]);
+    const { rows: [{ total_properties }] } = await pool.query('SELECT COUNT(*) as total_properties FROM properties');
+    const { rows: [{ active_listings }] } = await pool.query("SELECT COUNT(*) as active_listings FROM properties WHERE status = 'active'");
+    const { rows: [{ total_users }] } = await pool.query('SELECT COUNT(*) as total_users FROM users');
+    const { rows: [{ pending_appointments }] } = await pool.query("SELECT COUNT(*) as pending_appointments FROM appointments WHERE status = 'pending'");
 
     res.json({
       success: true,
       stats: {
-        totalProperties,
-        activeListings,
-        totalUsers,
-        pendingAppointments,
-        recentActivity,
-        viewsData,
+        totalProperties: parseInt(total_properties),
+        activeListings: parseInt(active_listings),
+        totalUsers: parseInt(total_users),
+        pendingAppointments: parseInt(pending_appointments),
+        // Add more stats as needed
       },
     });
   } catch (error) {
@@ -59,6 +65,7 @@ export const getAdminStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching admin statistics",
+      error: error.message
     });
   }
 };
@@ -160,7 +167,7 @@ const getViewsData = async () => {
 };
 
 // Add these new controller functions
-export const getAllAppointments = async (req, res) => {
+export const fetchAllAppointments = async (req, res) => {
   try {
     console.log("Fetching all appointments...");
     const appointments = await Appointment.find()
@@ -223,3 +230,210 @@ export const updateAppointmentStatus = async (req, res) => {
     });
   }
 };
+
+export const getAdminDashboard = async (req, res) => {
+    try {
+        const dashboardData = await getDashboardStats();
+        
+        res.json({
+            success: true,
+            data: dashboardData
+        });
+    } catch (error) {
+        console.error('Error fetching admin dashboard:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch dashboard data',
+            error: error.message
+        });
+    }
+};
+
+export const getPropertyAnalytics = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        
+        const analytics = await getDashboardStats();
+        
+        res.json({
+            success: true,
+            data: analytics
+        });
+    } catch (error) {
+        console.error('Error fetching property analytics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch property analytics',
+            error: error.message
+        });
+    }
+};
+
+export const getUserAnalytics = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        
+        const analytics = await getDashboardStats();
+        
+        res.json({
+            success: true,
+            data: analytics
+        });
+    } catch (error) {
+        console.error('Error fetching user analytics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user analytics',
+            error: error.message
+        });
+    }
+};
+
+export const getRevenueAnalytics = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        
+        const analytics = await getDashboardStats();
+        
+        res.json({
+            success: true,
+            data: analytics
+        });
+    } catch (error) {
+        console.error('Error fetching revenue analytics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch revenue analytics',
+            error: error.message
+        });
+    }
+};
+
+export const getSystemHealth = async (req, res) => {
+    try {
+        const healthData = await getDashboardStats();
+        
+        res.json({
+            success: true,
+            data: healthData
+        });
+    } catch (error) {
+        console.error('Error fetching system health:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch system health',
+            error: error.message
+        });
+    }
+};
+
+// User Management
+export const getUsers = catchAsync(async (req, res) => {
+    const users = await getAllUsers(req.query);
+    res.json({
+        success: true,
+        data: users
+    });
+});
+
+export const getUser = catchAsync(async (req, res) => {
+    const user = await getUserById(req.params.id);
+    res.json({
+        success: true,
+        data: user
+    });
+});
+
+export const updateUserDetails = catchAsync(async (req, res) => {
+    const user = await updateUser(req.params.id, req.body);
+    res.json({
+        success: true,
+        message: 'User updated successfully',
+        data: user
+    });
+});
+
+export const removeUser = catchAsync(async (req, res) => {
+    await deleteUser(req.params.id);
+    res.json({
+        success: true,
+        message: 'User deleted successfully'
+    });
+});
+
+// Property Management
+export const getProperties = catchAsync(async (req, res) => {
+    const properties = await getAllProperties(req.query);
+    res.json({
+        success: true,
+        data: properties
+    });
+});
+
+export const getProperty = catchAsync(async (req, res) => {
+    const property = await getPropertyById(req.params.id);
+    res.json({
+        success: true,
+        data: property
+    });
+});
+
+export const updatePropertyDetails = catchAsync(async (req, res) => {
+    const property = await updateProperty(req.params.id, req.body);
+    res.json({
+        success: true,
+        message: 'Property updated successfully',
+        data: property
+    });
+});
+
+export const removeProperty = catchAsync(async (req, res) => {
+    await deleteProperty(req.params.id);
+    res.json({
+        success: true,
+        message: 'Property deleted successfully'
+    });
+});
+
+// Appointment Management
+export const getAppointments = catchAsync(async (req, res) => {
+    const appointments = await getAllAppointments(req.query);
+    res.json({
+        success: true,
+        data: appointments
+    });
+});
+
+export const getAppointment = catchAsync(async (req, res) => {
+    const appointment = await getAppointmentById(req.params.id);
+    res.json({
+        success: true,
+        data: appointment
+    });
+});
+
+export const updateAppointmentDetails = catchAsync(async (req, res) => {
+    const appointment = await updateAppointment(req.params.id, req.body);
+    res.json({
+        success: true,
+        message: 'Appointment updated successfully',
+        data: appointment
+    });
+});
+
+export const removeAppointment = catchAsync(async (req, res) => {
+    await deleteAppointment(req.params.id);
+    res.json({
+        success: true,
+        message: 'Appointment deleted successfully'
+    });
+});
+
+// Dashboard
+export const getStats = catchAsync(async (req, res) => {
+    const stats = await getDashboardStats();
+    res.json({
+        success: true,
+        data: stats
+    });
+});

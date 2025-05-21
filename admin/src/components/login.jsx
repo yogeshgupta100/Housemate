@@ -4,7 +4,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -18,23 +18,21 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // Change the endpoint to /api/users/admin for admin login
-      // const response = await axios.post(`${backendUrl}/api/users/admin`, {
-      //   email,
-      //   password
-      // });
+      const response = await axios.post(`${backendUrl}/api/auth/admin`, {
+        email,
+        password
+      });
 
-      // if (response.data.success) {
-      //   // Store the admin token
-      //   localStorage.setItem('token', response.data.token);
-      //   localStorage.setItem('isAdmin', 'true');
+      if (response.data.success) {
+        // Store the admin token
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('isAdmin', 'true');
         
-      //   toast.success("Admin login successful!");
-      // } else {
-      //   toast.error(response.data.message || "Login failed");
-      // }
-      navigate("/dashboard");
-
+        toast.success("Admin login successful!");
+        navigate("/dashboard");
+      } else {
+        toast.error(response.data.message || "Login failed");
+      }
     } catch (error) {
       console.error('Error logging in:', error);
       toast.error(error.response?.data?.message || 'Invalid admin credentials');

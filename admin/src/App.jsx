@@ -18,7 +18,7 @@ import Appointments from "./pages/Appointments";
 import Users from "./pages/Users"; // Add this import at the top
 
 // Config
-export const backendurl = import.meta.env.VITE_BACKEND_URL;
+export const backendurl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 // Page transition variants
 const pageVariants = {

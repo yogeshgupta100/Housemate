@@ -1,8 +1,8 @@
-import pool from '../config/postgres.js';
+import pool from "../config/postgres.js";
 
 const createPropertyTable = async () => {
-    try {
-        await pool.query(`
+  try {
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS properties (
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(100) NOT NULL CHECK (length(title) >= 5),
@@ -83,46 +83,47 @@ const createPropertyTable = async () => {
             CREATE INDEX IF NOT EXISTS idx_properties_location ON properties(location);
             CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
         `);
-    } catch (error) {
-        console.error('Error creating properties table:', error);
-        throw error;
-    }
+  } catch (error) {
+    console.error("Error creating properties table:", error);
+    throw error;
+  }
 };
 
 // Create the table if it doesn't exist
 createPropertyTable();
 
 export default {
-    async create(propertyData) {
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            // Generate slug if not provided
-            if (!propertyData.slug) {
-                propertyData.slug = `${propertyData.title}-${Date.now()}`
-                    .toLowerCase()
-                    .replace(/[^\w\s-]/g, '')
-                    .replace(/\s+/g, '-');
-            }
+  async create(propertyData) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-            // Calculate deposit if not provided for rent
-            if (propertyData.listing_type === 'rent' && !propertyData.deposit) {
-                const multipliers = {
-                    'house': 2,
-                    'apartment': 3,
-                    'office': 3,
-                    'villa': 3,
-                    'commercial': 3,
-                    'flat': 2,
-                    'pg': 1,
-                    'rk': 1
-                };
-                propertyData.deposit = propertyData.price * (multipliers[propertyData.type] || 2);
-            }
+      // Generate slug if not provided
+      if (!propertyData.slug) {
+        propertyData.slug = `${propertyData.title}-${Date.now()}`
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-");
+      }
 
-            const { rows } = await client.query(
-                `INSERT INTO properties (
+      // Calculate deposit if not provided for rent
+      if (propertyData.listing_type === "rent" && !propertyData.deposit) {
+        const multipliers = {
+          house: 2,
+          apartment: 3,
+          office: 3,
+          villa: 3,
+          commercial: 3,
+          flat: 2,
+          pg: 1,
+          rk: 1,
+        };
+        propertyData.deposit =
+          propertyData.price * (multipliers[propertyData.type] || 2);
+      }
+
+      const { rows } = await client.query(
+        `INSERT INTO properties (
                     title, subtitle, slug, listing_type, type, price, rent_type,
                     deposit, property_age, property_condition, property_status,
                     location, region, latitude, longitude, street, city, state,
@@ -136,115 +137,117 @@ export default {
                     $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
                     $39, $40, $41, $42
                 ) RETURNING *`,
-                [
-                    propertyData.title,
-                    propertyData.subtitle,
-                    propertyData.slug,
-                    propertyData.listing_type,
-                    propertyData.type,
-                    propertyData.price,
-                    propertyData.rent_type,
-                    propertyData.deposit,
-                    propertyData.property_age,
-                    propertyData.property_condition,
-                    propertyData.property_status,
-                    propertyData.location,
-                    propertyData.region,
-                    propertyData.latitude,
-                    propertyData.longitude,
-                    propertyData.street,
-                    propertyData.city,
-                    propertyData.state,
-                    propertyData.pincode,
-                    propertyData.country,
-                    propertyData.floor_area,
-                    propertyData.sqft,
-                    propertyData.floor_no,
-                    propertyData.total_floors,
-                    propertyData.beds,
-                    propertyData.baths,
-                    propertyData.furnishing,
-                    propertyData.amenities,
-                    propertyData.balcony,
-                    propertyData.central_ac,
-                    propertyData.power_backup,
-                    propertyData.parking,
-                    propertyData.security,
-                    propertyData.swimming_pool,
-                    propertyData.gym,
-                    propertyData.garden,
-                    propertyData.lift,
-                    propertyData.images,
-                    propertyData.videos,
-                    propertyData.status || 'Active',
-                    propertyData.featured || false,
-                    propertyData.user_id,
-                    propertyData.created_by
-                ]
-            );
-            
-            await client.query('COMMIT');
-            return rows[0];
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
-    },
+        [
+          [
+            propertyData.title,
+            propertyData.subtitle,
+            propertyData.slug,
+            propertyData.listing_type,
+            propertyData.type,
+            propertyData.price,
+            propertyData.rent_type,
+            propertyData.deposit,
+            propertyData.property_age,
+            propertyData.property_condition,
+            propertyData.property_status,
+            propertyData.location,
+            propertyData.region,
+            propertyData.latitude,
+            propertyData.longitude,
+            propertyData.street,
+            propertyData.city,
+            propertyData.state,
+            propertyData.pincode,
+            propertyData.country,
+            propertyData.floor_area,
+            propertyData.sqft,
+            propertyData.floor_no,
+            propertyData.total_floors,
+            propertyData.beds,
+            propertyData.baths,
+            propertyData.furnishing,
+            propertyData.amenities,
+            propertyData.balcony,
+            propertyData.central_ac,
+            propertyData.power_backup,
+            propertyData.parking,
+            propertyData.security,
+            propertyData.swimming_pool,
+            propertyData.gym,
+            propertyData.garden,
+            propertyData.lift,
+            propertyData.images,
+            propertyData.videos,
+            propertyData.featured || false, // 41
+            propertyData.user_id, // 42
+            propertyData.created_by, // 43 ← now matches the column count
+          ],
+        ]
+      );
 
-    async findById(id) {
-        const { rows } = await pool.query(
-            `SELECT p.*, 
+      await client.query("COMMIT");
+      return rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async findById(id) {
+    const { rows } = await pool.query(
+      `SELECT p.*, 
                     u.first_name as owner_first_name, u.last_name as owner_last_name,
                     c.first_name as creator_first_name, c.last_name as creator_last_name
              FROM properties p
              LEFT JOIN users u ON p.user_id = u.id
              LEFT JOIN users c ON p.created_by = c.id
              WHERE p.id = $1`,
-            [id]
-        );
-        return rows[0];
-    },
+      [id]
+    );
+    return rows[0];
+  },
 
-    async findBySlug(slug) {
-        const { rows } = await pool.query(
-            `SELECT p.*, 
+  async findBySlug(slug) {
+    const { rows } = await pool.query(
+      `SELECT p.*, 
                     u.first_name as owner_first_name, u.last_name as owner_last_name,
                     c.first_name as creator_first_name, c.last_name as creator_last_name
              FROM properties p
              LEFT JOIN users u ON p.user_id = u.id
              LEFT JOIN users c ON p.created_by = c.id
              WHERE p.slug = $1`,
-            [slug]
-        );
-        return rows[0];
-    },
+      [slug]
+    );
+    return rows[0];
+  },
 
-    async findAll(filters = {}, page = 1, limit = 10) {
-        const offset = (page - 1) * limit;
-        const conditions = [];
-        const values = [];
-        let paramCount = 1;
+  async findAll(filters = {}, page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
+    const conditions = [];
+    const values = [];
+    let paramCount = 1;
 
-        // Build filter conditions
-        for (const [key, value] of Object.entries(filters)) {
-            if (value !== undefined && value !== null) {
-                if (Array.isArray(value)) {
-                    conditions.push(`${key} = ANY($${paramCount})`);
-                    values.push(value);
-                } else {
-                    conditions.push(`${key} = $${paramCount}`);
-                    values.push(value);
-                }
-                paramCount++;
-            }
+    // Build filter conditions
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          conditions.push(`${key} = ANY($${paramCount})`);
+          values.push(value);
+        } else {
+          conditions.push(`${key} = $${paramCount}`);
+          values.push(value);
         }
+        paramCount++;
+      }
+    }
 
-        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-        const { rows } = await pool.query(
-            `SELECT p.*, 
+    const { rows } = await pool.query(
+      `SELECT p.*, 
                     u.first_name as owner_first_name, u.last_name as owner_last_name,
                     c.first_name as creator_first_name, c.last_name as creator_last_name
              FROM properties p
@@ -253,76 +256,94 @@ export default {
              ${whereClause}
              ORDER BY p.created_at DESC
              LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
-            [...values, limit, offset]
-        );
+      [...values, limit, offset]
+    );
+    console.log('Final query:', query);
+console.log('With values:', values);
 
-        return rows;
-    },
 
-    async update(id, updateData) {
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            const setClause = [];
-            const values = [];
-            let paramCount = 1;
+    return rows;
+  },
 
-            for (const [key, value] of Object.entries(updateData)) {
-                if (value !== undefined) {
-                    setClause.push(`${key} = $${paramCount}`);
-                    values.push(value);
-                    paramCount++;
-                }
-            }
+  async update(id, updateData) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-            if (setClause.length === 0) return null;
+      const setClause = [];
+      const values = [];
+      let paramCount = 1;
 
-            values.push(id);
-            const { rows } = await client.query(
-                `UPDATE properties 
-                 SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      for (const [key, value] of Object.entries(updateData)) {
+        if (value !== undefined) {
+          setClause.push(`${key} = $${paramCount}`);
+          values.push(value);
+          paramCount++;
+        }
+      }
+
+      if (setClause.length === 0) return null;
+
+      values.push(id);
+      const { rows } = await client.query(
+        `UPDATE properties 
+                 SET ${setClause.join(", ")}, updated_at = CURRENT_TIMESTAMP
                  WHERE id = $${paramCount}
                  RETURNING *`,
-                values
-            );
-            
-            await client.query('COMMIT');
-            return rows[0];
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
-    },
+        values
+      );
 
-    async delete(id) {
-        const { rows } = await pool.query(
-            'DELETE FROM properties WHERE id = $1 RETURNING *',
-            [id]
-        );
-        return rows[0];
-    },
+      await client.query("COMMIT");
+      return rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
 
-    async findByUser(userId) {
-        const { rows } = await pool.query(
-            `SELECT p.*, 
-                    u.first_name as owner_first_name, u.last_name as owner_last_name,
-                    c.first_name as creator_first_name, c.last_name as creator_last_name
-             FROM properties p
-             LEFT JOIN users u ON p.user_id = u.id
-             LEFT JOIN users c ON p.created_by = c.id
-             WHERE p.created_by = $1
-             ORDER BY p.created_at DESC`,
-            [userId]
-        );
-        return rows;
-    },
+  async delete(id) {
+    const { rows } = await pool.query(
+      "DELETE FROM properties WHERE id = $1 RETURNING *",
+      [id]
+    );
+    return rows[0];
+  },
 
-    async findFeatured(limit = 6) {
-        const { rows } = await pool.query(
-            `SELECT p.*, 
+//   async findByUser(userId) {
+//     const { rows } = await pool.query(
+//       `SELECT p.*, 
+//                     u.first_name as owner_first_name, u.last_name as owner_last_name,
+//                     c.first_name as creator_first_name, c.last_name as creator_last_name
+//              FROM properties p
+//              LEFT JOIN users u ON p.user_id = u.id
+//              LEFT JOIN users c ON p.created_by = c.id
+//              WHERE p.created_by = $1
+//              ORDER BY p.created_at DESC`,
+//       [userId]
+//     );
+//     return rows;
+//   },
+
+async findByUser(userId) {
+    const { rows } = await pool.query(
+        `SELECT p.*, 
+                u.first_name as owner_first_name, u.last_name as owner_last_name,
+                c.first_name as creator_first_name, c.last_name as creator_last_name
+         FROM properties p
+         LEFT JOIN users u ON p.user_id = u.id
+         LEFT JOIN users c ON p.created_by = c.id
+         WHERE p.created_by = $1
+         ORDER BY p.created_at DESC`,
+        [String(userId)] // 👈 ensure UUID is passed correctly
+    );
+    return rows;
+  },
+
+  async findFeatured(limit = 6) {
+    const { rows } = await pool.query(
+      `SELECT p.*, 
                     u.first_name as owner_first_name, u.last_name as owner_last_name,
                     c.first_name as creator_first_name, c.last_name as creator_last_name
              FROM properties p
@@ -331,8 +352,8 @@ export default {
              WHERE p.featured = true AND p.status = 'Active'
              ORDER BY p.created_at DESC
              LIMIT $1`,
-            [limit]
-        );
-        return rows;
-    }
+      [limit]
+    );
+    return rows;
+  },
 };

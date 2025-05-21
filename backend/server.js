@@ -34,7 +34,10 @@ const limiter = rateLimit({
 
 // Security middlewares
 app.use(limiter);
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
 app.use(compression());
 
 // Middleware

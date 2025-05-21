@@ -32,13 +32,13 @@ const PropertyListings = () => {
       const response = await axios.get(`${backendurl}/api/properties`);
       
       if (response.data.success) {
-        const parsedProperties = response.data.data.map(property => ({
+        const parsedProperties = response.data.data.properties.map(property => ({
           ...property,
           amenities: parseAmenities(property.amenities)
         }));
         setProperties(parsedProperties);
       } else {
-        toast.error(response.data.error);
+        toast.error(response.data.message || "Failed to fetch properties");
       }
     } catch (error) {
       console.error("Error fetching properties:", error);
@@ -203,7 +203,7 @@ const PropertyListings = () => {
                 {/* Property Image */}
                 <div className="relative h-48">
                   <img
-                    src={property.images?.[0] || property.image?.[0] || "/placeholder.jpg"}
+                    src={property.images?.[0] ? `${backendurl}/uploads/${property.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
                     alt={property.title}
                     className="w-full h-full object-cover"
                   />
@@ -215,7 +215,7 @@ const PropertyListings = () => {
                   </div>
                   <div className="absolute top-4 right-4 flex space-x-2">
                     <Link 
-                      to={`/update/${property._id}`}
+                      to={`/update/${property.id}`}
                       className="p-2 bg-white/90 backdrop-blur-sm text-blue-600 rounded-full hover:bg-blue-600 hover:text-white transition-all"
                     >
                       <Edit3 className="w-4 h-4" />

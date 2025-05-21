@@ -18,14 +18,14 @@ class AuthService {
         throw new Error('Email already registered');
       }
 
-      // Get default role
-      const { rows: defaultRole } = await client.query(
-        'SELECT * FROM roles WHERE name = $1',
-        ['individual']
+      // Get role by ID
+      const { rows: role } = await client.query(
+        'SELECT * FROM roles WHERE id = $1',
+        [userData.role]
       );
 
-      if (!defaultRole.length) {
-        throw new Error('Default role not found');
+      if (!role.length) {
+        throw new Error('Invalid role ID');
       }
 
       // Hash password
@@ -46,7 +46,7 @@ class AuthService {
           hashedPassword,
           userData.phone,
           userData.gender,
-          defaultRole[0].id,
+          userData.role,
           userData.userType || 'individual',
           userData.companyName,
           userData.registrationNumber,
