@@ -1,4 +1,4 @@
-import formRepository from '../repositories/formRepository.js';
+import formModel from '../models/formmodel.js';
 import { AppError } from '../utils/error.js';
 
 class FormService {
@@ -7,7 +7,7 @@ class FormService {
       throw new AppError('Email and message are required', 400);
     }
 
-    return await formRepository.create(formData);
+    return await formModel.create(formData);
   }
 }
 

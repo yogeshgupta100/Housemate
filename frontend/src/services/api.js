@@ -13,7 +13,11 @@ const api = axios.create({
 
 export const searchProperties = async (searchParams) => {
   try {
-    const response = await api.post('/api/properties/search', searchParams);
+    console.log('Search params:', searchParams); // Debug log
+    const response = await api.get('/api/properties/search', {
+      params: searchParams
+    });
+    console.log('Search response:', response); // Debug log
     return response.data;
   } catch (error) {
     console.error('Error searching properties:', error);
@@ -23,7 +27,7 @@ export const searchProperties = async (searchParams) => {
 
 export const getLocationTrends = async (city) => {
   try {
-    const response = await api.get(`/api/locations/${encodeURIComponent(city)}/trends`);
+    const response = await api.get(`${Backendurl}/api/locations/${encodeURIComponent(city)}/trends`);
     return response.data;
   } catch (error) {
     console.error('Error fetching location trends:', error);

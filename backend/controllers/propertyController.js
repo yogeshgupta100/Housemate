@@ -1,18 +1,113 @@
 import propertyService from '../services/propertyService.js';
 import Property from '../models/propertymodel.js';
+import aiService from '../services/aiService.js';
+import { Op } from 'sequelize';
+import pool from '../config/postgres.js';
 
 export const getAllProperties = async (req, res) => {
   try {
-    const { page, limit, ...filters } = req.query;
-    const properties = await propertyService.getAllProperties(filters, page, limit);
-    res.status(200).json({
-      success: true,
-      data: properties
-    });
+    const { page = 1, limit = 10, ...filters } = req.query;
+    const offset = (page - 1) * limit;
+    const client = await pool.connect();
+
+    try {
+      // Build the WHERE clause based on filters
+      let whereClause = 'WHERE status = $1';
+      const queryParams = ['Active'];
+      let paramIndex = 2;
+
+      // Add filters to the WHERE clause
+      if (filters.type) {
+        whereClause += ` AND type = $${paramIndex}`;
+        queryParams.push(filters.type);
+        paramIndex++;
+      }
+
+      if (filters.listing_type) {
+        whereClause += ` AND listing_type = $${paramIndex}`;
+        queryParams.push(filters.listing_type);
+        paramIndex++;
+      }
+
+      if (filters.beds) {
+        whereClause += ` AND beds = $${paramIndex}`;
+        queryParams.push(filters.beds);
+        paramIndex++;
+      }
+
+      if (filters.baths) {
+        whereClause += ` AND baths = $${paramIndex}`;
+        queryParams.push(filters.baths);
+        paramIndex++;
+      }
+
+      if (filters.price_min) {
+        whereClause += ` AND price >= $${paramIndex}`;
+        queryParams.push(filters.price_min);
+        paramIndex++;
+      }
+
+      if (filters.price_max) {
+        whereClause += ` AND price <= $${paramIndex}`;
+        queryParams.push(filters.price_max);
+        paramIndex++;
+      }
+
+      if (filters.sqft_min) {
+        whereClause += ` AND sqft >= $${paramIndex}`;
+        queryParams.push(filters.sqft_min);
+        paramIndex++;
+      }
+
+      if (filters.sqft_max) {
+        whereClause += ` AND sqft <= $${paramIndex}`;
+        queryParams.push(filters.sqft_max);
+        paramIndex++;
+      }
+
+      if (filters.city) {
+        whereClause += ` AND city ILIKE $${paramIndex}`;
+        queryParams.push(`%${filters.city}%`);
+        paramIndex++;
+      }
+
+      // Get total count
+      const countQuery = `SELECT COUNT(*) FROM properties ${whereClause}`;
+      const { rows: [{ count }] } = await client.query(countQuery, queryParams);
+
+      // Get properties with pagination
+      const propertiesQuery = `
+        SELECT * FROM properties 
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+      
+      const { rows: properties } = await client.query(
+        propertiesQuery,
+        [...queryParams, limit, offset]
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          properties,
+          pagination: {
+            total: parseInt(count),
+            page: parseInt(page),
+            limit: parseInt(limit),
+            pages: Math.ceil(parseInt(count) / parseInt(limit))
+          }
+        }
+      });
+    } finally {
+      client.release();
+    }
   } catch (error) {
+    console.error('Error in getAllProperties:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: `Failed to fetch properties: ${error.message}`
     });
   }
 };
@@ -40,10 +135,50 @@ export const createProperty = async (req, res) => {
     const images = req.files ? req.files.map(file => file.path) : [];
     const amenities = req.body.amenities ? JSON.parse(req.body.amenities) : [];
 
-    const coordinates = req.body.coordinates ? JSON.parse(req.body.coordinates) : null;
-    const address = req.body.address ? JSON.parse(req.body.address) : null;
+    // Parse coordinates with proper validation
+    let coordinates = null;
+    try {
+      if (req.body.coordinates) {
+        coordinates = typeof req.body.coordinates === 'string' 
+          ? JSON.parse(req.body.coordinates) 
+          : req.body.coordinates;
+        
+        // Ensure coordinates are numbers
+        coordinates.latitude = parseFloat(coordinates.latitude);
+        coordinates.longitude = parseFloat(coordinates.longitude);
+        
+        // Validate coordinate ranges
+        if (isNaN(coordinates.latitude) || isNaN(coordinates.longitude) ||
+            coordinates.latitude < -90 || coordinates.latitude > 90 ||
+            coordinates.longitude < -180 || coordinates.longitude > 180) {
+          throw new Error('Invalid coordinate values');
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing coordinates:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid coordinates format or values'
+      });
+    }
 
-    const defaultAdminId = '657089f229c2df66a7ea7c0d'; //for case of admin , will replace it after admin auth fix.
+    // Parse and validate address
+    let address = null;
+    try {
+      if (req.body.address) {
+        address = typeof req.body.address === 'string' 
+          ? JSON.parse(req.body.address) 
+          : req.body.address;
+      }
+    } catch (error) {
+      console.error('Error parsing address:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid address format'
+      });
+    }
+
+    const defaultAdminId = '657089f229c2df66a7ea7c0d';
 
     const propertyData = {
       title: req.body.title?.toString(),
@@ -64,12 +199,12 @@ export const createProperty = async (req, res) => {
         latitude: 0,
         longitude: 0
       },
-      address: address || {
-        street: '',
-        city: '',
-        state: '',
-        pincode: '',
-        country: 'India'
+      address: {
+        street: address?.street || '',
+        city: address?.city || req.body.location?.toString() || '',
+        state: address?.state || '',
+        pincode: address?.pincode || '',
+        country: address?.country || 'India'
       },
       floorArea: Number(req.body.sqft) || 0
     };
@@ -95,14 +230,6 @@ export const createProperty = async (req, res) => {
       throw new Error('Title and type are required fields');
     }
 
-    if (coordinates && (!coordinates.latitude || !coordinates.longitude)) {
-      throw new Error('Invalid coordinates provided');
-    }
-
-    if (address && (!address.city || !address.state)) {
-      throw new Error('City and state are required in address');
-    }
-
     const property = await propertyService.createProperty(propertyData);
 
     res.status(201).json({
@@ -121,15 +248,50 @@ export const createProperty = async (req, res) => {
 
 export const updateProperty = async (req, res) => {
   try {
-    const property = await propertyService.updateProperty(req.params.id, req.body);
+    const { id } = req.params;
+    const updateData = { ...req.body };
+
+    // Handle JSON stringified fields
+    if (updateData.amenities) {
+      updateData.amenities = JSON.parse(updateData.amenities);
+    }
+    if (updateData.availability) {
+      updateData.availability = JSON.parse(updateData.availability);
+    }
+
+    // Handle file uploads
+    if (req.files && req.files.length > 0) {
+      const imagePaths = req.files.map(file => file.path);
+      updateData.images = imagePaths;
+    }
+
+    // Convert numeric fields
+    const numericFields = ['price', 'beds', 'baths', 'sqft', 'floor_area', 'property_age'];
+    numericFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        updateData[field] = Number(updateData[field]);
+      }
+    });
+
+    const property = await propertyService.updateProperty(id, updateData);
+    
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: 'Property not found'
+      });
+    }
+
     res.status(200).json({
       success: true,
-      data: property
+      data: property,
+      message: 'Property updated successfully'
     });
   } catch (error) {
+    console.error('Error updating property:', error);
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to update property'
     });
   }
 };
@@ -150,114 +312,245 @@ export const deleteProperty = async (req, res) => {
 };
 
 export const searchProperties = async (req, res) => {
+    try {
+        const { search, ...filters } = req.query;
+        const client = await pool.connect();
+
+        try {
+            // Get the base URL from environment or use default
+            const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+
+            // Build the WHERE clause
+            let whereClause = 'WHERE status = $1';
+            const queryParams = ['Active'];
+            let paramIndex = 2;
+
+            // Add search condition
+            if (search) {
+                whereClause += ` AND (LOWER(city) = LOWER($${paramIndex}) OR LOWER(state) = LOWER($${paramIndex}))`;
+                queryParams.push(search);
+                paramIndex++;
+            }
+
+            // Add other filters
+            if (filters.type) {
+                whereClause += ` AND type = $${paramIndex}`;
+                queryParams.push(filters.type);
+                paramIndex++;
+            }
+
+            if (filters.listing_type) {
+                whereClause += ` AND listing_type = $${paramIndex}`;
+                queryParams.push(filters.listing_type);
+                paramIndex++;
+            }
+
+            if (filters.beds) {
+                whereClause += ` AND beds = $${paramIndex}`;
+                queryParams.push(filters.beds);
+                paramIndex++;
+            }
+
+            if (filters.baths) {
+                whereClause += ` AND baths = $${paramIndex}`;
+                queryParams.push(filters.baths);
+                paramIndex++;
+            }
+
+            if (filters.minPrice) {
+                whereClause += ` AND price >= $${paramIndex}`;
+                queryParams.push(filters.minPrice);
+                paramIndex++;
+            }
+
+            if (filters.maxPrice) {
+                whereClause += ` AND price <= $${paramIndex}`;
+                queryParams.push(filters.maxPrice);
+                paramIndex++;
+            }
+
+            if (filters.amenities && !Array.isArray(filters.amenities)) {
+                filters.amenities = [filters.amenities];
+            }
+
+            if (filters.amenities && filters.amenities.length > 0) {
+              whereClause += ` AND amenities && $${paramIndex}::text[]`;
+              queryParams.push(filters.amenities);
+              paramIndex++;
+          }
+
+          whereClause += ` AND status = $${paramIndex}`;
+          queryParams.push('Active');
+          paramIndex++;
+
+            // Get properties
+            const { rows: properties } = await client.query(
+                `SELECT * FROM properties 
+                ${whereClause}
+                ORDER BY created_at DESC`,
+                queryParams
+            );
+
+            // Add full URLs to images
+            const propertiesWithFullUrls = properties.map(property => ({
+                ...property,
+                images: property.images.map(image => 
+                    image.startsWith('http') ? image : `${baseUrl}${image}`
+                )
+            }));
+
+            res.json({
+                success: true,
+                properties: propertiesWithFullUrls
+            });
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error searching properties:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to search properties',
+            error: error.message
+        });
+    }
+};
+
+export const getLocationSuggestions = async (req, res) => {
   try {
-    const {
-      search,
-      type,
-      listingType,
-      minPrice,
-      maxPrice,
-      beds,
-      baths,
-      minArea,
-      maxArea,
-      amenities,
-      sort,
-      verified,
-      page = 1,
-      limit = 12
-    } = req.query;
-
-
-    const filter = {};
-
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } }
-      ];
+    const { query } = req.query;
+    if (!query) {
+      return res.json({ locations: [] });
     }
-
-    
-    if (type) {
-      filter.type = new RegExp(type, 'i');
-    }
-    
-    if (listingType) {
-      filter.listingType = new RegExp(listingType, 'i');
-    }
-
-    if (beds) filter.beds = { $gte: parseInt(beds) };
-    if (baths) filter.baths = { $gte: parseInt(baths) };
-    if (verified) filter.verified = true;
-    
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = parseInt(minPrice);
-      if (maxPrice) filter.price.$lte = parseInt(maxPrice);
-    }
-
-    if (minArea || maxArea) {
-      filter.sqft = {};
-      if (minArea) filter.sqft.$gte = parseInt(minArea);
-      if (maxArea) filter.sqft.$lte = parseInt(maxArea);
-    }
-
-    if (amenities) {
-      const amenitiesList = JSON.parse(amenities);
-      if (amenitiesList.length > 0) {
-        filter.amenities = { $all: amenitiesList };
-      }
-    }
-
-
-    let sortObj = { createdAt: -1 };
-    if (sort) {
-      switch (sort) {
-        case 'price-asc':
-          sortObj = { price: 1 };
-          break;
-        case 'price-desc':
-          sortObj = { price: -1 };
-          break;
-        case 'area-asc':
-          sortObj = { sqft: 1 };
-          break;
-        case 'area-desc':
-          sortObj = { sqft: -1 };
-          break;
-        case 'newest':
-          sortObj = { createdAt: -1 };
-          break;
-      }
-    }
-
-    const skip = (page - 1) * limit;
-
-    const properties = await Property.find(filter)
-      .sort(sortObj)
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await Property.countDocuments(filter);
-
-    res.status(200).json({
-      success: true,
-      data: properties,
-      pagination: {
-        current: page,
-        total: Math.ceil(total / limit),
-        hasMore: skip + properties.length < total
-      }
-    });
+    // Example: search cities that match the query (case-insensitive)
+    const client = await pool.connect();
+    const { rows } = await client.query(
+      `SELECT DISTINCT city FROM properties WHERE city ILIKE $1 LIMIT 10`,
+      [`%${query}%`]
+    );
+    client.release();
+    const locations = rows.map(row => row.city).filter(Boolean);
+    res.json({ locations });
   } catch (error) {
-    console.error('Search error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Error searching properties'
-    });
+    res.status(500).json({ locations: [], error: error.message });
   }
+};
+
+export const getLocationTrends = async (req, res) => {
+    try {
+        const { city } = req.params;
+        const { limit = 5 } = req.query;
+
+        if (!city) {
+            return res.status(400).json({ success: false, message: 'City parameter is required' });
+        }
+
+        // Get location trends from our database
+        const locations = await Property.aggregate([
+            { $match: { 'address.city': { $regex: new RegExp(city, 'i') }, status: 'Active' } },
+            { $group: { 
+                _id: '$address.city', 
+                count: { $sum: 1 },
+                avgPrice: { $avg: '$price' },
+                minPrice: { $min: '$price' },
+                maxPrice: { $max: '$price' }
+            }},
+            { $sort: { count: -1 } },
+            { $limit: Math.min(parseInt(limit), 5) }
+        ]);
+
+        // Analyze the location trends using AI
+        const analysis = await aiService.analyzeLocationTrends(
+            locations,
+            city
+        );
+
+        res.json({
+            success: true,
+            locations,
+            analysis
+        });
+    } catch (error) {
+        console.error('Error getting location trends:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get location trends',
+            error: error.message
+        });
+    }
+};
+
+export const getFeaturedProperties = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 6;
+        
+        const properties = await Property.find({ 
+            status: 'Active',
+            isFeatured: true 
+        })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .select('-__v');
+        
+        res.json({
+            success: true,
+            properties
+        });
+    } catch (error) {
+        console.error('Error fetching featured properties:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch featured properties',
+            error: error.message
+        });
+    }
+};
+
+export const getPropertiesByCategory = async (req, res) => {
+    try {
+        const { category } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
+        if (!category) {
+            return res.status(400).json({ success: false, message: 'Category is required' });
+        }
+        
+        // Build filter
+        const filter = { 
+            status: 'Active',
+            type: category
+        };
+        
+        // Execute query with pagination
+        const properties = await Property.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .select('-__v');
+            
+        // Get total count for pagination
+        const total = await Property.countDocuments(filter);
+        
+        res.json({
+            success: true,
+            properties,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching properties by category:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch properties by category',
+            error: error.message
+        });
+    }
 };
 
 export const searchPropertiesByCoordinates = async (req, res) => {

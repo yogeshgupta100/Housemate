@@ -5,8 +5,8 @@ import { toast } from 'react-hot-toast';
 import { backendurl } from '../App';
 import { X, Upload } from 'lucide-react';
 
-const PROPERTY_TYPES = ['House', 'Apartment', 'Office', 'Villa'];
-const AVAILABILITY_TYPES = ['rent', 'buy'];
+const PROPERTY_TYPES = ['apartment', 'house', 'villa', 'office', 'pg', 'flat', 'rk', 'commercial', 'residential plot', 'commercial plot'];
+const LISTING_TYPES = ['rent', 'sale'];
 const AMENITIES = ['Lake View', 'Fireplace', 'Central heating and air conditioning', 'Dock', 'Pool', 'Garage', 'Garden', 'Gym', 'Security system', 'Master bathroom', 'Guest bathroom', 'Home theater', 'Exercise room/gym', 'Covered parking', 'High-speed internet ready'];
 
 const Update = () => {
@@ -22,9 +22,25 @@ const Update = () => {
     baths: '',
     sqft: '',
     phone: '',
-    availability: '',
+    listing_type: '',
+    availability: {
+      status: 'Available',
+      availableFrom: '',
+      minLeasePeriod: '12 months'
+    },
     amenities: [],
-    images: []
+    images: [],
+    latitude: '',
+    longitude: '',
+    street: '',
+    city: '',
+    state: '',
+    pincode: '',
+    country: '',
+    floor_area: '',
+    property_age: '',
+    property_condition: '',
+    property_status: ''
   });
   const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +48,7 @@ const Update = () => {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await axios.get(`${backendurl}/api/products/single/${id}`);
+        const response = await axios.get(`${backendurl}/api/properties/${id}`);
         console.log('Response:', response); // Log the response
         if (response.data.success) {
           const property = response.data.property;
@@ -46,11 +62,28 @@ const Update = () => {
             baths: property.baths,
             sqft: property.sqft,
             phone: property.phone,
+            listing_type: property.listing_type,
             availability: property.availability,
-            amenities: property.amenities,
-            images: property.image
+            amenities: property.amenities || [],
+            images: property.images || [],
+            latitude: property.latitude,
+            longitude: property.longitude,
+            street: property.street,
+            city: property.city,
+            state: property.state,
+            pincode: property.pincode,
+            country: property.country,
+            floor_area: property.floor_area,
+            property_age: property.property_age,
+            property_condition: property.property_condition,
+            property_status: property.property_status
           });
-          setPreviewUrls(property.image);
+          // Convert backend image paths to full URLs
+          setPreviewUrls(property.images?.map(img => {
+            // If the image path is absolute, extract just the relative part
+            const relativePath = img.split('/uploads/').pop();
+            return `${backendurl}/uploads/${relativePath}`;
+          }) || []);
         } else {
           toast.error(response.data.message);
         }
@@ -82,16 +115,30 @@ const Update = () => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    setPreviewUrls(files.map((file) => URL.createObjectURL(file)));
-    setFormData((prev) => ({
+    
+    // Limit to 4 images
+    if (previewUrls.length + files.length > 4) {
+      toast.error('You can only upload up to 4 images');
+      return;
+    }
+
+    // Create preview URLs for new images
+    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+
+    // Update form data with new images
+    setFormData(prev => ({
       ...prev,
-      images: files
+      images: [...prev.images, ...files]
     }));
   };
 
   const removeImage = (index) => {
-    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
-    setFormData((prev) => ({
+    // Revoke the object URL to avoid memory leaks
+    URL.revokeObjectURL(previewUrls[index]);
+    
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
@@ -103,9 +150,10 @@ const Update = () => {
 
     try {
       const formdata = new FormData();
-      formdata.append('id', id);
+      
+      // Basic fields
       formdata.append('title', formData.title);
-      formdata.append('type', formData.type);
+      formdata.append('type', formData.type.toLowerCase());
       formdata.append('price', formData.price);
       formdata.append('location', formData.location);
       formdata.append('description', formData.description);
@@ -113,22 +161,55 @@ const Update = () => {
       formdata.append('baths', formData.baths);
       formdata.append('sqft', formData.sqft);
       formdata.append('phone', formData.phone);
-      formdata.append('availability', formData.availability);
+      formdata.append('listing_type', formData.listing_type.toLowerCase());
+      
+      // Location details
+      formdata.append('latitude', formData.latitude || '0');
+      formdata.append('longitude', formData.longitude || '0');
+      formdata.append('street', formData.street || '');
+      formdata.append('city', formData.city);
+      formdata.append('state', formData.state);
+      formdata.append('pincode', formData.pincode);
+      formdata.append('country', formData.country);
+      
+      // Additional details
+      formdata.append('floor_area', formData.floor_area || '0');
+      formdata.append('property_age', formData.property_age || '0');
+      formdata.append('property_condition', formData.property_condition || '');
+      formdata.append('property_status', formData.property_status || '');
+      
+      // Complex objects
+      formdata.append('availability', JSON.stringify({
+        status: 'Available',
+        availableFrom: formData.availability.availableFrom,
+        minLeasePeriod: formData.availability.minLeasePeriod
+      }));
       formdata.append('amenities', JSON.stringify(formData.amenities));
-      formData.images.forEach((image, index) => {
-        formdata.append(`image${index + 1}`, image);
+
+      // Handle images
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((image, index) => {
+          if (image instanceof File) {
+            formdata.append('images', image);
+          }
+        });
+      }
+
+      const response = await axios.put(`${backendurl}/api/properties/${id}`, formdata, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      const response = await axios.post(`${backendurl}/api/products/update`, formdata);
       if (response.data.success) {
         toast.success('Property updated successfully');
         navigate('/list');
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || 'Failed to update property');
       }
     } catch (error) {
-      console.log(error);
-      toast.error('An error occurred. Please try again.');
+      console.error('Error updating property:', error);
+      toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -188,26 +269,26 @@ const Update = () => {
                   <option value="">Select Type</option>
                   {PROPERTY_TYPES.map(type => (
                     <option key={type} value={type}>
-                      {type}
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="availability" className="block text-sm font-medium text-gray-700">
-                  Availability
+                <label htmlFor="listing_type" className="block text-sm font-medium text-gray-700">
+                  Listing Type
                 </label>
                 <select
-                  id="availability"
-                  name="availability"
+                  id="listing_type"
+                  name="listing_type"
                   required
-                  value={formData.availability}
+                  value={formData.listing_type}
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border border-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
-                  <option value="">Select Availability</option>
-                  {AVAILABILITY_TYPES.map(type => (
+                  <option value="">Select Listing Type</option>
+                  {LISTING_TYPES.map(type => (
                     <option key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>
@@ -345,7 +426,7 @@ const Update = () => {
             </label>
             <div className="grid grid-cols-2 gap-4 mb-4">
               {previewUrls.map((url, index) => (
-                <div key={index} className="relative">
+                <div key={index} className="relative group">
                   <img
                     src={url}
                     alt={`Preview ${index + 1}`}
@@ -354,7 +435,7 @@ const Update = () => {
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X size={16} />
                   </button>

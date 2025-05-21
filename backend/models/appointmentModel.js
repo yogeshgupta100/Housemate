@@ -5,186 +5,176 @@ const createAppointmentTable = async () => {
     try {
         await client.query('BEGIN');
 
-        // First check if properties table exists
-        const { rows: tableCheck } = await client.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'properties'
-            );
-        `);
-
-        if (!tableCheck[0].exists) {
-            console.log('Waiting for properties table to be created...');
-            await client.query('COMMIT');
-            return;
-        }
-
-        // Create appointments table
+        // First create the table
         await client.query(`
-            CREATE TABLE IF NOT EXISTS appointments (
+            DROP TABLE IF EXISTS appointments CASCADE;
+            
+            CREATE TABLE appointments (
                 id SERIAL PRIMARY KEY,
                 property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
                 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                date DATE NOT NULL,
-                time TIME NOT NULL,
-                status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'confirmed', 'rejected', 'cancelled', 'completed')) DEFAULT 'pending',
-                meeting_link VARCHAR(255),
-                meeting_platform VARCHAR(20) CHECK (meeting_platform IN ('zoom', 'google-meet', 'teams', 'other')) DEFAULT 'other',
+                preferred_date DATE NOT NULL,
+                preferred_time TIME NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
                 notes TEXT,
-                cancel_reason TEXT,
-                reminder_sent BOOLEAN DEFAULT false,
-                rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-                feedback_comment TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            );
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                feedback TEXT,
+                rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+                CONSTRAINT valid_appointment_time CHECK (preferred_time >= '09:00' AND preferred_time <= '17:00')
+            )
+        `);
 
-            CREATE INDEX IF NOT EXISTS idx_appointments_user_date ON appointments(user_id, date DESC);
-            CREATE INDEX IF NOT EXISTS idx_appointments_property_date ON appointments(property_id, date DESC);
-            CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
+        // Then create indexes separately
+        await client.query(`
+            CREATE INDEX idx_appointments_property_id ON appointments(property_id);
+            CREATE INDEX idx_appointments_user_id ON appointments(user_id);
+            CREATE INDEX idx_appointments_status ON appointments(status);
+            CREATE INDEX idx_appointments_date ON appointments(preferred_date);
         `);
 
         await client.query('COMMIT');
-        console.log('Appointments table created successfully');
+        console.log('Appointments table and indexes created successfully');
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error creating appointments table:', error);
-        // Don't throw the error, just log it and let the application continue
-        // This allows for retry on next startup if properties table isn't ready
+        throw error;
     } finally {
         client.release();
     }
 };
 
-// Create the table if it doesn't exist
-createAppointmentTable();
+// Initialize table
+createAppointmentTable().catch(error => {
+    console.error('Failed to initialize appointments table:', error);
+    process.exit(1);
+});
 
-// Retry table creation every 5 seconds if it failed
-setInterval(async () => {
-    try {
-        const { rows: tableCheck } = await pool.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'appointments'
-            );
-        `);
-        
-        if (!tableCheck[0].exists) {
-            await createAppointmentTable();
-        }
-    } catch (error) {
-        console.error('Error checking appointments table:', error);
-    }
-}, 5000);
-
-export default {
+const appointmentModel = {
     async create(appointmentData) {
-        const { rows } = await pool.query(
-            `INSERT INTO appointments (
-                property_id, user_id, date, time, status,
-                meeting_link, meeting_platform, notes
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *`,
-            [
-                appointmentData.propertyId,
-                appointmentData.userId,
-                appointmentData.date,
-                appointmentData.time,
-                appointmentData.status || 'pending',
-                appointmentData.meetingLink,
-                appointmentData.meetingPlatform || 'other',
-                appointmentData.notes
-            ]
-        );
-        return rows[0];
+        const { property_id, user_id, preferred_date, preferred_time, notes } = appointmentData;
+        const query = `
+            INSERT INTO appointments (property_id, user_id, preferred_date, preferred_time, notes)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `;
+        const values = [property_id, user_id, preferred_date, preferred_time, notes];
+        const result = await pool.query(query, values);
+        return result.rows[0];
     },
 
     async findById(id) {
-        const { rows } = await pool.query(
-            `SELECT a.*, 
-                    p.title as property_title, p.location as property_location,
-                    u.first_name as user_first_name, u.last_name as user_last_name
-             FROM appointments a
-             LEFT JOIN properties p ON a.property_id = p.id
-             LEFT JOIN users u ON a.user_id = u.id
-             WHERE a.id = $1`,
-            [id]
-        );
-        return rows[0];
+        const query = `
+            SELECT a.*, 
+                   p.title as property_title, p.location as property_location,
+                   u.first_name as user_first_name, u.last_name as user_last_name, u.email as user_email
+            FROM appointments a
+            LEFT JOIN properties p ON a.property_id = p.id
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.id = $1
+        `;
+        const result = await pool.query(query, [id]);
+        return result.rows[0];
     },
 
-    async findByUserId(userId) {
-        const { rows } = await pool.query(
-            `SELECT a.*, 
-                    p.title as property_title, p.location as property_location
-             FROM appointments a
-             LEFT JOIN properties p ON a.property_id = p.id
-             WHERE a.user_id = $1
-             ORDER BY a.date DESC, a.time DESC`,
-            [userId]
-        );
-        return rows;
-    },
+    async findAll(filters = {}) {
+        let query = `
+            SELECT a.*, 
+                   p.title as property_title, p.location as property_location,
+                   u.first_name as user_first_name, u.last_name as user_last_name, u.email as user_email
+            FROM appointments a
+            LEFT JOIN properties p ON a.property_id = p.id
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE 1=1
+        `;
+        const values = [];
+        let paramCount = 1;
 
-    async findByPropertyId(propertyId) {
-        const { rows } = await pool.query(
-            `SELECT a.*, 
-                    u.first_name as user_first_name, u.last_name as user_last_name
-             FROM appointments a
-             LEFT JOIN users u ON a.user_id = u.id
-             WHERE a.property_id = $1
-             ORDER BY a.date DESC, a.time DESC`,
-            [propertyId]
-        );
-        return rows;
+        if (filters.property_id) {
+            query += ` AND a.property_id = $${paramCount}`;
+            values.push(filters.property_id);
+            paramCount++;
+        }
+
+        if (filters.user_id) {
+            query += ` AND a.user_id = $${paramCount}`;
+            values.push(filters.user_id);
+            paramCount++;
+        }
+
+        if (filters.status) {
+            query += ` AND a.status = $${paramCount}`;
+            values.push(filters.status);
+            paramCount++;
+        }
+
+        if (filters.start_date) {
+            query += ` AND a.preferred_date >= $${paramCount}`;
+            values.push(filters.start_date);
+            paramCount++;
+        }
+
+        if (filters.end_date) {
+            query += ` AND a.preferred_date <= $${paramCount}`;
+            values.push(filters.end_date);
+            paramCount++;
+        }
+
+        query += ` ORDER BY a.preferred_date DESC, a.preferred_time ASC`;
+
+        const result = await pool.query(query, values);
+        return result.rows;
     },
 
     async update(id, updateData) {
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            const setClause = [];
-            const values = [];
-            let paramCount = 1;
+        const allowedFields = ['status', 'notes', 'feedback', 'rating'];
+        const updates = [];
+        const values = [id];
+        let paramCount = 2;
 
-            for (const [key, value] of Object.entries(updateData)) {
-                if (value !== undefined) {
-                    setClause.push(`${key} = $${paramCount}`);
-                    values.push(value);
-                    paramCount++;
-                }
+        for (const [key, value] of Object.entries(updateData)) {
+            if (allowedFields.includes(key)) {
+                updates.push(`${key} = $${paramCount}`);
+                values.push(value);
+                paramCount++;
             }
-
-            if (setClause.length === 0) return null;
-
-            values.push(id);
-            const { rows } = await client.query(
-                `UPDATE appointments 
-                 SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
-                 WHERE id = $${paramCount}
-                 RETURNING *`,
-                values
-            );
-            
-            await client.query('COMMIT');
-            return rows[0];
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
         }
+
+        if (updates.length === 0) {
+            return null;
+        }
+
+        const query = `
+            UPDATE appointments 
+            SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const result = await pool.query(query, values);
+        return result.rows[0];
     },
 
-    async addFeedback(id, feedback) {
-        const { rows } = await pool.query(
-            `UPDATE appointments 
-             SET rating = $1, feedback_comment = $2, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $3
-             RETURNING *`,
-            [feedback.rating, feedback.comment, id]
-        );
-        return rows[0];
+    async delete(id) {
+        const query = 'DELETE FROM appointments WHERE id = $1 RETURNING *';
+        const result = await pool.query(query, [id]);
+        return result.rows[0];
+    },
+
+    async getStats() {
+        const query = `
+            SELECT 
+                COUNT(*) as total_appointments,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_appointments,
+                COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed_appointments,
+                COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_appointments,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_appointments,
+                AVG(CASE WHEN rating IS NOT NULL THEN rating END) as average_rating
+            FROM appointments
+        `;
+        const result = await pool.query(query);
+        return result.rows[0];
     }
 };
+
+export default appointmentModel;

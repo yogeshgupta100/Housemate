@@ -34,7 +34,7 @@ const Appointments = () => {
 
       if (response.data.success) {
         // Filter out appointments with missing user data
-        const validAppointments = response.data.appointments.filter(
+        const validAppointments = (response.data.data || []).filter(
           (apt) => apt.userId && apt.propertyId
         );
         setAppointments(validAppointments);
@@ -51,15 +51,11 @@ const Appointments = () => {
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
+      console.log("Payload:", { appointmentId, status: newStatus });
       const response = await axios.put(
-        `${backendurl}/api/appointments/status`,
-        {
-          appointmentId,
-          status: newStatus,
-        },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        `${backendurl}/api/appointments/${appointmentId}/status`,
+        { appointmentId, status: newStatus },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
 
       if (response.data.success) {
@@ -215,7 +211,7 @@ const Appointments = () => {
               <tbody className="divide-y divide-gray-200">
                 {filteredAppointments.map((appointment) => (
                   <motion.tr
-                    key={appointment._id}
+                    key={appointment.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="hover:bg-gray-50"
@@ -358,7 +354,7 @@ const Appointments = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() =>
-                              handleStatusChange(appointment._id, "confirmed")
+                              handleStatusChange(appointment.id, "confirmed")
                             }
                             className="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
                             title="Approve Request"
@@ -368,7 +364,7 @@ const Appointments = () => {
                           </button>
                           <button
                             onClick={() =>
-                              handleStatusChange(appointment._id, "rejected")
+                              handleStatusChange(appointment.id, "rejected")
                             }
                             className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1"
                             title="Reject Request"
@@ -381,7 +377,7 @@ const Appointments = () => {
                       {appointment.status === "confirmed" && (
                         <button
                           onClick={() =>
-                            handleStatusChange(appointment._id, "completed")
+                            handleStatusChange(appointment.id, "completed")
                           }
                           className="p-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
                           title="Mark as Completed"

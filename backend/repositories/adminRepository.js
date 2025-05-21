@@ -1,7 +1,7 @@
 import Stats from '../models/statsModel.js';
 import Property from '../models/propertymodel.js';
 import Appointment from '../models/appointmentModel.js';
-import User from '../models/Usermodel.js';  // need to make a User in model in models**
+import pool from '../config/postgres.js';  // need to make a User in model in models**
 
 class AdminRepository {
   async getStats() {

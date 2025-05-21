@@ -64,14 +64,14 @@ const PropertyCard = ({ property }) => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   const handleNavigate = () => {
-    navigate(`/properties/single/${property._id}`);
+    navigate(`/properties/single/${property.id}`);
   };
 
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       try {
         const response = await axios.get(
-            `${Backendurl}/api/favorites/${property._id}/check`,
+            `${Backendurl}/api/favorites/${property.id}/check`,
             {
               headers: {
                 "Content-Type": "application/json",
@@ -87,7 +87,7 @@ const PropertyCard = ({ property }) => {
       }
     };
     checkFavoriteStatus();
-  }, [property._id]);
+  }, [property.id]);
 
   const toggleFavorite = async (e) => {
     e.preventDefault();
@@ -95,7 +95,7 @@ const PropertyCard = ({ property }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-          `${Backendurl}/api/favorites/${property._id}`,
+          `${Backendurl}/api/favorites/${property.id}`,
           {},
           {
             headers: {
@@ -118,15 +118,11 @@ const PropertyCard = ({ property }) => {
     }
   };
 
-
   const getListingStatus = () => {
-    if (typeof property.availability === 'object' && property.availability?.status) {
+    if (property.availability?.status) {
       return property.availability.status;
     }
-    if (typeof property.availability === 'string') {
-      return property.availability;
-    }
-    return property.listingType || 'Sale';
+    return property.listing_type || 'Sale';
   };
 
   const getBadgeColor = () => {
@@ -140,7 +136,6 @@ const PropertyCard = ({ property }) => {
     return 'bg-purple-600 text-white';
   };
 
-  // Helper to format listing type for display
   const formatListingType = (status) => {
     const statusMap = {
       'rent': 'Rental',
@@ -163,17 +158,22 @@ const PropertyCard = ({ property }) => {
           onClick={handleNavigate}
           onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="relative h-64"><img src={property.images?.[0] || property.image?.[0] || "/placeholder.jpg"} alt={property.title} className="w-full h-full object-cover"/>
+        <div className="relative h-64">
+          <img 
+            src={property.images?.[0] ? `${Backendurl}${property.images[0]}` : "/placeholder.jpg"} 
+            alt={property.title} 
+            className="w-full h-full object-cover"
+          />
           <div className="absolute top-6 left-4 flex flex-col gap-2">
-      <span className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
-        {property.type}
-      </span>
+            <span className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
+              {property.type}
+            </span>
           </div>
 
           <button
               onClick={toggleFavorite}
               className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 cursor-pointer z-20
-        ${isFavorite
+                ${isFavorite
                   ? 'bg-red-500 text-white'
                   : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:text-red-500'}`}
           >
@@ -203,7 +203,6 @@ const PropertyCard = ({ property }) => {
           </AnimatePresence>
         </div>
 
-        {/* Property Content */}
         <div className="p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
             {property.title}
@@ -214,7 +213,6 @@ const PropertyCard = ({ property }) => {
             <span className="line-clamp-1">{property.location}</span>
           </div>
 
-          {/* Property Features */}
           <div className="flex justify-between items-center py-3 border-y border-gray-100 mb-4">
             <div className="flex items-center gap-1">
               <BedDouble className="w-4 h-4 text-blue-500"/>
@@ -290,16 +288,19 @@ const PropertiesShow = () => {
         const response = await axios.get(`${Backendurl}/api/properties`);
         
         if (response.data.success) {
-          const featuredProperties = response.data.data.slice(0, 6);
-          setProperties(featuredProperties);
+          // Access the properties array from the nested data structure
+          const properties = response.data.data.properties || [];
+          console.log('Fetched properties:', properties); // Debug log
+          setProperties(properties);
         } else {
+          console.error('API response indicated failure:', response.data);
           setError('Failed to fetch properties');
-          setProperties(sampleProperties);
+          setProperties([]);
         }
       } catch (err) {
         console.error('Error fetching properties:', err);
-        setError('Failed to load properties. Using sample data instead.');
-        setProperties(sampleProperties);
+        setError('Failed to load properties');
+        setProperties([]);
       } finally {
         setLoading(false);
       }

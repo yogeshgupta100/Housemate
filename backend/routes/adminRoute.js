@@ -1,8 +1,25 @@
 import express from 'express';
 import { 
   getAdminStats,
-  getAllAppointments,
-  updateAppointmentStatus 
+  fetchAllAppointments,
+  updateAppointmentStatus,
+  getUsers,
+  getUser,
+  updateUserDetails,
+  removeUser,
+  getProperties,
+  getProperty,
+  updatePropertyDetails,
+  removeProperty,
+  getAppointment,
+  updateAppointmentDetails,
+  removeAppointment,
+  getStats,
+  getAdminDashboard,
+  getPropertyAnalytics,
+  getUserAnalytics,
+  getRevenueAnalytics,
+  getSystemHealth
 } from '../controllers/adminController.js';
 import * as userController from '../controllers/userController.js';
 import { protect } from '../middleware/authmiddleware.js';
@@ -13,7 +30,7 @@ const router = express.Router();
 router.get('/stats', getAdminStats);
 
 // Appointment routes
-router.get('/appointments', getAllAppointments);
+router.get('/appointments', fetchAllAppointments);
 router.put('/appointments/status', updateAppointmentStatus);
 
 router.get('/users', userController.getAllUsers);

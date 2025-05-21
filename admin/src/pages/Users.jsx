@@ -31,12 +31,12 @@ const Users = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
     const [newUser, setNewUser] = useState({
-        firstName: "",
-        lastName: "",
+        first_name: "",
+        last_name: "",
         email: "",
         phone: "",
-        userType: "",
-        isVerified: false,
+        user_type: "",
+        is_verified: false,
         password: "123456",
     });
 
@@ -110,7 +110,7 @@ const Users = () => {
         try {
             const response = await axios.put(
                 `${backendurl}/api/admin/users/${userId}`,
-                { userType: newRole },
+                { user_type: newRole },
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -131,7 +131,7 @@ const Users = () => {
         try {
             const response = await axios.put(
                 `${backendurl}/api/admin/users/${userId}/verify`,
-                { isVerified: !isVerified },
+                { is_verified: !isVerified },
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -164,12 +164,12 @@ const Users = () => {
                 toast.success("User created successfully with temporary password '123456'");
                 setShowCreateUserModal(false);
                 setNewUser({
-                    firstName: "",
-                    lastName: "",
+                    first_name: "",
+                    last_name: "",
                     email: "",
                     phone: "",
-                    userType: "",
-                    isVerified: false,
+                    user_type: "",
+                    is_verified: false,
                     password: "123456",
                 });
                 fetchUsers();
@@ -223,10 +223,10 @@ const Users = () => {
     const filteredUsers = users.filter((user) => {
         const matchesSearch =
             !searchTerm ||
-            [user.firstName, user.lastName, user.email, user.userType].some((field) =>
+            [user.first_name, user.last_name, user.email, user.user_type].some((field) =>
                 field.toLowerCase().includes(searchTerm.toLowerCase())
             );
-        const matchesType = filterType === "all" || user.userType === filterType;
+        const matchesType = filterType === "all" || user.user_type === filterType;
         return matchesSearch && matchesType;
     });
 
@@ -300,9 +300,9 @@ const Users = () => {
                                     <label className="block text-sm font-medium text-gray-700">First Name</label>
                                     <input
                                         type="text"
-                                        value={newUser.firstName}
+                                        value={newUser.first_name}
                                         onChange={(e) =>
-                                            setNewUser({ ...newUser, firstName: e.target.value })
+                                            setNewUser({ ...newUser, first_name: e.target.value })
                                         }
                                         className="w-full p-2 border rounded-lg"
                                         required
@@ -312,9 +312,9 @@ const Users = () => {
                                     <label className="block text-sm font-medium text-gray-700">Last Name</label>
                                     <input
                                         type="text"
-                                        value={newUser.lastName}
+                                        value={newUser.last_name}
                                         onChange={(e) =>
-                                            setNewUser({ ...newUser, lastName: e.target.value })
+                                            setNewUser({ ...newUser, last_name: e.target.value })
                                         }
                                         className="w-full p-2 border rounded-lg"
                                         required
@@ -346,9 +346,9 @@ const Users = () => {
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Role</label>
                                     <select
-                                        value={newUser.userType}
+                                        value={newUser.user_type}
                                         onChange={(e) =>
-                                            setNewUser({ ...newUser, userType: e.target.value })
+                                            setNewUser({ ...newUser, user_type: e.target.value })
                                         }
                                         className="w-full p-2 border rounded-lg"
                                         required
@@ -364,9 +364,9 @@ const Users = () => {
                                 <div className="mb-4 flex items-center">
                                     <input
                                         type="checkbox"
-                                        checked={newUser.isVerified}
+                                        checked={newUser.is_verified}
                                         onChange={(e) =>
-                                            setNewUser({ ...newUser, isVerified: e.target.checked })
+                                            setNewUser({ ...newUser, is_verified: e.target.checked })
                                         }
                                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                     />
@@ -419,9 +419,9 @@ const Users = () => {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                             <AnimatePresence>
-                                {filteredUsers.map((user) => (
+                                {filteredUsers?.map((user) => (
                                     <motion.tr
-                                        key={user._id}
+                                        key={user.id}
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
@@ -430,12 +430,12 @@ const Users = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-medium">
-                                                    {user.firstName[0]}
-                                                    {user.lastName[0]}
+                                                    {user.first_name[0]}
+                                                    {user.last_name[0]}
                                                 </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {user.firstName} {user.lastName}
+                                                        {user.first_name} {user.last_name}
                                                     </div>
                                                     <div className="flex items-center text-sm text-gray-500">
                                                         <Mail className="w-3 h-3 mr-1" />
@@ -447,14 +447,14 @@ const Users = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center text-sm text-gray-500">
                                                 <Phone className="w-3 h-3 mr-1" />
-                                                {user.phone}
+                                                {user.phone || 'N/A'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <select
-                                                    value={user.userType}
-                                                    onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                                                    value={user.user_type}
+                                                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
                                                     className="border rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 capitalize"
                                                 >
                                                     {roles.map((role) => (
@@ -468,32 +468,32 @@ const Users = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    user.isActive
+                                                    user.is_active
                                                         ? "bg-green-100 text-green-800"
                                                         : "bg-red-100 text-red-800"
                                                 }`}
                                             >
-                                                {user.isActive ? "Active" : "Inactive"}
+                                                {user.is_active ? "Active" : "Inactive"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
-                                                    checked={user.isVerified || false}
+                                                    checked={user.is_verified || false}
                                                     onChange={() =>
-                                                        handleVerificationToggle(user._id, user.isVerified)
+                                                        handleVerificationToggle(user.id, user.is_verified)
                                                     }
                                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                 />
                                                 <span
                                                     className={`ml-2 inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        user.isVerified
+                                                        user.is_verified
                                                             ? "bg-blue-100 text-blue-800"
                                                             : "bg-gray-100 text-gray-600"
                                                     }`}
                                                 >
-                                                    {user.isVerified ? "Verified" : "Unverified"}
+                                                    {user.is_verified ? "Verified" : "Unverified"}
                                                 </span>
                                             </div>
                                         </td>
@@ -501,8 +501,8 @@ const Users = () => {
                                             <button
                                                 onClick={() =>
                                                     handleDeleteUser(
-                                                        user._id,
-                                                        `${user.firstName} ${user.lastName}`
+                                                        user.id,
+                                                        `${user.first_name} ${user.last_name}`
                                                     )
                                                 }
                                                 className="text-red-600 hover:text-red-900 transition-colors"

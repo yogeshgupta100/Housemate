@@ -1,4 +1,5 @@
 import pool from '../config/postgres.js';
+import { isValidUUID } from '../utils/validateUUID.js';
 
 class PropertyRepository {
   async create(propertyData) {
@@ -31,63 +32,41 @@ class PropertyRepository {
 
       const { rows } = await client.query(
         `INSERT INTO properties (
-          title, subtitle, slug, listing_type, type, price, rent_type,
-          deposit, property_age, property_condition, property_status,
-          location, region, latitude, longitude, street, city, state,
-          pincode, country, floor_area, sqft, floor_no, total_floors,
-          beds, baths, furnishing, amenities, balcony, central_ac,
-          power_backup, parking, security, swimming_pool, gym, garden,
-          lift, images, videos, status, featured, user_id, created_by
+          title, slug, listing_type, type, price,
+          property_age, property_condition, property_status,
+          location, latitude, longitude, street, city, state,
+          pincode, country, floor_area, sqft,
+          beds, baths, amenities, images, status, user_id, created_by
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-          $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
-          $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
-          $39, $40, $41, $42
+          $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
         ) RETURNING *`,
         [
-          propertyData.title,
-          propertyData.subtitle,
-          propertyData.slug,
-          propertyData.listing_type,
-          propertyData.type,
-          propertyData.price,
-          propertyData.rent_type,
-          propertyData.deposit,
-          propertyData.property_age,
-          propertyData.property_condition,
-          propertyData.property_status,
-          propertyData.location,
-          propertyData.region,
-          propertyData.latitude,
-          propertyData.longitude,
-          propertyData.street,
-          propertyData.city,
-          propertyData.state,
-          propertyData.pincode,
-          propertyData.country,
-          propertyData.floor_area,
-          propertyData.sqft,
-          propertyData.floor_no,
-          propertyData.total_floors,
-          propertyData.beds,
-          propertyData.baths,
-          propertyData.furnishing,
-          propertyData.amenities,
-          propertyData.balcony,
-          propertyData.central_ac,
-          propertyData.power_backup,
-          propertyData.parking,
-          propertyData.security,
-          propertyData.swimming_pool,
-          propertyData.gym,
-          propertyData.garden,
-          propertyData.lift,
-          propertyData.images,
-          propertyData.videos,
+          propertyData.title || '',
+          propertyData.slug || '',
+          propertyData.listing_type || 'sale',
+          propertyData.type || '',
+          propertyData.price || 0,
+          propertyData.property_age || 0,
+          propertyData.property_condition || '',
+          propertyData.property_status || '',
+          propertyData.location || '',
+          propertyData.latitude || 0,
+          propertyData.longitude || 0,
+          propertyData.street || '',
+          propertyData.city || '',
+          propertyData.state || '',
+          propertyData.pincode || '',
+          propertyData.country || '',
+          propertyData.floor_area || 0,
+          propertyData.sqft || 0,
+          propertyData.beds || 0,
+          propertyData.baths || 0,
+          propertyData.amenities || [],
+          propertyData.images || [],
           propertyData.status || 'Active',
-          propertyData.featured || false,
-          propertyData.user_id,
-          propertyData.created_by
+          propertyData.user_id || 1,
+          propertyData.created_by || 1
         ]
       );
       
@@ -110,7 +89,7 @@ class PropertyRepository {
        LEFT JOIN users u ON p.user_id = u.id
        LEFT JOIN users c ON p.created_by = c.id
        WHERE p.id = $1`,
-      [id]
+      [parseInt(id)]
     );
     return rows[0];
   }
@@ -130,41 +109,83 @@ class PropertyRepository {
   }
 
   async findAll(filters = {}, page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    const conditions = [];
-    const values = [];
-    let paramCount = 1;
-
-    // Build filter conditions
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          conditions.push(`${key} = ANY($${paramCount})`);
-          values.push(value);
-        } else {
-          conditions.push(`${key} = $${paramCount}`);
-          values.push(value);
+    const client = await pool.connect();
+    try {
+      const offset = (page - 1) * limit;
+      const conditions = [];
+      const values = [];
+      let paramCount = 1;
+  
+      if (filters.search) {
+        conditions.push(`(${filters.search})`);
+      }
+  
+      // Exact matches for all fields
+      ['type', 'listing_type', 'beds', 'baths', 'verified', 'user_id', 'created_by'].forEach(field => {
+        if (filters[field] !== undefined) {
+          conditions.push(`${field} = $${paramCount}`);
+          values.push(filters[field]);
+          paramCount++;
         }
+      });
+  
+      // Range queries, amenities etc stay same
+      if (filters.price) {
+        if (filters.price.min !== undefined) {
+          conditions.push(`price >= $${paramCount}`);
+          values.push(filters.price.min);
+          paramCount++;
+        }
+        if (filters.price.max !== undefined) {
+          conditions.push(`price <= $${paramCount}`);
+          values.push(filters.price.max);
+          paramCount++;
+        }
+      }
+  
+      if (filters.sqft) {
+        if (filters.sqft.min !== undefined) {
+          conditions.push(`sqft >= $${paramCount}`);
+          values.push(filters.sqft.min);
+          paramCount++;
+        }
+        if (filters.sqft.max !== undefined) {
+          conditions.push(`sqft <= $${paramCount}`);
+          values.push(filters.sqft.max);
+          paramCount++;
+        }
+      }
+  
+      if (filters.amenities && filters.amenities.length > 0) {
+        conditions.push(`amenities && $${paramCount}`);
+        values.push(filters.amenities);
         paramCount++;
       }
+  
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  
+      const query = `
+        SELECT p.*, 
+               u.first_name as owner_first_name, u.last_name as owner_last_name,
+               c.first_name as creator_first_name, c.last_name as creator_last_name
+        FROM properties p
+        LEFT JOIN users u ON p.user_id = u.id
+        LEFT JOIN users c ON p.created_by = c.id
+        ${whereClause}
+        ORDER BY p.created_at DESC
+        LIMIT $${paramCount} OFFSET $${paramCount + 1}
+      `;
+  
+      values.push(limit, offset);
+  
+      const { rows } = await client.query(query, values);
+      return rows;
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
+    } finally {
+      client.release();
     }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const { rows } = await pool.query(
-      `SELECT p.*, 
-              u.first_name as owner_first_name, u.last_name as owner_last_name,
-              c.first_name as creator_first_name, c.last_name as creator_last_name
-       FROM properties p
-       LEFT JOIN users u ON p.user_id = u.id
-       LEFT JOIN users c ON p.created_by = c.id
-       ${whereClause}
-       ORDER BY p.created_at DESC
-       LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
-      [...values, limit, offset]
-    );
-
-    return rows;
   }
 
   async countDocuments(filter) {
@@ -222,6 +243,7 @@ class PropertyRepository {
   }
 
   async findByUser(userId) {
+    console.log('typeof userId:', typeof userId, userId);
     const { rows } = await pool.query(
       `SELECT p.*, 
               u.first_name as owner_first_name, u.last_name as owner_last_name,
@@ -258,16 +280,13 @@ class PropertyRepository {
     const values = [];
     let paramCount = 1;
 
-    // Add search conditions
+    // Add search conditions for city and state
     if (query) {
       conditions.push(`(
-        p.title ILIKE $${paramCount} OR
-        p.subtitle ILIKE $${paramCount} OR
-        p.location ILIKE $${paramCount} OR
-        p.city ILIKE $${paramCount} OR
-        p.state ILIKE $${paramCount}
+        LOWER(p.city) = LOWER($${paramCount}) OR
+        LOWER(p.state) = LOWER($${paramCount})
       )`);
-      values.push(`%${query}%`);
+      values.push(query);
       paramCount++;
     }
 
@@ -284,6 +303,9 @@ class PropertyRepository {
         paramCount++;
       }
     }
+
+    // Add status condition to only show active properties
+    conditions.push(`p.status = 'Active'`);
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 

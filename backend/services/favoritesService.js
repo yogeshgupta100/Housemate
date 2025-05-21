@@ -1,61 +1,105 @@
-import User from '../models/userModel.js';
-import Property from '../models/propertymodel.js';
+import pool from '../config/postgres.js';
 
 class FavoritesService {
     async getFavorites(userId) {
-        const user = await User.findById(userId)
-            .populate('favorites')
-            .select('favorites');
+        const client = await pool.connect();
+        try {
+            const { rows: [user] } = await client.query(
+                'SELECT favorites FROM users WHERE id = $1',
+                [userId]
+            );
 
-        if (!user) {
-            throw new Error('User not found');
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            return user.favorites || [];
+        } finally {
+            client.release();
         }
-
-        return user.favorites;
     }
 
     async addFavorite(userId, propertyId) {
-        const user = await User.findById(userId);
-        const property = await Property.findById(propertyId);
+        const client = await pool.connect();
+        try {
+            // Check if property exists
+            const { rows: [property] } = await client.query(
+                'SELECT id FROM properties WHERE id = $1',
+                [propertyId]
+            );
 
-        if (!user) {
-            throw new Error('User not found');
-        }
-        if (!property) {
-            throw new Error('Property not found');
-        }
+            if (!property) {
+                throw new Error('Property not found');
+            }
 
-        if (!user.favorites.includes(property._id)) {
-            user.favorites.push(property._id);
-            await user.save();
-        }
+            // Get current favorites
+            const { rows: [user] } = await client.query(
+                'SELECT favorites FROM users WHERE id = $1',
+                [userId]
+            );
 
-        return user.favorites;
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            // Add property to favorites if not already present
+            const favorites = user.favorites || [];
+            if (!favorites.includes(propertyId)) {
+                favorites.push(propertyId);
+                await client.query(
+                    'UPDATE users SET favorites = $1 WHERE id = $2',
+                    [favorites, userId]
+                );
+            }
+
+            return favorites;
+        } finally {
+            client.release();
+        }
     }
 
     async removeFavorite(userId, propertyId) {
-        const user = await User.findById(userId);
+        const client = await pool.connect();
+        try {
+            // Get current favorites
+            const { rows: [user] } = await client.query(
+                'SELECT favorites FROM users WHERE id = $1',
+                [userId]
+            );
 
-        if (!user) {
-            throw new Error('User not found');
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            // Remove property from favorites
+            const favorites = (user.favorites || []).filter(id => id !== propertyId);
+            await client.query(
+                'UPDATE users SET favorites = $1 WHERE id = $2',
+                [favorites, userId]
+            );
+
+            return favorites;
+        } finally {
+            client.release();
         }
-
-        user.favorites = user.favorites.filter(
-            (fav) => fav.toString() !== propertyId
-        );
-        await user.save();
-
-        return user.favorites;
     }
 
     async isPropertyFavorited(userId, propertyId) {
-        const user = await User.findById(userId).select('favorites');
+        const client = await pool.connect();
+        try {
+            const { rows: [user] } = await client.query(
+                'SELECT favorites FROM users WHERE id = $1',
+                [userId]
+            );
 
-        if (!user) {
-            throw new Error('User not found');
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            return (user.favorites || []).includes(propertyId);
+        } finally {
+            client.release();
         }
-
-        return user.favorites.includes(propertyId);
     }
 }
 

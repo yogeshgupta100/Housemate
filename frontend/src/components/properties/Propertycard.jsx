@@ -36,7 +36,7 @@ const PropertyCard = ({ property, viewType }) => {
   };
 
   const handleNavigateToDetails = () => {
-    navigate(`/properties/single/${property._id}`);
+    navigate(`/properties/single/${property.id}`);
   };
 
   const handleShare = async (e) => {
@@ -109,7 +109,8 @@ const PropertyCard = ({ property, viewType }) => {
         <AnimatePresence mode="wait">
           <motion.img
             key={currentImageIndex}
-            src={propertyImages[currentImageIndex] || '/placeholder.jpg'}
+            // src={propertyImages[currentImageIndex] || '/placeholder.jpg'}
+            src={property.images?.[0] ? `${"http://localhost:4000"}/uploads/${property.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
             alt={property.title}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

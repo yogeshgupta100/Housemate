@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/admin', authController.adminLogin);
 
 // Protected routes
 router.get('/me',protect, authController.getCurrentUser);
