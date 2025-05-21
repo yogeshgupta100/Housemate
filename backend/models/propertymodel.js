@@ -1,465 +1,338 @@
-import mongoose from 'mongoose';
+import pool from '../config/postgres.js';
 
-const propertySchema = new mongoose.Schema({
-  // Basic Information
-  title: {
-    type: String,
-    required: [true, 'Title is required'],
-    trim: true,
-    minLength: [5, 'Title must be at least 5 characters'],
-    maxLength: [100, 'Title cannot be more than 100 characters']
-  },
-  subtitle: {
-    type: String,
-    trim: true,
-    maxLength: [200, 'Subtitle cannot be more than 200 characters']
-  },
-  slug: {
-    type: String,
-    unique: true,
-    lowercase: true,
-    default: function() {
-      return `${this.title}-${Date.now()}`.toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-');
+const createPropertyTable = async () => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS properties (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(100) NOT NULL CHECK (length(title) >= 5),
+                subtitle VARCHAR(200),
+                slug VARCHAR(255) UNIQUE,
+                listing_type VARCHAR(10) NOT NULL CHECK (listing_type IN ('sale', 'rent')),
+                type VARCHAR(50) NOT NULL CHECK (
+                    (listing_type = 'sale' AND type IN ('house', 'apartment', 'office', 'villa', 'flat', 'commercial', 'residential plot', 'commercial plot')) OR
+                    (listing_type = 'rent' AND type IN ('house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 'commercial', 'residential plot', 'commercial plot'))
+                ),
+                price DECIMAL(12,2) NOT NULL CHECK (price >= 0),
+                rent_type VARCHAR(10) CHECK (rent_type IN ('monthly', 'yearly', 'daily')) DEFAULT 'monthly',
+                deposit DECIMAL(12,2) CHECK (deposit >= 0),
+                
+                -- Sale-specific fields
+                property_age INTEGER CHECK (property_age >= 0),
+                property_condition VARCHAR(20) CHECK (property_condition IN ('new', 'good', 'average', 'needs_repair')),
+                property_status VARCHAR(20) CHECK (property_status IN ('ready_to_move', 'under_construction', 'renovated')),
+                
+                -- Location
+                location VARCHAR(255) NOT NULL,
+                region VARCHAR(100),
+                latitude DECIMAL(10,8) NOT NULL,
+                longitude DECIMAL(11,8) NOT NULL,
+                street VARCHAR(255),
+                city VARCHAR(100),
+                state VARCHAR(100),
+                pincode VARCHAR(20),
+                country VARCHAR(100) DEFAULT 'India',
+                
+                -- Property Features
+                floor_area DECIMAL(10,2) DEFAULT 0,
+                sqft DECIMAL(10,2) NOT NULL CHECK (sqft >= 0),
+                floor_no INTEGER CHECK (floor_no >= 0),
+                total_floors INTEGER CHECK (total_floors >= 1),
+                beds INTEGER CHECK (beds >= 0),
+                baths INTEGER CHECK (baths >= 0),
+                
+                -- Furnishing and Amenities
+                furnishing VARCHAR(20) CHECK (furnishing IN ('Furnished', 'Semi-Furnished', 'Unfurnished')) DEFAULT 'Unfurnished',
+                amenities TEXT[] DEFAULT '{}',
+                
+                -- Commercial Property Features
+                balcony BOOLEAN DEFAULT false,
+                central_ac BOOLEAN DEFAULT false,
+                power_backup BOOLEAN DEFAULT false,
+                
+                -- Additional Features
+                parking BOOLEAN DEFAULT false,
+                security BOOLEAN DEFAULT false,
+                swimming_pool BOOLEAN DEFAULT false,
+                gym BOOLEAN DEFAULT false,
+                garden BOOLEAN DEFAULT false,
+                lift BOOLEAN DEFAULT false,
+                
+                -- Images and Media
+                images TEXT[] DEFAULT '{}',
+                videos TEXT[] DEFAULT '{}',
+                
+                -- Status and Ownership
+                status VARCHAR(20) DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Sold', 'Rented')),
+                featured BOOLEAN DEFAULT false,
+                user_id INTEGER REFERENCES users(id),
+                created_by INTEGER REFERENCES users(id),
+                
+                -- Timestamps
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Create indexes for better performance
+            CREATE INDEX IF NOT EXISTS idx_properties_slug ON properties(slug);
+            CREATE INDEX IF NOT EXISTS idx_properties_listing_type ON properties(listing_type);
+            CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(type);
+            CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
+            CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
+            CREATE INDEX IF NOT EXISTS idx_properties_created_by ON properties(created_by);
+            CREATE INDEX IF NOT EXISTS idx_properties_location ON properties(location);
+            CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
+        `);
+    } catch (error) {
+        console.error('Error creating properties table:', error);
+        throw error;
     }
-  },
-  
-  // Property Details
-  listingType: {
-    type: String,
-    required: [true, 'Listing type is required'],
-    enum: ['sale', 'rent'],
-    lowercase: true
-  },
-  type: {
-    type: String,
-    required: [true, 'Property type is required'],
-    enum: [
-      'house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk',
-      'commercial', 'residential plot', 'commercial plot'
-    ],
-    lowercase: true,
-    validate: {
-      validator: function(type) {
-        if (this.listingType === 'sale') {
-          return ['house', 'apartment', 'office', 'villa', 'flat', 'commercial', 
-                 'residential plot', 'commercial plot'].includes(type);
+};
+
+// Create the table if it doesn't exist
+createPropertyTable();
+
+export default {
+    async create(propertyData) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Generate slug if not provided
+            if (!propertyData.slug) {
+                propertyData.slug = `${propertyData.title}-${Date.now()}`
+                    .toLowerCase()
+                    .replace(/[^\w\s-]/g, '')
+                    .replace(/\s+/g, '-');
+            }
+
+            // Calculate deposit if not provided for rent
+            if (propertyData.listing_type === 'rent' && !propertyData.deposit) {
+                const multipliers = {
+                    'house': 2,
+                    'apartment': 3,
+                    'office': 3,
+                    'villa': 3,
+                    'commercial': 3,
+                    'flat': 2,
+                    'pg': 1,
+                    'rk': 1
+                };
+                propertyData.deposit = propertyData.price * (multipliers[propertyData.type] || 2);
+            }
+
+            const { rows } = await client.query(
+                `INSERT INTO properties (
+                    title, subtitle, slug, listing_type, type, price, rent_type,
+                    deposit, property_age, property_condition, property_status,
+                    location, region, latitude, longitude, street, city, state,
+                    pincode, country, floor_area, sqft, floor_no, total_floors,
+                    beds, baths, furnishing, amenities, balcony, central_ac,
+                    power_backup, parking, security, swimming_pool, gym, garden,
+                    lift, images, videos, status, featured, user_id, created_by
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                    $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
+                    $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
+                    $39, $40, $41, $42
+                ) RETURNING *`,
+                [
+                    propertyData.title,
+                    propertyData.subtitle,
+                    propertyData.slug,
+                    propertyData.listing_type,
+                    propertyData.type,
+                    propertyData.price,
+                    propertyData.rent_type,
+                    propertyData.deposit,
+                    propertyData.property_age,
+                    propertyData.property_condition,
+                    propertyData.property_status,
+                    propertyData.location,
+                    propertyData.region,
+                    propertyData.latitude,
+                    propertyData.longitude,
+                    propertyData.street,
+                    propertyData.city,
+                    propertyData.state,
+                    propertyData.pincode,
+                    propertyData.country,
+                    propertyData.floor_area,
+                    propertyData.sqft,
+                    propertyData.floor_no,
+                    propertyData.total_floors,
+                    propertyData.beds,
+                    propertyData.baths,
+                    propertyData.furnishing,
+                    propertyData.amenities,
+                    propertyData.balcony,
+                    propertyData.central_ac,
+                    propertyData.power_backup,
+                    propertyData.parking,
+                    propertyData.security,
+                    propertyData.swimming_pool,
+                    propertyData.gym,
+                    propertyData.garden,
+                    propertyData.lift,
+                    propertyData.images,
+                    propertyData.videos,
+                    propertyData.status || 'Active',
+                    propertyData.featured || false,
+                    propertyData.user_id,
+                    propertyData.created_by
+                ]
+            );
+            
+            await client.query('COMMIT');
+            return rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
         }
-        return true;
-      },
-      message: 'Invalid property type for sale listing'
-    }
-  },
-  price: {
-    type: Number,
-    required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative']
-  },
-  rentType: {
-    type: String,
-    enum: ['monthly', 'yearly', 'daily'],
-    default: 'monthly',
-    lowercase: true
-  },
-  deposit: {
-    type: Number,
-    min: [0, 'Deposit cannot be negative'],
-    default: function() {
-      if (this.listingType !== 'rent') return undefined;
-      
-      const multipliers = {
-        'house': 2,
-        'apartment': 3,
-        'office': 3,
-        'villa': 3,
-        'commercial': 3,
-        'flat': 2,
-        'pg': 1,
-        'rk': 1
-      };
-      return this.price * (multipliers[this.type] || 2);
-    }
-  },
-  
-  // Sale-specific fields
-  propertyAge: {
-    type: Number,
-    min: [0, 'Property age cannot be negative'],
-    required: function() {
-      return this.listingType === 'sale';
-    }
-  },
-  propertyCondition: {
-    type: String,
-    enum: ['new', 'good', 'average', 'needs_repair'],
-    required: function() {
-      return this.listingType === 'sale';
-    }
-  },
-  propertyStatus: {
-    type: String,
-    enum: ['ready_to_move', 'under_construction', 'renovated'],
-    required: function() {
-      return this.listingType === 'sale';
-    }
-  },
-  
-  // Location
-  location: {
-    type: String,
-    required: [true, 'Location is required'],
-    trim: true
-  },
-  region: {
-    type: String,
-    trim: true
-  },
-  coordinates: {
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true }
-  },
-  address: {
-    street: {
-      type: String,
-      default: ''
     },
-    city: {
-      type: String,
-      default: '' 
-    },
-    state: {
-      type: String,
-      default: '' // Changed from required
-    },
-    pincode: {
-      type: String,
-      default: '' // Changed from required
-    },
-    country: {
-      type: String,
-      default: 'India',
-      trim: true
-    }
-  },
-  
-  // Property Features
-  floorArea: {
-    type: Number,
-    default: 0 // Changed from required
-  },
-  sqft: {
-    type: Number,
-    required: [true, 'Square footage is required'],
-    min: [0, 'Square footage cannot be negative']
-  },
-  floorNo: {
-    type: Number,
-    min: [0, 'Floor number cannot be negative']
-  },
-  totalFloors: {
-    type: Number,
-    min: [1, 'Total floors must be at least 1']
-  },
-  beds: {
-    type: Number,
-    required: function() {
-      return !this.type.includes('plot');
-    },
-    min: [0, 'Number of beds cannot be negative']
-  },
-  baths: {
-    type: Number,
-    required: function() {
-      return !this.type.includes('plot');
-    },
-    min: [0, 'Number of baths cannot be negative']
-  },
-  
-  // Furnishing and Amenities
-  furnishing: {
-    type: String,
-    enum: ['Furnished', 'Semi-Furnished', 'Unfurnished'],
-    default: 'Unfurnished'
-  },
-  amenities: {
-    type: [String],
-    default: []
-  },
-  
-  // Commercial Property Features
-  balcony: {
-    type: Boolean,
-    default: false
-  },
-  centralAC: {
-    type: Boolean,
-    default: false
-  },
-  powerBackup: {
-    type: Boolean,
-    default: false
-  },
-  lift: {
-    type: Boolean,
-    default: false
-  },
-  fireSafety: {
-    type: Boolean,
-    default: false
-  },
-  securityRoom: {
-    type: Boolean,
-    default: false
-  },
-  pantry: {
-    type: Boolean,
-    default: false
-  },
-  receptionArea: {
-    type: Boolean,
-    default: false
-  },
-  officeCabins: {
-    type: Number,
-    min: [0, 'Number of office cabins cannot be negative']
-  },
-  conferenceRooms: {
-    type: Number,
-    min: [0, 'Number of conference rooms cannot be negative']
-  },
-  openWorkstations: {
-    type: Number,
-    min: [0, 'Number of open workstations cannot be negative']
-  },
-  showroomArea: {
-    type: Number,
-    min: [0, 'Showroom area cannot be negative']
-  },
-  storageArea: {
-    type: Number,
-    min: [0, 'Storage area cannot be negative']
-  },
-  
-  // Parking
-  carParking: {
-    available: {
-      type: Boolean,
-      default: false
-    },
-    noOfCars: {
-      type: Number,
-      min: [0, 'Number of car parking spaces cannot be negative']
-    }
-  },
-  bikeParking: {
-    available: {
-      type: Boolean,
-      default: false
-    },
-    noOfBikes: {
-      type: Number,
-      min: [0, 'Number of bike parking spaces cannot be negative']
-    }
-  },
-  
-  // Media
-  images: {
-    type: [String],
-  },
-  imageUrl: {
-    type: String
-  },
-  
-  // Description
-  description: {
-    type: String,
-    required: [true, 'Description is required'],
-    // minLength: [50, 'Description must be at least 50 characters'],
-    // maxLength: [2000, 'Description cannot be more than 2000 characters']
-  },
-  
-  // Contact Information
-    phone: {
-      type: String,
-      // required: [true, 'Contact phone is required'],
-      trim: true
-    },
-    email: {
-      type: String,
-      // required: [true, 'Contact email is required'],
-      lowercase: true,
-      trim: true
-    },
-  
-  // Owner & Creator (Updated)
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User',
-  },
-  threeDMappingRequests: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ThreeDMappingRequest'
-  }],
-  
-  // Availability
-  availability: {
-    status: {
-      type: String,
-      required: [true, 'Availability status is required'],
-      enum: ['Available', 'Rented', 'Pending', 'Unavailable', 'Sold'],
-      default: 'Available'
-    },
-    availableFrom: {
-      type: Date,
-      required: function() {
-        return this.listingType === 'rent';
-      }
-    },
-    minLeasePeriod: {
-      type: String,
-      enum: ['3 months', '6 months', '12 months', '18 months', '24 months'],
-      default: '12 months',
-      required: function() {
-        return this.listingType === 'rent';
-      }
-    }
-  },
-  
-  // Status and Metadata
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'sold', 'rented'],
-    default: 'active',
-    lowercase: true
-  },
-  tag: {
-    type: String,
-    trim: true
-  },
-  check: {
-    type: Boolean,
-    default: false
-  },
-  
-  // Extras
-  views: {
-    type: Number,
-    default: 0
-  },
-  verified: {
-    type: Boolean,
-    default: false
-  },
-  scheduledVisits: [{
-    date: Date,
-    visitor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'confirmed', 'cancelled'],
-      default: 'pending'
-    }
-  }],
-  
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
-  featured: {
-    type: Boolean,
-    default: false
-  },
-  minimumLease: {
-    type: Number,
-    min: [1, 'Minimum lease must be at least 1 month']
-  }
-}, {
-  timestamps: true
-});
 
-// Pre-save hook to update updatedAt
-propertySchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  
-  // Only update slug if title changed
-  if (this.isModified('title')) {
-    this.slug = `${this.title}-${Date.now()}`
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
-  }
-  
-  next();
-});
+    async findById(id) {
+        const { rows } = await pool.query(
+            `SELECT p.*, 
+                    u.first_name as owner_first_name, u.last_name as owner_last_name,
+                    c.first_name as creator_first_name, c.last_name as creator_last_name
+             FROM properties p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN users c ON p.created_by = c.id
+             WHERE p.id = $1`,
+            [id]
+        );
+        return rows[0];
+    },
 
-// Add index for better search performance
-propertySchema.index({ title: 'text', description: 'text', 'address.city': 'text' });
-propertySchema.index({ listingType: 1, type: 1, 'availability.status': 1 });
-propertySchema.index({ price: 1 });
-propertySchema.index({ userId: 1 });
-propertySchema.index({ 'address.city': 1, 'address.state': 1 });
-propertySchema.index({ featured: 1, status: 1 });
-propertySchema.index({ createdBy: 1 });
-propertySchema.index({
-  "coordinates": "2dsphere",
-  "address.city": 1,
-  "address.state": 1
-});
+    async findBySlug(slug) {
+        const { rows } = await pool.query(
+            `SELECT p.*, 
+                    u.first_name as owner_first_name, u.last_name as owner_last_name,
+                    c.first_name as creator_first_name, c.last_name as creator_last_name
+             FROM properties p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN users c ON p.created_by = c.id
+             WHERE p.slug = $1`,
+            [slug]
+        );
+        return rows[0];
+    },
 
-// Method to check if property is available
-propertySchema.methods.isAvailable = function() {
-  return this.availability.status === 'Available';
+    async findAll(filters = {}, page = 1, limit = 10) {
+        const offset = (page - 1) * limit;
+        const conditions = [];
+        const values = [];
+        let paramCount = 1;
+
+        // Build filter conditions
+        for (const [key, value] of Object.entries(filters)) {
+            if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                    conditions.push(`${key} = ANY($${paramCount})`);
+                    values.push(value);
+                } else {
+                    conditions.push(`${key} = $${paramCount}`);
+                    values.push(value);
+                }
+                paramCount++;
+            }
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        const { rows } = await pool.query(
+            `SELECT p.*, 
+                    u.first_name as owner_first_name, u.last_name as owner_last_name,
+                    c.first_name as creator_first_name, c.last_name as creator_last_name
+             FROM properties p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN users c ON p.created_by = c.id
+             ${whereClause}
+             ORDER BY p.created_at DESC
+             LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
+            [...values, limit, offset]
+        );
+
+        return rows;
+    },
+
+    async update(id, updateData) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            const setClause = [];
+            const values = [];
+            let paramCount = 1;
+
+            for (const [key, value] of Object.entries(updateData)) {
+                if (value !== undefined) {
+                    setClause.push(`${key} = $${paramCount}`);
+                    values.push(value);
+                    paramCount++;
+                }
+            }
+
+            if (setClause.length === 0) return null;
+
+            values.push(id);
+            const { rows } = await client.query(
+                `UPDATE properties 
+                 SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $${paramCount}
+                 RETURNING *`,
+                values
+            );
+            
+            await client.query('COMMIT');
+            return rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    },
+
+    async delete(id) {
+        const { rows } = await pool.query(
+            'DELETE FROM properties WHERE id = $1 RETURNING *',
+            [id]
+        );
+        return rows[0];
+    },
+
+    async findByUser(userId) {
+        const { rows } = await pool.query(
+            `SELECT p.*, 
+                    u.first_name as owner_first_name, u.last_name as owner_last_name,
+                    c.first_name as creator_first_name, c.last_name as creator_last_name
+             FROM properties p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN users c ON p.created_by = c.id
+             WHERE p.created_by = $1
+             ORDER BY p.created_at DESC`,
+            [userId]
+        );
+        return rows;
+    },
+
+    async findFeatured(limit = 6) {
+        const { rows } = await pool.query(
+            `SELECT p.*, 
+                    u.first_name as owner_first_name, u.last_name as owner_last_name,
+                    c.first_name as creator_first_name, c.last_name as creator_last_name
+             FROM properties p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN users c ON p.created_by = c.id
+             WHERE p.featured = true AND p.status = 'Active'
+             ORDER BY p.created_at DESC
+             LIMIT $1`,
+            [limit]
+        );
+        return rows;
+    }
 };
-
-// Method to calculate price per square foot
-propertySchema.methods.getPricePerSqft = function() {
-  if (this.sqft && this.sqft > 0) {
-    return this.price / this.sqft;
-  }
-  return 0;
-};
-
-// Method to get similar properties
-propertySchema.methods.getSimilarProperties = function() {
-  return this.model('Property').find({
-    listingType: this.listingType,
-    type: this.type,
-    'address.city': this.address.city,
-    _id: { $ne: this._id },
-    'availability.status': 'Available'
-  }).limit(5);
-};
-
-// Method to get rental properties
-propertySchema.statics.getRentalProperties = function() {
-  return this.find({
-    listingType: 'Rent',
-    'availability.status': 'Available',
-    status: 'Active'
-  });
-};
-
-// Method to get properties for sale
-propertySchema.statics.getPropertiesForSale = function() {
-  return this.find({
-    listingType: 'Sale',
-    'availability.status': 'Available',
-    status: 'Active'
-  });
-};
-
-const Property = mongoose.model('Property', propertySchema);
-
-export default Property;

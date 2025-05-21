@@ -27,9 +27,10 @@ import AdminDashboard from './components/admin/Dashboard';
 import Users from './components/admin/Users';
 import MyCoupons from './components/dashboard/MyCoupons';
 import DraftProperties from './components/dashboard/DraftProperties';
+import CustomerPanel from './components/customerPanel/CustomerPanel';
 
 
-export const Backendurl = import.meta.env.VITE_BACKEND_URL;
+export const Backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
 const App = () => {
   return (
@@ -69,6 +70,8 @@ const App = () => {
           <Route path="properties" element={<div>Properties Management</div>} />
           <Route path="settings" element={<div>Settings</div>} />
         </Route>
+
+        <Route path="/*" element={<CustomerPanel />} />
         
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

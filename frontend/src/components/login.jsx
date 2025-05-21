@@ -36,25 +36,16 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post(
-        `${Backendurl}/api/auth/login`,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.data.success) {
-        await login(response.data.data.token, response.data.data.user);
+      console.log('Attempting login with:', { email: formData.email });
+      
+      const result = await login(formData.email, formData.password);
+      console.log('Login result:', result);
+      
+      if (result.success) {
         toast.success("Login successful!");
-        // Navigate to the stored path or home
         navigate(from);
       } else {
-        toast.error(response.data.message);
+        toast.error(result.message || "Login failed");
       }
     } catch (error) {
       console.error("Error logging in:", error);

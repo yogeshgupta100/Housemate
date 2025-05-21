@@ -31,17 +31,47 @@ const Signup = () => {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await axios.get(`${Backendurl}/api/auth/get-roles`);
+        const apiUrl = `${Backendurl}/api/auth/get-roles`;
+        console.log('Backend URL:', Backendurl);
+        console.log('Full API URL:', apiUrl);
+        
+        if (!Backendurl) {
+          throw new Error('Backend URL is not configured');
+        }
+
+        const response = await axios.get(apiUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        console.log('Roles response:', response.data);
+        
+        if (!response.data) {
+          throw new Error('No data received from server');
+        }
+        
         if (response.data.success) {
           setRoles(response.data.data);
           const defaultRole = response.data.data.find(role => role.name === 'individual');
           if (defaultRole) {
-            setSelectedRole(defaultRole._id);
+            setSelectedRole(defaultRole.id);
           }
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch roles');
         }
       } catch (error) {
         console.error('Error fetching roles:', error);
-        toast.error('Error loading roles');
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          config: error.config
+        });
+        toast.error('Error loading roles. Please try again later.');
       }
     };
 
@@ -161,7 +191,7 @@ const Signup = () => {
         role: selectedRole
       };
 
-      const selectedRoleData = roles.find(role => role._id === selectedRole);
+      const selectedRoleData = roles.find(role => role.id === selectedRole);
       if (selectedRoleData?.name === 'corporate') {
         userData.companyName = formData.companyName;
         userData.registrationNumber = formData.registrationNumber;
@@ -414,6 +444,7 @@ const Signup = () => {
                           required
                           value={selectedRole}
                           onChange={(e) => {
+                            console.log('Selected role:', e.target.value);
                             setSelectedRole(e.target.value);
                             setFormData(prev => ({
                               ...prev,
@@ -426,7 +457,7 @@ const Signup = () => {
                       >
                         <option value="">Select Account Type</option>
                         {roles.map((role) => (
-                            <option key={role._id} value={role._id}>
+                            <option key={role.id} value={role.id}>
                               {role.name === 'individual' && 'Individual'}
                               {role.name === 'corporate' && 'Corporate'}
                               {role.name === 'dealer' && 'Property Dealer'}
@@ -437,7 +468,7 @@ const Signup = () => {
                     </div>
                   </div>
 
-                {selectedRole && roles.find(role => role._id === selectedRole)?.name === 'corporate' && (
+                {selectedRole && roles.find(role => role.id === selectedRole)?.name === 'corporate' && (
                   <>
                     <div>
                       <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -480,7 +511,7 @@ const Signup = () => {
                 )}
 
                 {/* Conditional Fields for Dealer Users */}
-                  {selectedRole && roles.find(role => role._id === selectedRole)?.name === 'dealer' && (
+                  {selectedRole && roles.find(role => role.id === selectedRole)?.name === 'dealer' && (
                   <div>
                     <label htmlFor="dealerLicense" className="block text-sm font-medium text-gray-700 mb-1">
                       Dealer License Number *

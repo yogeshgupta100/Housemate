@@ -18,13 +18,13 @@ export const register = async (req, res) => {
       success: true,
       data: {
         user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
           email: user.email,
           phone: user.phone,
-          userType: user.userType,
-          role: user.role
+          user_type: user.user_type,
+          role_id: user.role_id
         },
         token
       }
@@ -42,18 +42,17 @@ export const login = async (req, res) => {
     console.log("req.body",req.body);
     const { user, token } = await authService.login(req.body.email, req.body.password);
 
-
     res.status(200).json({
       success: true,
       data: {
         user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
           email: user.email,
           phone: user.phone,
-          userType: user.userType,
-          role: user.role
+          user_type: user.user_type,
+          role_id: user.role_id
         },
         token
       }

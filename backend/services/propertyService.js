@@ -1,5 +1,3 @@
-import mongoose from 'mongoose';
-import Property from '../models/propertymodel.js';
 import propertyRepository from '../repositories/propertyRepository.js';
 // import cloudinary from '../utils/cloudinary.js';
 
@@ -12,7 +10,7 @@ class PropertyService {
 
   async getPropertyById(id) {
     try {
-      const property = await Property.findById(id);
+      const property = await propertyRepository.findById(id);
 
       if (!property) {
         throw new Error('Property not found');
@@ -24,23 +22,18 @@ class PropertyService {
   }
 
   async createProperty(propertyData) {
-    // Ensure userId and createdBy are valid ObjectIds
-    const defaultAdminId = '657089f229c2df66a7ea7c0d'; 
+    // Set default admin ID if userId is not provided
+    const defaultAdminId = 1; // Assuming 1 is the admin ID in PostgreSQL
     
-    propertyData.userId = mongoose.Types.ObjectId.isValid(propertyData.userId) 
-      ? propertyData.userId 
-      : defaultAdminId;
-      
-    propertyData.createdBy = mongoose.Types.ObjectId.isValid(propertyData.createdBy)
-      ? propertyData.createdBy
-      : defaultAdminId;
+    propertyData.user_id = propertyData.user_id || defaultAdminId;
+    propertyData.created_by = propertyData.created_by || defaultAdminId;
 
     return await propertyRepository.create(propertyData);
   }
 
   async updateProperty(id, updateData) {
     // Prevent modification of userId to protect ownership
-    delete updateData.userId;
+    delete updateData.user_id;
 
     // Handle image updates if any
     // if (updateData.images && updateData.images.length > 0) {
