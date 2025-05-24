@@ -98,53 +98,53 @@ export const deleteProperty = async (propertyId) => {
     }
 };
 
-export const getAllAppointments = async (filters = {}) => {
-    try {
-        const appointments = await appointmentRepository.findAll(filters);
-        return appointments;
-    } catch (error) {
-        throw new AppError(`Failed to fetch appointments: ${error.message}`, 500);
-    }
-};
+// export const getAllAppointments = async (filters = {}) => {
+//     try {
+//         const appointments = await appointmentRepository.findAll(filters);
+//         return appointments;
+//     } catch (error) {
+//         throw new AppError(`Failed to fetch appointments: ${error.message}`, 500);
+//     }
+// };
 
-export const getAppointmentById = async (appointmentId) => {
-    try {
-        const appointment = await appointmentRepository.findById(appointmentId);
-        if (!appointment) {
-            throw new AppError('Appointment not found', 404);
-        }
-        return appointment;
-    } catch (error) {
-        if (error instanceof AppError) throw error;
-        throw new AppError(`Failed to fetch appointment: ${error.message}`, 500);
-    }
-};
+// export const getAppointmentById = async (appointmentId) => {
+//     try {
+//         const appointment = await appointmentRepository.findById(appointmentId);
+//         if (!appointment) {
+//             throw new AppError('Appointment not found', 404);
+//         }
+//         return appointment;
+//     } catch (error) {
+//         if (error instanceof AppError) throw error;
+//         throw new AppError(`Failed to fetch appointment: ${error.message}`, 500);
+//     }
+// };
 
-export const updateAppointment = async (appointmentId, updateData) => {
-    try {
-        const appointment = await appointmentRepository.update(appointmentId, updateData);
-        if (!appointment) {
-            throw new AppError('Appointment not found', 404);
-        }
-        return appointment;
-    } catch (error) {
-        if (error instanceof AppError) throw error;
-        throw new AppError(`Failed to update appointment: ${error.message}`, 500);
-    }
-};
+// export const updateAppointment = async (appointmentId, updateData) => {
+//     try {
+//         const appointment = await appointmentRepository.update(appointmentId, updateData);
+//         if (!appointment) {
+//             throw new AppError('Appointment not found', 404);
+//         }
+//         return appointment;
+//     } catch (error) {
+//         if (error instanceof AppError) throw error;
+//         throw new AppError(`Failed to update appointment: ${error.message}`, 500);
+//     }
+// };
 
-export const deleteAppointment = async (appointmentId) => {
-    try {
-        const appointment = await appointmentRepository.delete(appointmentId);
-        if (!appointment) {
-            throw new AppError('Appointment not found', 404);
-        }
-        return appointment;
-    } catch (error) {
-        if (error instanceof AppError) throw error;
-        throw new AppError(`Failed to delete appointment: ${error.message}`, 500);
-    }
-};
+// export const deleteAppointment = async (appointmentId) => {
+//     try {
+//         const appointment = await appointmentRepository.delete(appointmentId);
+//         if (!appointment) {
+//             throw new AppError('Appointment not found', 404);
+//         }
+//         return appointment;
+//     } catch (error) {
+//         if (error instanceof AppError) throw error;
+//         throw new AppError(`Failed to delete appointment: ${error.message}`, 500);
+//     }
+// };
 
 export const getDashboardStats = async () => {
     try {
@@ -156,15 +156,15 @@ export const getDashboardStats = async () => {
         ] = await Promise.all([
             userRepository.count(),
             propertyRepository.count(),
-            appointmentRepository.getStats(),
-            appointmentRepository.findAll({ limit: 5, orderBy: 'created_at DESC' })
+            // appointmentRepository.getStats(),
+            // appointmentRepository.findAll({ limit: 5, orderBy: 'created_at DESC' })
         ]);
 
         return {
             totalUsers,
             totalProperties,
-            appointmentStats,
-            recentAppointments
+            // appointmentStats,
+            // recentAppointments
         };
     } catch (error) {
         throw new AppError(`Failed to fetch dashboard stats: ${error.message}`, 500);
