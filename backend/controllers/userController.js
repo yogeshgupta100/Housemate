@@ -1,6 +1,4 @@
-import userService from '../services/userService.js'; //kkjn ok oknijn
-import { validateUser } from '../utils/validators.js';
-import { hashPassword } from '../utils/auth.js';
+import userService from '../services/userService.js';
 
 export const getAllUsers = async (req, res) => {
   try {

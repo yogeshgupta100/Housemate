@@ -1,4 +1,3 @@
-import Role from "../models/role.js";
 import authService from "../services/authService.js";
 import pool from "../config/postgres.js";
 

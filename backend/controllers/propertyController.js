@@ -1,7 +1,6 @@
 import propertyService from '../services/propertyService.js';
 import Property from '../models/propertymodel.js';
 import aiService from '../services/aiService.js';
-import { Op } from 'sequelize';
 import pool from '../config/postgres.js';
 
 export const getAllProperties = async (req, res) => {
