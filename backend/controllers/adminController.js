@@ -12,10 +12,10 @@ import {
     getPropertyById,
     updateProperty,
     deleteProperty,
-    getAllAppointments,
-    getAppointmentById,
-    updateAppointment,
-    deleteAppointment,
+    // getAllAppointments,
+    // getAppointmentById,
+    // updateAppointment,
+    // deleteAppointment,
     getDashboardStats
 } from '../services/adminService.js';
 import catchAsync from '../utils/catchAsync.js';
@@ -29,23 +29,23 @@ const formatRecentProperties = (properties) => {
   }));
 };
 
-const formatRecentAppointments = (appointments) => {
-  return appointments.map((appointment) => ({
-    type: "appointment",
-    description:
-      appointment.userId && appointment.propertyId
-        ? `${appointment.userId.name} scheduled viewing for ${appointment.propertyId.title}`
-        : "Appointment scheduled",
-    timestamp: appointment.createdAt,
-  }));
-};
+// const formatRecentAppointments = (appointments) => {
+//   return appointments.map((appointment) => ({
+//     type: "appointment",
+//     description:
+//       appointment.userId && appointment.propertyId
+//         ? `${appointment.userId.name} scheduled viewing for ${appointment.propertyId.title}`
+//         : "Appointment scheduled",
+//     timestamp: appointment.createdAt,
+//   }));
+// };
 
 export const getAdminStats = async (req, res) => {
   try {
     const { rows: [{ total_properties }] } = await pool.query('SELECT COUNT(*) as total_properties FROM properties');
     const { rows: [{ active_listings }] } = await pool.query("SELECT COUNT(*) as active_listings FROM properties WHERE status = 'active'");
     const { rows: [{ total_users }] } = await pool.query('SELECT COUNT(*) as total_users FROM users');
-    const { rows: [{ pending_appointments }] } = await pool.query("SELECT COUNT(*) as pending_appointments FROM appointments WHERE status = 'pending'");
+    // const { rows: [{ pending_appointments }] } = await pool.query("SELECT COUNT(*) as pending_appointments FROM appointments WHERE status = 'pending'");
 
     res.json({
       success: true,
@@ -53,7 +53,7 @@ export const getAdminStats = async (req, res) => {
         totalProperties: parseInt(total_properties),
         activeListings: parseInt(active_listings),
         totalUsers: parseInt(total_users),
-        pendingAppointments: parseInt(pending_appointments),
+        // pendingAppointments: parseInt(pending_appointments),
         // Add more stats as needed
       },
     });
