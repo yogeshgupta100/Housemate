@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 export default function Hero() {
   return (
     <div className="relative h-[50vh] flex items-center justify-center my-6 mx-6 rounded-2xl overflow-hidden">
-      {/* Animated gradient background */}
+      {}
       <div className="absolute inset-0 z-0">
         <motion.div
           className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500"
@@ -18,7 +18,7 @@ export default function Hero() {
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Animated shapes */}
+        {}
         <div className="absolute inset-0 opacity-20">
           <motion.div 
             className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-blue-300"
@@ -41,11 +41,11 @@ export default function Hero() {
           />
         </div>
         
-        {/* Pattern overlay */}
+        {}
         <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjMiPjxwYXRoIGQ9Ik01IDEwQzMuODk1IDEwIDMgMTAuODk1IDMgMTJ2MzhjMCAxLjEwNS44OTUgMiAyIDJoMzhWMTBINXptMzgtMkg1QzIuODEgOCAxIDkuODEgMSAxMnYzOGMwIDIuMTkgMS43OSA0IDQgNGg0MWMxLjEwNSAwIDItLjg5NSAyLTJWMTBjMC0xLjEwNS0uODk1LTItMi0yaC0zeiIvPjwvZz48L2c+PC9zdmc+')]"></div>
       </div>
 
-      {/* Content Section */}
+      {}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -60,7 +60,7 @@ export default function Hero() {
           Our team is here to help you every step of the way.
         </p>
         
-        {/* Decorative line */}
+        {}
         <motion.div 
           className="w-24 h-1 bg-white mx-auto mt-8"
           initial={{ width: 0, opacity: 0 }}

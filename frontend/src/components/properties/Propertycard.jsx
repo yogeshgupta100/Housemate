@@ -109,8 +109,7 @@ const PropertyCard = ({ property, viewType }) => {
         <AnimatePresence mode="wait">
           <motion.img
             key={currentImageIndex}
-            // src={propertyImages[currentImageIndex] || '/placeholder.jpg'}
-            src={property.images?.[0] ? `${"http://localhost:4000"}/uploads/${property.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
+            src={propertyImages[currentImageIndex] || '/placeholder.jpg'}
             alt={property.title}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

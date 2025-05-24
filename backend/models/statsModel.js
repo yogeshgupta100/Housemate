@@ -24,7 +24,6 @@ const createStatsTable = async () => {
     }
 };
 
-// Create the table if it doesn't exist
 createStatsTable();
 
 export default {

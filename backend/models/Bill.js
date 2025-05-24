@@ -174,13 +174,11 @@ const billSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
 billSchema.index({ user: 1, status: 1 });
 billSchema.index({ property: 1 });
 billSchema.index({ 'payment.status': 1 });
 billSchema.index({ billDate: -1 });
 
-// Pre-save middleware to generate bill number
 billSchema.pre('save', async function(next) {
   if (this.isNew) {
     const date = new Date();
@@ -201,7 +199,6 @@ billSchema.pre('save', async function(next) {
   next();
 });
 
-// Pre-save middleware to calculate totals
 billSchema.pre('save', function(next) {
   // Calculate items total
   if (this.items && this.items.length > 0) {
@@ -251,19 +248,16 @@ billSchema.pre('save', function(next) {
   next();
 });
 
-// Method to generate PDF
 billSchema.methods.generatePDF = async function() {
   // Implementation for PDF generation
   // This would typically use a PDF generation library
 };
 
-// Method to send bill via email
 billSchema.methods.sendViaEmail = async function(email) {
   // Implementation for sending email
   // This would typically use an email service
 };
 
-// Method to record payment
 billSchema.methods.recordPayment = async function(amount, paymentMethod, paymentDetails = {}) {
   if (amount <= 0) {
     throw new Error('Payment amount must be positive');
@@ -289,7 +283,6 @@ billSchema.methods.recordPayment = async function(amount, paymentMethod, payment
   return this.save();
 };
 
-// Static method to get overdue bills
 billSchema.statics.getOverdueBills = function() {
   return this.find({
     dueDate: { $lt: new Date() },
@@ -298,7 +291,6 @@ billSchema.statics.getOverdueBills = function() {
   });
 };
 
-// Static method to get bills by date range
 billSchema.statics.getByDateRange = function(startDate, endDate, filter = {}) {
   return this.find({
     billDate: {

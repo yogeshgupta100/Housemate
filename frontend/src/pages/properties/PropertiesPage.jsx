@@ -46,12 +46,12 @@ const PropertiesPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Filters Sidebar */}
+        {}
         <div className="w-full md:w-1/4">
           <PropertyFilters filters={filters} onFilterChange={handleFilterChange} />
         </div>
 
-        {/* Properties Grid */}
+        {}
         <div className="w-full md:w-3/4">
           {loading ? (
             <LoadingSpinner size="large" />

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { blogPosts } from '../assets/blogdata';
 import { toast } from 'react-toastify';
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -37,7 +36,6 @@ const pulseAnimation = {
   }
 };
 
-// BlogCard component
 const BlogCard = ({ post }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -195,7 +193,6 @@ const BlogCard = ({ post }) => {
   );
 };
 
-// Main Blog component
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -228,7 +225,6 @@ const Blog = () => {
           </p>
         </motion.div>
         
-        {/* Search and filter section */}
         <div className="mb-12">
           <div className="flex flex-col md:flex-row gap-4 justify-between">
             <div className="relative max-w-md w-full">
@@ -287,7 +283,6 @@ const Blog = () => {
           </motion.div>
         )}
         
-        {/* View all articles button */}
         <div className="text-center mt-16">
           <motion.button
             whileHover={{ scale: 1.05 }}

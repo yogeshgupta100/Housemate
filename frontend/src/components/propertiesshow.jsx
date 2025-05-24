@@ -18,44 +18,6 @@ import { Backendurl } from '../App';
 import PropTypes from "prop-types";
 import {toast} from "react-toastify";
 
-// const sampleProperties = [
-//   {
-//     _id: "sample1",
-//     title: "Luxury Beachfront Villa",
-//     location: "Juhu Beach, Mumbai",
-//     price: 25000000,
-//     beds: 4,
-//     baths: 3,
-//     sqft: 2800,
-//     type: "Villa",
-//     availability: "Buy",
-//     image: ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
-//   },
-//   {
-//     _id: "sample2",
-//     title: "Modern Highrise Apartment",
-//     location: "Bandra West, Mumbai",
-//     price: 18500000,
-//     beds: 3,
-//     baths: 2,
-//     sqft: 1800,
-//     type: "Apartment",
-//     availability: "Rent",
-//     image: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
-//   },
-//   {
-//     _id: "sample3",
-//     title: "Riverside Townhouse",
-//     location: "Koramangala, Bangalore",
-//     price: 12000000,
-//     beds: 3,
-//     baths: 2.5,
-//     sqft: 2200,
-//     type: "House",
-//     availability: "Buy",
-//     image: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"]
-//   }
-// ];
 
 const PropertyCard = ({ property }) => {
   const navigate = useNavigate();
@@ -160,7 +122,7 @@ const PropertyCard = ({ property }) => {
       >
         <div className="relative h-64">
           <img 
-            src={property.images?.[0] ? `${Backendurl}${property.images[0]}` : "/placeholder.jpg"} 
+            src={property?.images?.[0]} 
             alt={property.title} 
             className="w-full h-full object-cover"
           />
@@ -371,7 +333,7 @@ const PropertiesShow = () => {
           </p>
         </motion.div>
 
-        {/* Category filter */}
+        {}
         <motion.div 
           className="flex flex-wrap justify-center gap-4 mb-12"
           initial={{ opacity: 0, y: 20 }}

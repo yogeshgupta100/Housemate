@@ -1,7 +1,6 @@
 import Stats from "../models/statsModel.js";
 import Property from "../models/propertymodel.js";
 import Appointment from "../models/appointmentModel.js";
-import User from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 import { getEmailTemplate } from "../email.js";
 import {
@@ -20,7 +19,6 @@ import {
     getDashboardStats
 } from '../services/adminService.js';
 import catchAsync from '../utils/catchAsync.js';
-import { validateAdmin } from '../utils/validators.js';
 import pool from '../config/postgres.js';
 
 const formatRecentProperties = (properties) => {
@@ -42,7 +40,6 @@ const formatRecentAppointments = (appointments) => {
   }));
 };
 
-// Add these helper functions before the existing exports
 export const getAdminStats = async (req, res) => {
   try {
     const { rows: [{ total_properties }] } = await pool.query('SELECT COUNT(*) as total_properties FROM properties');
@@ -166,10 +163,8 @@ const getViewsData = async () => {
   }
 };
 
-// Add these new controller functions
 export const fetchAllAppointments = async (req, res) => {
   try {
-    console.log("Fetching all appointments...");
     const appointments = await Appointment.find()
       .populate("propertyId", "title location")
       .populate("userId", "firstName email")
@@ -327,7 +322,6 @@ export const getSystemHealth = async (req, res) => {
     }
 };
 
-// User Management
 export const getUsers = catchAsync(async (req, res) => {
     const users = await getAllUsers(req.query);
     res.json({
@@ -361,7 +355,6 @@ export const removeUser = catchAsync(async (req, res) => {
     });
 });
 
-// Property Management
 export const getProperties = catchAsync(async (req, res) => {
     const properties = await getAllProperties(req.query);
     res.json({
@@ -395,7 +388,6 @@ export const removeProperty = catchAsync(async (req, res) => {
     });
 });
 
-// Appointment Management
 export const getAppointments = catchAsync(async (req, res) => {
     const appointments = await getAllAppointments(req.query);
     res.json({
@@ -429,7 +421,6 @@ export const removeAppointment = catchAsync(async (req, res) => {
     });
 });
 
-// Dashboard
 export const getStats = catchAsync(async (req, res) => {
     const stats = await getDashboardStats();
     res.json({

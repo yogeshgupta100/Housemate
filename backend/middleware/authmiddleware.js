@@ -45,7 +45,6 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// In backend/middleware/authmiddleware.js
 export const checkAppointmentOwnership = async (req, res, next) => {
   try {
     const client = await pool.connect();

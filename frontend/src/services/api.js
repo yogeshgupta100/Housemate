@@ -1,7 +1,5 @@
-// frontend/src/services/api.js
 import axios from 'axios';
 
-// Change this to match your backend server port (4000)
 const API_URL = 'http://localhost:4000'
 
 const api = axios.create({

@@ -18,7 +18,6 @@ const createRolesTable = async () => {
     }
 };
 
-// Create the table if it doesn't exist
 createRolesTable();
 
 export default {

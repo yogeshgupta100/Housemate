@@ -12,6 +12,7 @@ import userRoutes from './routes/userRoutes.js';
 import appointmentRoutes from './routes/appointmentRoute.js';
 import adminRoutes from './routes/adminRoute.js';
 import favoritesRoutes from './routes/favoritesRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js';
 import pool from './config/postgres.js';
 // Load env vars
 dotenv.config();
@@ -36,7 +37,11 @@ const __dirname = dirname(__filename);
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Set static folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -52,6 +57,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/favorites', favoritesRoutes);
+app.use('/api/pg', pdfRoutes);
 
 // Error handling
 app.use(errorHandler);
@@ -64,7 +70,7 @@ app.use(errorHandler);
 //   });
 // });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);

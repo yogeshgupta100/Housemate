@@ -1,4 +1,3 @@
-// Property validation function
 export const validateProperty = (data) => {
   const errors = [];
 

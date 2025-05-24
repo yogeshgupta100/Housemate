@@ -30,6 +30,7 @@ const createUserTable = async () => {
                 password_changed_at TIMESTAMP WITH TIME ZONE,
                 is_active BOOLEAN DEFAULT true,
                 bio TEXT,
+                profile_image VARCHAR(255),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
@@ -70,10 +71,8 @@ const createUserTable = async () => {
     }
 };
 
-// Create the table if it doesn't exist
 createUserTable();
 
-// Retry user_favorites table creation every 5 seconds if it failed
 setInterval(async () => {
     try {
         const { rows: tableCheck } = await pool.query(`

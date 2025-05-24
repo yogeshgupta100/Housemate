@@ -24,7 +24,6 @@ dotenv.config();
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email, password);
     
     // Find user and include password field
     const user = await userModel.findOne({ email }).select('+password');
@@ -249,7 +248,6 @@ const logout = async (req, res) => {
     }
 };
 
-// get name and email
 
 const getname = async (req, res) => {
   try {

@@ -14,7 +14,7 @@ const PropertyCard = ({ property }) => {
       transition={{ duration: 0.3 }}
       className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl border border-gray-100 flex flex-col h-full"
     >
-      {/* Header with gradient background */}
+      {}
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 sm:p-5 relative">
         <motion.div 
           initial={{ opacity: 0 }}
@@ -37,9 +37,9 @@ const PropertyCard = ({ property }) => {
         </div>
       </div>
       
-      {/* Content area */}
+      {}
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
-        {/* Price and area information */}
+        {}
         <div className="flex items-center gap-3 mb-4 sm:mb-5">
           <div className="flex-1">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-0.5 sm:mb-1">Price</p>
@@ -57,7 +57,7 @@ const PropertyCard = ({ property }) => {
           )}
         </div>
         
-        {/* Property description - Collapsible on mobile */}
+        {}
         <div className="mb-4 sm:mb-5 flex-1">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
@@ -91,7 +91,7 @@ const PropertyCard = ({ property }) => {
           </motion.div>
         </div>
         
-        {/* Amenities section */}
+        {}
         {property.amenities && property.amenities.length > 0 && (
           <div className="mt-auto">
             <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">

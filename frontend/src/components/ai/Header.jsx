@@ -23,7 +23,7 @@ const Header = ({ title = "AI Property Assistant" }) => {
       className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-4 sm:px-6 shadow-lg relative z-50"
     >
       <div className="container mx-auto flex justify-between items-center">
-        {/* Logo and Title */}
+        {}
         <Link to="/ai-property-hub" className="flex items-center gap-2">
           <motion.div
             whileHover={{ rotate: 10 }}
@@ -43,14 +43,14 @@ const Header = ({ title = "AI Property Assistant" }) => {
           </motion.div>
         </Link>
 
-        {/* Mobile Title (centered) */}
+        {}
         <div className="sm:hidden absolute left-1/2 transform -translate-x-1/2">
           <h1 className="text-lg font-bold text-white">
             {title.split(' ').slice(0, 2).join(' ')}
           </h1>
         </div>
 
-        {/* Navigation */}
+        {}
         <div className="flex items-center gap-3">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -62,7 +62,7 @@ const Header = ({ title = "AI Property Assistant" }) => {
             <span>Back Home</span>
           </motion.button>
 
-          {/* Mobile Menu Button */}
+          {}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={toggleMenu}
@@ -74,7 +74,7 @@ const Header = ({ title = "AI Property Assistant" }) => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div

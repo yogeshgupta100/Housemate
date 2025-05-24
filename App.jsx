@@ -27,7 +27,6 @@ const App = () => {
     <HelmetProvider>
     <AuthProvider>
     <Router>
-      {/* Base website structured data */}
       <StructuredData type="website" />
       <StructuredData type="organization" />
       

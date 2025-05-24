@@ -144,7 +144,7 @@ const ScheduleViewing = ({ propertyId, propertyTitle, propertyLocation, property
 
           {!isSuccess ? (
             <>
-              {/* Header with property info */}
+              {}
               <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
                 {propertyImage && (
                   <div className="mr-4 flex-shrink-0">
@@ -169,7 +169,7 @@ const ScheduleViewing = ({ propertyId, propertyTitle, propertyLocation, property
                 </div>
               </div>
 
-              {/* Step indicator */}
+              {}
               <div className="mb-6">
                 <div className="flex items-center justify-between">
                   <div className={`flex flex-col items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
@@ -389,7 +389,7 @@ const ScheduleViewing = ({ propertyId, propertyTitle, propertyLocation, property
             </motion.div>
           )}
           
-          {/* Additional services info */}
+          {}
           {!isSuccess && (
             <div className="mt-6 pt-4 border-t border-gray-100">
               <div className="flex items-center text-sm text-gray-600">

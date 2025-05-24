@@ -120,7 +120,17 @@ const PropertyListingForm = () => {
 
   const locationInputRef = useRef(null);
 
-// Add useEffect to initialize Google Places Autocomplete
+  // Add new state for floor and room details
+  const [floorDetails, setFloorDetails] = useState([{
+    floorNumber: 1,
+    rooms: [{
+      roomNumber: 1,
+      capacity: 1,
+      occupied: 0,
+    }]
+  }]);
+
+  // Add useEffect to initialize Google Places Autocomplete
   useEffect(() => {
     if (!locationInputRef.current || !window.google) return;
 
@@ -307,12 +317,53 @@ const PropertyListingForm = () => {
     }
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
+    
+    try {
+      const uploadedUrls = [];
+      
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('pdf', file); // Using the same endpoint but for images
+
+        const response = await axios.post(
+          `${Backendurl}/api/pg/upload`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+
+        if (response.data.success) {
+          uploadedUrls.push(response.data.data.url);
+        }
+      }
+
+      // Update form data with the new image URLs
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls]
+      }));
+
+      // Update preview URLs
+      setPreviewUrls(prev => [...prev, ...uploadedUrls]);
+
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload some images');
+    }
+  };
+
+  const handleRemoveImage = (index) => {
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...files]
+      images: prev.images.filter((_, i) => i !== index)
     }));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSaveDraft = async () => {
@@ -375,6 +426,82 @@ const PropertyListingForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFloorDetailsChange = (floorIndex, field, value) => {
+    setFloorDetails(prev => {
+      const newDetails = [...prev];
+      if (field === 'floorNumber') {
+        newDetails[floorIndex].floorNumber = value;
+      }
+      return newDetails;
+    });
+  };
+
+  const handleRoomDetailsChange = (floorIndex, roomIndex, field, value) => {
+    setFloorDetails(prev => {
+      const newDetails = [...prev];
+      if (field === 'roomNumber') {
+        newDetails[floorIndex].rooms[roomIndex].roomNumber = value;
+      } else if (field === 'capacity') {
+        newDetails[floorIndex].rooms[roomIndex].capacity = value;
+        // Ensure occupied doesn't exceed new capacity
+        if (newDetails[floorIndex].rooms[roomIndex].occupied > value) {
+          newDetails[floorIndex].rooms[roomIndex].occupied = value;
+        }
+      } else if (field === 'occupied') {
+        // Ensure occupied doesn't exceed capacity
+        const maxOccupied = newDetails[floorIndex].rooms[roomIndex].capacity;
+        newDetails[floorIndex].rooms[roomIndex].occupied = Math.min(value, maxOccupied);
+      }
+      return newDetails;
+    });
+  };
+
+  const addFloor = () => {
+    setFloorDetails(prev => [...prev, {
+      floorNumber: prev.length + 1,
+      rooms: [{
+        roomNumber: 1,
+        capacity: 1,
+        occupied: 0
+      }]
+    }]);
+  };
+
+  const removeFloor = (floorIndex) => {
+    setFloorDetails(prev => prev.filter((_, index) => index !== floorIndex));
+  };
+
+  const addRoom = (floorIndex) => {
+    setFloorDetails(prev => {
+      const newDetails = [...prev];
+      const currentFloor = newDetails[floorIndex];
+      const nextRoomNumber = currentFloor.rooms.length + 1;
+      
+      // Create a new rooms array with the new room
+      const updatedRooms = [...currentFloor.rooms, {
+        roomNumber: nextRoomNumber,
+        capacity: 1,
+        occupied: 0
+      }];
+      
+      // Update the floor with the new rooms array
+      newDetails[floorIndex] = {
+        ...currentFloor,
+        rooms: updatedRooms
+      };
+      
+      return newDetails;
+    });
+  };
+
+  const removeRoom = (floorIndex, roomIndex) => {
+    setFloorDetails(prev => {
+      const newDetails = [...prev];
+      newDetails[floorIndex].rooms = newDetails[floorIndex].rooms.filter((_, index) => index !== roomIndex);
+      return newDetails;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -475,7 +602,8 @@ const PropertyListingForm = () => {
           state: formData.address.state,
           pincode: formData.address.pincode,
           country: formData.address.country
-        }
+        },
+        images: formData.images // Now this will be an array of S3 URLs
       };
 
       // Add availability data for rental properties
@@ -488,48 +616,21 @@ const PropertyListingForm = () => {
         };
       }
 
-      // Create FormData for multipart/form-data
-      const formDataToSend = new FormData();
-      
-      // Append all non-file data as JSON string
-      formDataToSend.append('data', JSON.stringify(payload));
-
-      // Append images as files
-      if (formData.images && formData.images.length > 0) {
-        formData.images.forEach((file, index) => {
-          // If the image is a base64 object, convert it back to a file
-          if (file.data) {
-            const byteString = atob(file.data);
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            
-            const blob = new Blob([ab], { type: file.type });
-            const newFile = new File([blob], file.name, { type: file.type });
-            formDataToSend.append('images', newFile);
-          } else {
-            // If it's already a file, append it directly
-            formDataToSend.append('images', file);
-          }
-        });
+      // Add floor details for specific property types
+      if (formData.listingType === 'rent' && ['pg', 'rk', 'flat'].includes(formData.type)) {
+        payload.floorDetails = floorDetails;
       }
 
       console.log('Sending request to:', `${Backendurl}/api/properties/add`);
-      console.log('Form data being sent:', {
-        data: payload,
-        images: formData.images.map(img => img.name || img.fileName)
-      });
+      console.log('Payload being sent:', payload);
 
       const response = await axios.post(
         `${Backendurl}/api/properties/add`,
-        formDataToSend,
+        payload,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -539,7 +640,7 @@ const PropertyListingForm = () => {
       if (response.data.success) {
         setSuccess(true);
         toast.success('Property listed successfully!');
-        navigate('/dashboard');
+        navigate('/customer-panel');
       } else {
         throw new Error(response.data.message || 'Failed to list property');
       }
@@ -682,7 +783,7 @@ const PropertyListingForm = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen bg-gray-50 pt-16 pb-12"
+      className="min-h-screen bg-gray-50 pt-24 pb-12"
     >
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
@@ -1089,6 +1190,109 @@ const PropertyListingForm = () => {
               </div>
             </div>
           </div>
+
+          {/* Add this section after the Property Details section and before the Amenities section */}
+          {formData.listingType === 'rent' && ['pg', 'rk', 'flat'].includes(formData.type) && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Floor & Room Details
+              </h2>
+              
+              <div className="space-y-6">
+                {floorDetails.map((floor, floorIndex) => (
+                  <div key={floorIndex} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium">Floor {floor.floorNumber}</h3>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => addRoom(floorIndex)}
+                          className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                        >
+                          Add Room
+                        </button>
+                        {floorDetails.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeFloor(floorIndex)}
+                            className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          >
+                            Remove Floor
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {floor.rooms.map((room, roomIndex) => (
+                        <div key={roomIndex} className={`grid grid-cols-1 gap-4 p-3 bg-gray-50 rounded ${formData.type !== 'rk' ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Room Number
+                            </label>
+                            <input
+                              type="number"
+                              value={room.roomNumber}
+                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'roomNumber', parseInt(e.target.value))}
+                              min="1"
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          {formData.type !== 'rk' && <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Capacity
+                            </label>
+                            <input
+                              type="number"
+                              value={room.capacity}
+                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'capacity', parseInt(e.target.value))}
+                              min="1"
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Currently Occupied
+                            </label>
+                            <input
+                              type="number"
+                              value={room.occupied}
+                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'occupied', parseInt(e.target.value))}
+                              min="0"
+                              max={room.capacity}
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Max: {room.capacity}
+                            </p>
+                          </div>
+                          {floor.rooms.length > 1 && (
+                            <div className="md:col-span-3 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removeRoom(floorIndex, roomIndex)}
+                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Remove Room
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addFloor}
+                  className="w-full py-2 px-4 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                >
+                  Add Floor
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Amenities Section */}
           <div className="bg-white rounded-xl shadow-sm p-8">

@@ -155,9 +155,9 @@ const AgreementPreview = ({ agreement }) => {
         </div>
 
         <div className="mt-8 text-center text-sm text-gray-500 border-t border-gray-200 pt-4">
-          <p className="font-medium">BuildEstate, Inc.</p>
+          <p className="font-medium">HOUSEMATE, Inc.</p>
           <p>123 Real Estate Ave, New York, NY 10001</p>
-          <p>contact@buildestate.com | +1 (555) 123-4567</p>
+          <p>contact@housemate.com | +1 (555) 123-4567</p>
         </div>
       </div>
     </div>

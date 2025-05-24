@@ -42,7 +42,6 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    console.log("req.body",req.body);
     const { user, token } = await authService.login(req.body.email, req.body.password);
 
     res.status(200).json({

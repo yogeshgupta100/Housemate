@@ -4,16 +4,14 @@ class FavoritesService {
     async getFavorites(userId) {
         const client = await pool.connect();
         try {
-            const { rows: [user] } = await client.query(
-                'SELECT favorites FROM users WHERE id = $1',
+            const { rows } = await client.query(
+                `SELECT p.*
+                 FROM favorites f
+                 JOIN properties p ON f.property_id = p.id
+                 WHERE f.user_id = $1`,
                 [userId]
             );
-
-            if (!user) {
-                throw new Error('User not found');
-            }
-
-            return user.favorites || [];
+            return rows;
         } finally {
             client.release();
         }
@@ -27,32 +25,18 @@ class FavoritesService {
                 'SELECT id FROM properties WHERE id = $1',
                 [propertyId]
             );
+            if (!property) throw new Error('Property not found');
 
-            if (!property) {
-                throw new Error('Property not found');
-            }
-
-            // Get current favorites
-            const { rows: [user] } = await client.query(
-                'SELECT favorites FROM users WHERE id = $1',
-                [userId]
+            // Insert into favorites, ignore if already exists
+            await client.query(
+                `INSERT INTO favorites (user_id, property_id)
+                 VALUES ($1, $2)
+                 ON CONFLICT (user_id, property_id) DO NOTHING`,
+                [userId, propertyId]
             );
 
-            if (!user) {
-                throw new Error('User not found');
-            }
-
-            // Add property to favorites if not already present
-            const favorites = user.favorites || [];
-            if (!favorites.includes(propertyId)) {
-                favorites.push(propertyId);
-                await client.query(
-                    'UPDATE users SET favorites = $1 WHERE id = $2',
-                    [favorites, userId]
-                );
-            }
-
-            return favorites;
+            // Return updated favorites
+            return this.getFavorites(userId);
         } finally {
             client.release();
         }
@@ -61,24 +45,11 @@ class FavoritesService {
     async removeFavorite(userId, propertyId) {
         const client = await pool.connect();
         try {
-            // Get current favorites
-            const { rows: [user] } = await client.query(
-                'SELECT favorites FROM users WHERE id = $1',
-                [userId]
-            );
-
-            if (!user) {
-                throw new Error('User not found');
-            }
-
-            // Remove property from favorites
-            const favorites = (user.favorites || []).filter(id => id !== propertyId);
             await client.query(
-                'UPDATE users SET favorites = $1 WHERE id = $2',
-                [favorites, userId]
+                'DELETE FROM favorites WHERE user_id = $1 AND property_id = $2',
+                [userId, propertyId]
             );
-
-            return favorites;
+            return this.getFavorites(userId);
         } finally {
             client.release();
         }
@@ -87,16 +58,11 @@ class FavoritesService {
     async isPropertyFavorited(userId, propertyId) {
         const client = await pool.connect();
         try {
-            const { rows: [user] } = await client.query(
-                'SELECT favorites FROM users WHERE id = $1',
-                [userId]
+            const { rows } = await client.query(
+                'SELECT 1 FROM favorites WHERE user_id = $1 AND property_id = $2',
+                [userId, propertyId]
             );
-
-            if (!user) {
-                throw new Error('User not found');
-            }
-
-            return (user.favorites || []).includes(propertyId);
+            return rows.length > 0;
         } finally {
             client.release();
         }

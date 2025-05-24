@@ -3,7 +3,6 @@ import { steps } from '../assets/stepsdata';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -35,17 +34,17 @@ function Step({ icon: Icon, title, description, stepNumber }) {
     >
 
       
-      {/* Icon container */}
+      {}
       <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl flex items-center justify-center mb-5 shadow-md relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <Icon className="h-10 w-10 text-blue-600 group-hover:text-white relative z-10 transition-colors duration-300" />
       </div>
       
-      {/* Content */}
+      {}
       <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
       <p className="text-gray-600 max-w-xs text-center leading-relaxed">{description}</p>
       
-      {/* Hover indicator */}
+      {}
       <motion.div
         whileHover={{ scale: 1.1 }}
         className="mt-4 p-2 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors cursor-pointer"
@@ -60,7 +59,7 @@ export default function HowItWorks() {
   return (
     <section className="py-28 bg-gradient-to-b from-white to-gray-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -76,7 +75,7 @@ export default function HowItWorks() {
           </p>
         </motion.div>
 
-        {/* Steps */}
+        {}
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -84,7 +83,7 @@ export default function HowItWorks() {
           viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-8 lg:gap-16 relative"
         >
-          {/* Process line - desktop */}
+          {}
           <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-0.5 bg-gray-100">
             <div className="absolute left-0 right-0 top-0 h-full">
               <div className="h-full w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 bg-size-200 animate-bg-pos-x"></div>
@@ -100,7 +99,7 @@ export default function HowItWorks() {
                 stepNumber={index + 1}
               />
               
-              {/* Connection arrows - desktop */}
+              {}
               {index < steps.length - 1 && (
                 <div className="hidden md:block absolute" 
                   style={{ left: `${(index + 0.7) * (100 / 3) + 8}%`, top: '9%' }}>
@@ -123,7 +122,7 @@ export default function HowItWorks() {
           ))}
         </motion.div>
 
-        {/* CTA button */}
+        {}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -143,7 +142,7 @@ export default function HowItWorks() {
           </motion.a>
         </motion.div>
         
-        {/* Testimonial teaser */}
+        {}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}

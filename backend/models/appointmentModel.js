@@ -44,7 +44,6 @@ const createAppointmentTable = async () => {
     }
 };
 
-// Initialize table
 createAppointmentTable().catch(error => {
     console.error('Failed to initialize appointments table:', error);
     process.exit(1);

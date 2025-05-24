@@ -39,10 +39,10 @@ const InvoicePreview = ({ invoice, transaction }) => {
       <div className="p-6">
         <div className="flex justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-blue-600 mb-1">BuildEstate</h2>
+            <h2 className="text-2xl font-bold text-blue-600 mb-1">HOUSEMATE</h2>
             <p className="text-sm text-gray-500">123 Real Estate Ave</p>
             <p className="text-sm text-gray-500">New York, NY 10001</p>
-            <p className="text-sm text-gray-500">contact@buildestate.com</p>
+            <p className="text-sm text-gray-500">contact@housemate.com</p>
             <p className="text-sm text-gray-500">+1 (555) 123-4567</p>
           </div>
           <div className="text-right">
@@ -152,7 +152,7 @@ const InvoicePreview = ({ invoice, transaction }) => {
 
         <div className="mt-8 text-sm text-gray-500 border-t border-gray-200 pt-4">
           <p className="font-medium mb-2">Payment Information:</p>
-          <p>Please make checks payable to: BuildEstate, Inc.</p>
+          <p>Please make checks payable to: HOUSEMATE, Inc.</p>
           <p>Wire Transfer to: Bank of America</p>
           <p>Account #: XXXX-XXXX-XXXX-1234</p>
           <p>Routing #: XXXXXXXX</p>

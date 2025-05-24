@@ -11,7 +11,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
     <div className="bg-white p-4 rounded-lg shadow">
       <h2 className="text-lg font-semibold mb-4">Filters</h2>
       
-      {/* Listing Type */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Listing Type
@@ -28,7 +28,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
         </select>
       </div>
 
-      {/* Property Type */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Property Type
@@ -49,7 +49,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
         </select>
       </div>
 
-      {/* Price Range */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Price Range
@@ -74,7 +74,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      {/* Location */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           City
@@ -89,7 +89,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
         />
       </div>
 
-      {/* Beds & Baths */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Beds & Baths
@@ -122,7 +122,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      {/* Furnishing */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Furnishing
@@ -140,7 +140,7 @@ const PropertyFilters = ({ filters, onFilterChange }) => {
         </select>
       </div>
 
-      {/* Sort By */}
+      {}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Sort By

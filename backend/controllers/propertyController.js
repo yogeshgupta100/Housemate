@@ -132,8 +132,9 @@ export const getPropertyById = async (req, res) => {
 
 export const createProperty = async (req, res) => {
   try {
-    const images = req.files ? req.files.map(file => file.path) : [];
-    const amenities = req.body.amenities ? JSON.parse(req.body.amenities) : [];
+    // Get images array from request body (now contains S3 URLs)
+    const images = req.body.images || [];
+    const amenities = req.body.amenities || [];
 
     // Parse coordinates with proper validation
     let coordinates = null;
@@ -178,7 +179,40 @@ export const createProperty = async (req, res) => {
       });
     }
 
-    const defaultAdminId = '657089f229c2df66a7ea7c0d';
+    // Parse availability for rental properties
+    let availability = null;
+    try {
+      if (req.body.availability) {
+        availability = typeof req.body.availability === 'string'
+          ? JSON.parse(req.body.availability)
+          : req.body.availability;
+      }
+    } catch (error) {
+      console.error('Error parsing availability:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid availability format'
+      });
+    }
+
+    // Parse floor details if present
+    let floorDetails = null;
+    try {
+      if (req.body.floorDetails) {
+        floorDetails = typeof req.body.floorDetails === 'string'
+          ? JSON.parse(req.body.floorDetails)
+          : req.body.floorDetails;
+      }
+    } catch (error) {
+      console.error('Error parsing floor details:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid floor details format'
+      });
+    }
+
+    // Get user ID from the authenticated request
+    const userId = req.user.id; // This comes from the auth middleware
 
     const propertyData = {
       title: req.body.title?.toString(),
@@ -193,8 +227,8 @@ export const createProperty = async (req, res) => {
       listingType: req.body.listingType?.toString()?.toLowerCase(),
       amenities: amenities,
       images: images,
-      userId: req.body.userId || defaultAdminId,
-      createdBy: req.body.createdBy || defaultAdminId,
+      userId: userId, // Use the authenticated user's ID
+      createdBy: userId, // Use the same ID for created_by
       coordinates: coordinates || {
         latitude: 0,
         longitude: 0
@@ -206,7 +240,8 @@ export const createProperty = async (req, res) => {
         pincode: address?.pincode || '',
         country: address?.country || 'India'
       },
-      floorArea: Number(req.body.sqft) || 0
+      floorArea: Number(req.body.sqft) || 0,
+      floorDetails: floorDetails
     };
 
     // Adding sale-specific fields only if listingType is 'sale'
@@ -218,11 +253,10 @@ export const createProperty = async (req, res) => {
 
     // Adding rental-specific fields only if listingType is 'rent'
     if (req.body.listingType?.toString()?.toLowerCase() === 'rent') {
-      const availability = req.body.availability ? JSON.parse(req.body.availability) : {};
       propertyData.availability = {
         status: 'Available',
-        availableFrom: new Date(availability.availableFrom),
-        minLeasePeriod: availability.minLeasePeriod || '12 months'
+        availableFrom: new Date(availability?.availableFrom),
+        minLeasePeriod: availability?.minLeasePeriod || '12 months'
       };
     }
 
@@ -629,6 +663,84 @@ export const searchPropertiesByCoordinates = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message
+    });
+  }
+};
+
+export const getPropertiesByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const client = await pool.connect();
+
+    try {
+      const { rows: properties } = await client.query(
+        `SELECT * FROM properties WHERE user_id = $1 ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          properties
+        }
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error in getPropertiesByUser:', error);
+    res.status(500).json({
+      success: false,
+      message: `Failed to fetch user properties: ${error.message}`
+    });
+  }
+};
+
+export const getFilterOptions = async (req, res) => {
+  try {
+    const client = await pool.connect();
+
+    try {
+      // Get unique property types
+      const { rows: types } = await client.query(
+        'SELECT DISTINCT type FROM properties WHERE type IS NOT NULL ORDER BY type'
+      );
+
+      // Get unique statuses
+      const { rows: statuses } = await client.query(
+        'SELECT DISTINCT status FROM properties WHERE status IS NOT NULL ORDER BY status'
+      );
+
+      // Get unique cities
+      const { rows: cities } = await client.query(
+        'SELECT DISTINCT city FROM properties WHERE city IS NOT NULL ORDER BY city'
+      );
+
+      // Get price ranges
+      const { rows: [{ min_price, max_price }] } = await client.query(
+        'SELECT MIN(price) as min_price, MAX(price) as max_price FROM properties'
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          types: types.map(t => t.type),
+          statuses: statuses.map(s => s.status),
+          cities: cities.map(c => c.city),
+          priceRange: {
+            min: min_price || 0,
+            max: max_price || 0
+          }
+        }
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error in getFilterOptions:', error);
+    res.status(500).json({
+      success: false,
+      message: `Failed to fetch filter options: ${error.message}`
     });
   }
 };

@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 const Companies = () => {
   return (
     <div className="mt-16 my-3 mx-6">
-      {/* Additional Trusted Companies Section */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

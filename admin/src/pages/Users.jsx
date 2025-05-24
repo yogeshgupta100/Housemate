@@ -244,7 +244,7 @@ const Users = () => {
     return (
         <div className="min-h-screen pt-32 px-4 bg-gray-50">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
+                {}
                 <div className="mb-8 flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900 mb-1">User Management</h1>
@@ -259,7 +259,7 @@ const Users = () => {
                     </button>
                 </div>
 
-                {/* Filters */}
+                {}
                 <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
                     <div className="flex flex-col md:flex-row items-center gap-4">
                         <div className="relative flex-1">
@@ -290,7 +290,7 @@ const Users = () => {
                     </div>
                 </div>
 
-                {/* Create User Modal */}
+                {}
                 {showCreateUserModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">

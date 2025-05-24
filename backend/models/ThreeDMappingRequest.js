@@ -205,14 +205,12 @@ const threeDMappingRequestSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
 threeDMappingRequestSchema.index({ user: 1, status: 1 });
 threeDMappingRequestSchema.index({ property: 1 });
 threeDMappingRequestSchema.index({ status: 1 });
 threeDMappingRequestSchema.index({ assignedTo: 1 });
 threeDMappingRequestSchema.index({ requestDate: -1 });
 
-// Pre-save middleware to generate request number
 threeDMappingRequestSchema.pre('save', async function(next) {
   if (this.isNew) {
     const date = new Date();
@@ -233,7 +231,6 @@ threeDMappingRequestSchema.pre('save', async function(next) {
   next();
 });
 
-// Pre-save middleware to calculate total price
 threeDMappingRequestSchema.pre('save', function(next) {
   if (this.isModified('pricing')) {
     let total = this.pricing.basePrice;
@@ -255,7 +252,6 @@ threeDMappingRequestSchema.pre('save', function(next) {
   next();
 });
 
-// Method to assign the request to a user
 threeDMappingRequestSchema.methods.assign = async function(userId) {
   this.assignedTo = userId;
   this.assignedDate = new Date();
@@ -263,7 +259,6 @@ threeDMappingRequestSchema.methods.assign = async function(userId) {
   return this.save();
 };
 
-// Method to mark the request as completed
 threeDMappingRequestSchema.methods.complete = async function(userId, notes = '') {
   this.completedBy = userId;
   this.completedAt = new Date();
@@ -272,14 +267,12 @@ threeDMappingRequestSchema.methods.complete = async function(userId, notes = '')
   return this.save();
 };
 
-// Method to cancel the request
 threeDMappingRequestSchema.methods.cancel = async function() {
   this.status = 'Cancelled';
   this.cancelledAt = new Date();
   return this.save();
 };
 
-// Method to record payment
 threeDMappingRequestSchema.methods.recordPayment = async function(amount) {
   if (amount <= 0) {
     throw new Error('Payment amount must be positive');
@@ -296,14 +289,12 @@ threeDMappingRequestSchema.methods.recordPayment = async function(amount) {
   return this.save();
 };
 
-// Static method to get pending requests
 threeDMappingRequestSchema.statics.getPendingRequests = function() {
   return this.find({
     status: 'Pending'
   }).sort({ requestDate: 1 });
 };
 
-// Static method to get requests by date range
 threeDMappingRequestSchema.statics.getByDateRange = function(startDate, endDate, filter = {}) {
   return this.find({
     requestDate: {

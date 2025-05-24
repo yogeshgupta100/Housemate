@@ -26,10 +26,8 @@ import { protect } from '../middleware/authmiddleware.js';
 
 const router = express.Router();
 
-// Stats routes
 router.get('/stats', getAdminStats);
 
-// Appointment routes
 router.get('/appointments', fetchAllAppointments);
 router.put('/appointments/status', updateAppointmentStatus);
 
