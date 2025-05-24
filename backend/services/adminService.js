@@ -1,6 +1,5 @@
 import userRepository from '../repositories/userRepository.js';
 import propertyRepository from '../repositories/propertyRepository.js';
-import appointmentRepository from '../repositories/appointmentRepository.js';
 import { AppError } from '../utils/error.js';
 
 export const getAllUsers = async (filters = {}) => {
