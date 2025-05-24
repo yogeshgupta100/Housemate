@@ -1,6 +1,4 @@
 import Appointment from '../models/appointmentModel.js';
-import Property from '../models/propertymodel.js';
-import User from '../models/userModel.js';
 import transporter from '../config/nodemailer.js';
 import { getEmailTemplate } from '../email.js';
 import pool from '../config/postgres.js';
