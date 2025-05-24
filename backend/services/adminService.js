@@ -1,139 +1,149 @@
-import userModel from '../models/userModel.js';
-import propertyModel from '../models/propertymodel.js';
-import appointmentModel from '../models/appointmentModel.js';
+import userRepository from '../repositories/userRepository.js';
+import propertyRepository from '../repositories/propertyRepository.js';
+import appointmentRepository from '../repositories/appointmentRepository.js';
+import { AppError } from '../utils/error.js';
 
 export const getAllUsers = async (filters = {}) => {
     try {
-        const users = await userModel.findAll(filters);
+        const users = await userRepository.findAll(filters);
         return users;
     } catch (error) {
-        throw new Error(`Failed to fetch users: ${error.message}`);
+        throw new AppError(`Failed to fetch users: ${error.message}`, 500);
     }
 };
 
 export const getUserById = async (userId) => {
     try {
-        const user = await userModel.findById(userId);
+        const user = await userRepository.findById(userId);
         if (!user) {
-            throw new Error('User not found');
+            throw new AppError('User not found', 404);
         }
         return user;
     } catch (error) {
-        throw new Error(`Failed to fetch user: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to fetch user: ${error.message}`, 500);
     }
 };
 
 export const updateUser = async (userId, updateData) => {
     try {
-        const user = await userModel.update(userId, updateData);
+        const user = await userRepository.update(userId, updateData);
         if (!user) {
-            throw new Error('User not found');
+            throw new AppError('User not found', 404);
         }
         return user;
     } catch (error) {
-        throw new Error(`Failed to update user: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to update user: ${error.message}`, 500);
     }
 };
 
 export const deleteUser = async (userId) => {
     try {
-        const user = await userModel.delete(userId);
+        const user = await userRepository.delete(userId);
         if (!user) {
-            throw new Error('User not found');
+            throw new AppError('User not found', 404);
         }
         return user;
     } catch (error) {
-        throw new Error(`Failed to delete user: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to delete user: ${error.message}`, 500);
     }
 };
 
 export const getAllProperties = async (filters = {}) => {
     try {
-        const properties = await propertyModel.findAll(filters);
+        const properties = await propertyRepository.findAll(filters);
         return properties;
     } catch (error) {
-        throw new Error(`Failed to fetch properties: ${error.message}`);
+        throw new AppError(`Failed to fetch properties: ${error.message}`, 500);
     }
 };
 
 export const getPropertyById = async (propertyId) => {
     try {
-        const property = await propertyModel.findById(propertyId);
+        const property = await propertyRepository.findById(propertyId);
         if (!property) {
-            throw new Error('Property not found');
+            throw new AppError('Property not found', 404);
         }
         return property;
     } catch (error) {
-        throw new Error(`Failed to fetch property: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to fetch property: ${error.message}`, 500);
     }
 };
 
 export const updateProperty = async (propertyId, updateData) => {
     try {
-        const property = await propertyModel.update(propertyId, updateData);
+        const property = await propertyRepository.update(propertyId, updateData);
         if (!property) {
-            throw new Error('Property not found');
+            throw new AppError('Property not found', 404);
         }
         return property;
     } catch (error) {
-        throw new Error(`Failed to update property: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to update property: ${error.message}`, 500);
     }
 };
 
 export const deleteProperty = async (propertyId) => {
     try {
-        const property = await propertyModel.delete(propertyId);
+        const property = await propertyRepository.delete(propertyId);
         if (!property) {
-            throw new Error('Property not found');
+            throw new AppError('Property not found', 404);
         }
         return property;
     } catch (error) {
-        throw new Error(`Failed to delete property: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to delete property: ${error.message}`, 500);
     }
 };
 
 export const getAllAppointments = async (filters = {}) => {
     try {
-        const appointments = await appointmentModel.findAll(filters);
+        const appointments = await appointmentRepository.findAll(filters);
         return appointments;
     } catch (error) {
-        throw new Error(`Failed to fetch appointments: ${error.message}`);
+        throw new AppError(`Failed to fetch appointments: ${error.message}`, 500);
     }
 };
 
 export const getAppointmentById = async (appointmentId) => {
     try {
-        const appointment = await appointmentModel.findById(appointmentId);
+        const appointment = await appointmentRepository.findById(appointmentId);
         if (!appointment) {
-            throw new Error('Appointment not found');
+            throw new AppError('Appointment not found', 404);
         }
         return appointment;
     } catch (error) {
-        throw new Error(`Failed to fetch appointment: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to fetch appointment: ${error.message}`, 500);
     }
 };
 
 export const updateAppointment = async (appointmentId, updateData) => {
     try {
-        const appointment = await appointmentModel.update(appointmentId, updateData);
+        const appointment = await appointmentRepository.update(appointmentId, updateData);
         if (!appointment) {
-            throw new Error('Appointment not found');
+            throw new AppError('Appointment not found', 404);
         }
         return appointment;
     } catch (error) {
-        throw new Error(`Failed to update appointment: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to update appointment: ${error.message}`, 500);
     }
 };
 
 export const deleteAppointment = async (appointmentId) => {
     try {
-        const appointment = await appointmentModel.delete(appointmentId);
+        const appointment = await appointmentRepository.delete(appointmentId);
         if (!appointment) {
-            throw new Error('Appointment not found');
+            throw new AppError('Appointment not found', 404);
         }
         return appointment;
     } catch (error) {
-        throw new Error(`Failed to delete appointment: ${error.message}`);
+        if (error instanceof AppError) throw error;
+        throw new AppError(`Failed to delete appointment: ${error.message}`, 500);
     }
 };
 
@@ -145,10 +155,10 @@ export const getDashboardStats = async () => {
             appointmentStats,
             recentAppointments
         ] = await Promise.all([
-            userModel.count(),
-            propertyModel.count(),
-            appointmentModel.getStats(),
-            appointmentModel.findAll({ limit: 5, orderBy: 'created_at DESC' })
+            userRepository.count(),
+            propertyRepository.count(),
+            appointmentRepository.getStats(),
+            appointmentRepository.findAll({ limit: 5, orderBy: 'created_at DESC' })
         ]);
 
         return {
@@ -158,6 +168,6 @@ export const getDashboardStats = async () => {
             recentAppointments
         };
     } catch (error) {
-        throw new Error(`Failed to fetch dashboard stats: ${error.message}`);
+        throw new AppError(`Failed to fetch dashboard stats: ${error.message}`, 500);
     }
 }; 
