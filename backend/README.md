@@ -88,7 +88,7 @@ backend/
 │   └── error.js
 ├── models/
 │   ├── propertyModel.js
-│   └── userModel.js
+│   └── Usermodel.js
 ├── routes/
 │   ├── authRoutes.js
 │   └── propertyRoutes.js
