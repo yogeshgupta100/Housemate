@@ -1,5 +1,4 @@
 import pool from '../config/postgres.js';
-import bcrypt from 'bcryptjs';
 
 const createUserTable = async () => {
     const client = await pool.connect();
