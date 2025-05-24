@@ -15,12 +15,10 @@ import {
 
 const router = express.Router();
 
-// User routes
 router.post("/schedule", protect, scheduleViewing);
 router.get("/user", protect, getAppointmentsByUser);
 router.get("/upcoming", protect, getUpcomingAppointments);
 
-// Admin routes
 router.get("/all", protect, getAllAppointments);
 router.put("/:id/status", protect, updateAppointmentStatus);
 router.put("/:id/meeting-link", protect, updateAppointmentMeetingLink);

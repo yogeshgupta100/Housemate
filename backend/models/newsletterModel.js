@@ -31,7 +31,6 @@ const createNewsletterTable = async () => {
     }
 };
 
-// Create the table if it doesn't exist
 createNewsletterTable();
 
 export default {

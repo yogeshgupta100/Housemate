@@ -3,24 +3,20 @@ import { Toaster } from "react-hot-toast";
 import { ErrorBoundary } from "react-error-boundary";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Components
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorFallback from "./components/ErrorFallback";
 
-// Pages
 import Login from "./components/login";
-import Dashboard from "./pages/Dashboard";
+// import Dashboard from "./pages/Dashboard";
 import List from "./pages/List";
 import Add from "./pages/Add";
 import Update from "./pages/Update";
 import Appointments from "./pages/Appointments";
-import Users from "./pages/Users"; // Add this import at the top
+import Users from "./pages/Users";
 
-// Config
 export const backendurl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-// Page transition variants
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -44,13 +40,11 @@ const App = () => {
             transition={{ duration: 0.3 }}
           >
             <Routes>
-              {/* Public Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-              {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<Dashboard />} />
+                {/* <Route path="/dashboard" element={<Dashboard />} /> */}
                 <Route path="/list" element={<List />} />
                 <Route path="/add" element={<Add />} />
                 <Route path="/update/:id" element={<Update />} />
@@ -58,13 +52,11 @@ const App = () => {
                 <Route path="/users" element={<Users />} />
               </Route>
 
-              {/* 404 Route */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
 
-        {/* Toast Notifications */}
         <Toaster 
           position="top-right"
           toastOptions={{

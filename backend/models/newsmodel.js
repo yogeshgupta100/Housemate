@@ -19,7 +19,6 @@ const createNewsTable = async () => {
     }
 };
 
-// Create the table if it doesn't exist
 createNewsTable();
 
 export default {

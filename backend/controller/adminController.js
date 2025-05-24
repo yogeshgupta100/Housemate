@@ -24,7 +24,6 @@ const formatRecentAppointments = (appointments) => {
   }));
 };
 
-// Add these helper functions before the existing exports
 export const getAdminStats = async (req, res) => {
   try {
     const [
@@ -159,7 +158,6 @@ const getViewsData = async () => {
   }
 };
 
-// Add these new controller functions
 export const getAllAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find()

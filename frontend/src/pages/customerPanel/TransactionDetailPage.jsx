@@ -6,7 +6,6 @@ import PropertyCard from '../../components/customerPanel/profile/ProfileCard';
 import InvoicePreview from '../../components/customerPanel/transactions/InvoicePreview';
 import AgreementPreview from '../../components/customerPanel/transactions/AgreementPreview';
 
-// Mock data
 const mockTransactions = [
   {
     id: '1',

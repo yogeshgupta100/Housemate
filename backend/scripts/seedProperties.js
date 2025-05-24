@@ -6,11 +6,9 @@ import { dirname } from 'path';
 import Property from '../models/propertymodel.js';
 import User from '../models/Usermodel.js';
 
-// Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/housemate';
@@ -193,7 +191,6 @@ const seedProperties = async (count = 20) => {
   }
 };
 
-// Run the seed function if this file is executed directly
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const count = parseInt(process.argv[2]) || 20;
   seedProperties(count)

@@ -63,7 +63,7 @@ const SearchForm = ({ onSearch, isLoading }) => {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-        {/* City Field with Suggestions */}
+        {}
         <div className="relative">
           <label htmlFor="city" className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
             <MapPin className="w-4 h-4 mr-1.5 text-blue-600" />
@@ -107,7 +107,7 @@ const SearchForm = ({ onSearch, isLoading }) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          {/* Price Field */}
+          {}
           <div>
             <label htmlFor="maxPrice" className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
               <IndianRupee className="w-4 h-4 mr-1.5 text-blue-600" />
@@ -132,7 +132,7 @@ const SearchForm = ({ onSearch, isLoading }) => {
             </div>
           </div>
           
-          {/* Property Type Field */}
+          {}
           <div>
             <label htmlFor="propertyType" className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
               <Home className="w-4 h-4 mr-1.5 text-blue-600" />
@@ -152,7 +152,7 @@ const SearchForm = ({ onSearch, isLoading }) => {
             </select>
           </div>
           
-          {/* Property Category Field */}
+          {}
           <div>
             <label htmlFor="propertyCategory" className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
               <Building className="w-4 h-4 mr-1.5 text-blue-600" />
@@ -170,7 +170,7 @@ const SearchForm = ({ onSearch, isLoading }) => {
             </select>
           </div>
 
-          {/* Price Range Selector */}
+          {}
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2 sm:mb-4">
               <IndianRupee className="w-4 h-4 mr-1.5 text-blue-600" />

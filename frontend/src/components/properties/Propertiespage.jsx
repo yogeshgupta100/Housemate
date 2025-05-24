@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Grid, List, SlidersHorizontal, MapPin } from "lucide-react";
 import SearchBar from "./Searchbar.jsx";
 import FilterSection from "./Filtersection.jsx";
-import PropertyCard from "./Propertycard.jsx";
+import PropertyListing from "./PropertyListing.jsx";
 import { Backendurl } from "../../config/index.js";
 
 const PropertiesPage = () => {
@@ -273,71 +273,44 @@ const PropertiesPage = () => {
             )}
           </AnimatePresence>
 
-          <div className={`${viewState.showFilters ? "lg:col-span-3" : "lg:col-span-4"}`}>
-            <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <SearchBar
-                  onInputChange={handleSearchInputChange}
-                  onSearch={handleSearch}
-                  className="flex-1"
-                  locationSuggestions={locationSuggestions}
-                  loadingSuggestions={loadingSuggestions}
-                />
+          <PropertyListing
+            properties={propertyState.properties}
+            loading={propertyState.loading}
+            error={propertyState.error}
+            isGridView={viewState.isGridView}
+            onSortChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
+            sortBy={filters.sortBy}
+          >
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <SearchBar
+                onInputChange={handleSearchInputChange}
+                onSearch={handleSearch}
+                className="flex-1"
+                locationSuggestions={locationSuggestions}
+                loadingSuggestions={loadingSuggestions}
+              />
 
-                <div className="flex items-center gap-4">
-                  <select
-                    value={filters.sortBy}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
+              <div className="flex items-center gap-4">
+                <select
+                  value={filters.sortBy}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
                       ...prev,
-                        sortBy: e.target.value,
-                      }))
-                    }
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  >
-                    <option value="">Sort By</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                    <option value="newest">Newest First</option>
-                    <option value="area-asc">Area: Low to High</option>
-                    <option value="area-desc">Area: High to Low</option>
-                  </select>
-                </div>
+                      sortBy: e.target.value,
+                    }))
+                  }
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Sort By</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="newest">Newest First</option>
+                  <option value="area-asc">Area: Low to High</option>
+                  <option value="area-desc">Area: High to Low</option>
+                </select>
               </div>
             </div>
-
-            {propertyState.loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading properties...</p>
-              </div>
-            ) : propertyState.error ? (
-              <div className="text-center py-12 bg-red-50 rounded-lg">
-                <p className="text-red-600">{propertyState.error}</p>
-              </div>
-            ) : (
-              <motion.div layout className={`grid gap-6 ${viewState.isGridView ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
-                <AnimatePresence>
-                  {propertyState.properties.length > 0 ? (
-                    propertyState.properties.map((property) => (
-                      <PropertyCard key={property.id} property={property} viewType={viewState.isGridView ? "grid" : "list"} />
-                    ))
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="col-span-full text-center py-12 bg-white rounded-lg shadow-sm"
-                    >
-                      <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No properties found</h3>
-                      <p className="text-gray-600">Try adjusting your filters or search criteria</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </div>
+          </PropertyListing>
         </div>
       </div>
     </motion.div>

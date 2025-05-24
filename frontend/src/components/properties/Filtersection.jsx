@@ -102,7 +102,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
       exit={{ opacity: 0, x: -20 }}
       className="bg-white p-6 pt-0 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto"
     >
-      {/* Header */}
+      {}
       <div className="flex justify-between items-center mb-6 pt-6 sticky top-0 bg-white h-full z-10">
         <div className="flex items-center space-x-2 w-full">
           <Filter className="w-5 h-5 text-blue-600" />
@@ -117,7 +117,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
       </div>
 
       <div className="space-y-6">
-        {/* Property Type */}
+        {}
         <div className="filter-group">
           <label className="filter-label">
             <Home className="w-4 h-4 mr-2" />
@@ -141,7 +141,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Price Range */}
+        {}
         <div className="filter-group">
           <label className="filter-label">
             <IndianRupee className="w-4 h-4 mr-2" />
@@ -164,7 +164,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Beds & Baths */}
+        {}
         <div className="grid grid-cols-2 gap-4">
           <div className="filter-group">
             <label className="filter-label">
@@ -205,7 +205,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Area Range */}
+        {}
         <div className="grid grid-cols-2 gap-4">
           <div className="filter-group">
             <label className="filter-label">
@@ -238,7 +238,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Property Condition & Status */}
+        {}
         <div className="grid grid-cols-2 gap-4">
           <div className="filter-group">
             <label className="filter-label">
@@ -281,7 +281,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Furnishing */}
+        {}
         <div className="filter-group">
           <label className="filter-label">
             <Home className="w-4 h-4 mr-2" />
@@ -305,7 +305,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Amenities */}
+        {}
         <div className="filter-group">
           <label className="filter-label">
             <Star className="w-4 h-4 mr-2" />
@@ -330,7 +330,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {/* Verified Only */}
+        {}
         <div className="filter-group">
           <label className="flex items-center space-x-2">
             <input

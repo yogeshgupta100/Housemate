@@ -182,7 +182,6 @@ const Hero = () => {
     <AnimatedContainer distance={50} direction="vertical">
       <div className="mt-20">
         <div className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 my-3 mx-6">
-          {/* Background Image */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -197,7 +196,6 @@ const Hero = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-sky-300/40 via-slate/10 to-transparent" />
           </motion.div>
 
-          {/* Content */}
           <div className="relative z-10 max-w-7xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -220,7 +218,6 @@ const Hero = () => {
               </p>
             </motion.div>
 
-            {/* Search Section */}
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -250,7 +247,6 @@ const Hero = () => {
                 </button>
               </div>
 
-              {/* Location Suggestions */}
               <AnimatePresence>
                 {showSuggestions && (
                   <motion.div

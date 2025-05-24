@@ -80,11 +80,9 @@ const walletSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
 walletSchema.index({ user: 1 });
 walletSchema.index({ isActive: 1 });
 
-// Method to credit amount
 walletSchema.methods.credit = async function(amount, description = '') {
   if (amount <= 0) {
     throw new Error('Credit amount must be positive');
@@ -107,7 +105,6 @@ walletSchema.methods.credit = async function(amount, description = '') {
   return this.save();
 };
 
-// Method to debit amount
 walletSchema.methods.debit = async function(amount, description = '') {
   if (amount <= 0) {
     throw new Error('Debit amount must be positive');
@@ -134,7 +131,6 @@ walletSchema.methods.debit = async function(amount, description = '') {
   return this.save();
 };
 
-// Method to hold amount
 walletSchema.methods.hold = async function(amount, description = '') {
   if (amount <= 0) {
     throw new Error('Hold amount must be positive');
@@ -161,7 +157,6 @@ walletSchema.methods.hold = async function(amount, description = '') {
   return this.save();
 };
 
-// Method to release held amount
 walletSchema.methods.release = async function(amount, description = '') {
   if (amount <= 0) {
     throw new Error('Release amount must be positive');
@@ -188,7 +183,6 @@ walletSchema.methods.release = async function(amount, description = '') {
   return this.save();
 };
 
-// Method to check if transaction is within daily limit
 walletSchema.methods.isWithinDailyLimit = async function(amount) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -213,7 +207,6 @@ walletSchema.methods.isWithinDailyLimit = async function(amount) {
   return (dailyTotal + amount) <= this.dailyLimit;
 };
 
-// Method to check if transaction is within monthly limit
 walletSchema.methods.isWithinMonthlyLimit = async function(amount) {
   const firstDayOfMonth = new Date();
   firstDayOfMonth.setDate(1);
@@ -239,7 +232,6 @@ walletSchema.methods.isWithinMonthlyLimit = async function(amount) {
   return (monthlyTotal + amount) <= this.monthlyLimit;
 };
 
-// Method to get transaction history
 walletSchema.methods.getTransactionHistory = function(limit = 10, skip = 0) {
   return this.model('Transaction').find({
     wallet: this._id

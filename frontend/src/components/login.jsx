@@ -4,8 +4,6 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Loader } from "lucide-react";
-import { Backendurl } from "../App";
-import { authStyles } from "../styles/auth";
 import { toast } from "react-toastify";
 import { useAuth } from '../context/AuthContext';
 
@@ -64,11 +62,11 @@ const Login = () => {
         className="w-full max-w-md"
       >
         <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 mt-14">
-          {/* Logo & Title */}
+            
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
               <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                BuildEstate
+              HOUSEMATE
               </h2>
             </Link>
             <h2 className="mt-6 text-2xl font-semibold text-gray-800">Welcome back</h2>
@@ -76,7 +74,6 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -93,7 +90,6 @@ const Login = () => {
               />
             </div>
 
-            {/* Password Field */}
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -119,7 +115,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Forgot Password Link */}
             <div className="flex items-center justify-end">
               <Link 
                 to="/forgot-password"
@@ -129,7 +124,6 @@ const Login = () => {
               </Link>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -142,7 +136,6 @@ const Login = () => {
               )}
             </button>
 
-            {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
@@ -152,7 +145,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Sign Up Link */}
             <Link
               to="/signup"
               className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"

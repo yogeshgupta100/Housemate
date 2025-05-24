@@ -104,13 +104,11 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
 transactionSchema.index({ wallet: 1, createdAt: -1 });
 transactionSchema.index({ user: 1, createdAt: -1 });
 transactionSchema.index({ type: 1, status: 1 });
 transactionSchema.index({ referenceId: 1 });
 
-// Pre-save middleware to set completion time
 transactionSchema.pre('save', function(next) {
   if (this.isModified('status')) {
     switch (this.status) {
@@ -128,7 +126,6 @@ transactionSchema.pre('save', function(next) {
   next();
 });
 
-// Method to get transaction receipt
 transactionSchema.methods.getReceipt = async function() {
   const receipt = {
     transactionId: this._id,
@@ -162,7 +159,6 @@ transactionSchema.methods.getReceipt = async function() {
   return receipt;
 };
 
-// Static method to get transactions by date range
 transactionSchema.statics.getByDateRange = function(startDate, endDate, filter = {}) {
   return this.find({
     createdAt: {
@@ -173,7 +169,6 @@ transactionSchema.statics.getByDateRange = function(startDate, endDate, filter =
   }).sort({ createdAt: -1 });
 };
 
-// Static method to get transaction statistics
 transactionSchema.statics.getStatistics = async function(filter = {}) {
   return this.aggregate([
     { $match: filter },

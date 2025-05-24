@@ -4,7 +4,6 @@ import { Search, Filter, FileText, Download } from 'lucide-react';
 import PageHeader from '../../components/customerPanel/common/PageHeader';
 import TransactionCard from '../../components/customerPanel/transactions/TransactionCard';
 
-// Mock data
 const mockTransactions = [
   {
     id: '1',

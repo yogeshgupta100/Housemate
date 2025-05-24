@@ -124,11 +124,9 @@ const couponSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
 couponSchema.index({ isActive: 1 });
 couponSchema.index({ startDate: 1, endDate: 1 });
 
-// Method to check if coupon is valid
 couponSchema.methods.isValid = function() {
   const now = new Date();
   return (
@@ -139,7 +137,6 @@ couponSchema.methods.isValid = function() {
   );
 };
 
-// Method to check if user can use coupon
 couponSchema.methods.canUserUse = function(userId) {
   if (!this.isValid()) return false;
   
@@ -150,7 +147,6 @@ couponSchema.methods.canUserUse = function(userId) {
   return userUses < this.usesPerUser;
 };
 
-// Method to calculate discount
 couponSchema.methods.calculateDiscount = function(amount) {
   if (!this.isValid() || amount < this.minPurchase) return 0;
   
@@ -174,7 +170,6 @@ couponSchema.methods.calculateDiscount = function(amount) {
   return Math.min(discount, amount);
 };
 
-// Method to use coupon
 couponSchema.methods.use = async function(userId, propertyId, amount) {
   if (!this.canUserUse(userId)) {
     throw new Error('Coupon cannot be used');
@@ -198,7 +193,6 @@ couponSchema.methods.use = async function(userId, propertyId, amount) {
   return this.save();
 };
 
-// Static method to get valid coupons for user
 couponSchema.statics.getValidCoupons = function(userId, userType, propertyType) {
   const now = new Date();
   return this.find({

@@ -50,7 +50,7 @@ const Login = () => {
               Admin Login
             </h1>
             <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
-              {/* Email Input */}
+              {}
               <div>
                 <label
                   htmlFor="email"
@@ -70,7 +70,7 @@ const Login = () => {
                 />
               </div>
 
-              {/* Password Input */}
+              {}
               <div>
                 <label
                   htmlFor="password"
@@ -100,7 +100,7 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Submit Button */}
+              {}
               <button
                 type="submit"
                 disabled={loading}

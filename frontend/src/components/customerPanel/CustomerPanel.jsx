@@ -6,8 +6,18 @@ import TransactionsPage from '../../pages/customerPanel/TransactionsPage';
 import ListedPropertiesPage from '../../pages/customerPanel/ListedPropertiesPage';
 import TransactionDetailPage from '../../pages/customerPanel/TransactionDetailPage';
 import PropertyDetailPage from '../../pages/customerPanel/PropertyDetailPage';
-
+import Favorites from '../../pages/customerPanel/favorites/Favorites';
+import FavoriteDetails from '../../pages/customerPanel/favorites/FavoriteDetails';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import NotFoundPage from '../Notfound';
 const CustomerPanel = () => {
+  const {isLoggedIn} = useAuth();
+
+  if(!isLoggedIn){
+    return <NotFoundPage />;
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 mt-16">
       <Sidebar />
@@ -15,6 +25,8 @@ const CustomerPanel = () => {
         <Routes>
           <Route path="/" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/favorites/:id" element={<FavoriteDetails />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/transactions/:id" element={<TransactionDetailPage />} />
           <Route path="/properties" element={<ListedPropertiesPage />} />

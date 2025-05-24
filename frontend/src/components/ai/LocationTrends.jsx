@@ -57,7 +57,7 @@ const LocationTrends = ({ locations }) => {
       transition={{ duration: 0.5 }}
       className="bg-white p-4 sm:p-6 rounded-lg shadow-md"
     >
-      {/* Header - Stacked on mobile, side by side on larger screens */}
+      {}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center">
           <div className="p-2 bg-blue-100 rounded-lg mr-3">
@@ -95,7 +95,7 @@ const LocationTrends = ({ locations }) => {
             exit={{ opacity: 0, x: -20 }}
             className="overflow-x-auto -mx-4 sm:mx-0"
           >
-            {/* Mobile Table View */}
+            {}
             <div className="block sm:hidden">
               {processedLocations.map((location, index) => (
                 <motion.div
@@ -154,7 +154,7 @@ const LocationTrends = ({ locations }) => {
               ))}
             </div>
             
-            {/* Desktop Table View */}
+            {}
             <div className="hidden sm:block">
               <table className="min-w-full bg-white">
                 <thead>
@@ -242,7 +242,7 @@ const LocationTrends = ({ locations }) => {
               </div>
             ) : null}
             
-            {/* Responsive grid - 1 column on mobile, 2 on medium screens */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-center mb-2">

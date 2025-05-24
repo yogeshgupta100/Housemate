@@ -33,7 +33,7 @@ export default function Values() {
           <h2 className="text-4xl font-bold mb-4">Our Values</h2>
           <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            These core values guide everything we do at BuildEstate
+            These core values guide everything we do at HOUSEMATE
           </p>
         </motion.div>
 

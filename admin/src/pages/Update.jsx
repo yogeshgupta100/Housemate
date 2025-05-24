@@ -221,7 +221,7 @@ const Update = () => {
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Update Property</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
+          {}
           <div className="space-y-4">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">
@@ -396,7 +396,7 @@ const Update = () => {
             </div>
           </div>
 
-          {/* Amenities */}
+          {}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Amenities
@@ -419,7 +419,7 @@ const Update = () => {
             </div>
           </div>
 
-          {/* Image Upload */}
+          {}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Property Images (Max 4)
@@ -466,7 +466,7 @@ const Update = () => {
             )}
           </div>
 
-          {/* Submit Button */}
+          {}
           <div>
             <button
               type="submit"

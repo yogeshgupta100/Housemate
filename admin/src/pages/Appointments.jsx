@@ -142,7 +142,7 @@ const Appointments = () => {
   return (
     <div className="min-h-screen pt-32 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* Header and Search Section - Keep existing code */}
+        {}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">
@@ -216,7 +216,7 @@ const Appointments = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="hover:bg-gray-50"
                   >
-                    {/* Property Details */}
+                    {}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <Home className="w-5 h-5 text-gray-400 mr-2" />
@@ -231,7 +231,7 @@ const Appointments = () => {
                       </div>
                     </td>
 
-                    {/* Client Details */}
+                    {}
                     <td className="px-6 py-4 relative group">
                       <div className="flex items-center">
                         <User className="w-5 h-5 text-gray-400 mr-2" />
@@ -245,7 +245,7 @@ const Appointments = () => {
                           <p className="text-xs text-gray-400">
                             {appointment.userId?.phone || "No phone"}
                           </p>
-                          {/* Notes hover section */}
+                          {}
                           {appointment.notes && (
                             <>
                               <div className="hidden group-hover:block absolute z-10 bg-gray-800 text-white text-sm rounded-lg py-2 px-3 w-64 mt-2 left-0">
@@ -261,7 +261,7 @@ const Appointments = () => {
                       </div>
                     </td>
 
-                    {/* Date & Time */}
+                    {}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <Calendar className="w-5 h-5 text-gray-400 mr-2" />
@@ -277,7 +277,7 @@ const Appointments = () => {
                       </div>
                     </td>
 
-                    {/* Status */}
+                    {}
                     <td className="px-6 py-4">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -289,7 +289,7 @@ const Appointments = () => {
                       </span>
                     </td>
 
-                    {/* Meeting Link */}
+                    {}
                     <td className="px-6 py-4">
                       {editingMeetingLink === appointment._id ? (
                         <div className="flex items-center gap-2">
@@ -348,7 +348,7 @@ const Appointments = () => {
                       )}
                     </td>
 
-                    {/* Actions */}
+                    {}
                     <td className="px-6 py-4">
                       {appointment.status === "pending" && (
                         <div className="flex items-center gap-2">

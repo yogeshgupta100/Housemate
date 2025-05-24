@@ -1,5 +1,4 @@
 import fs from "fs";
-// import imagekit from "../config/imagekit.js";
 import Property from "../models/propertymodel.js";
 
 const addproperty = async (req, res) => {
@@ -59,7 +58,6 @@ const listproperty = async (req, res) => {
     try {
         const property = await Property.find();
         res.json({ property, success: true });
-        console.log(property);
     } catch (error) {
         console.log("Error listing products: ", error);
         res.status(500).json({ message: "Server Error", success: false });

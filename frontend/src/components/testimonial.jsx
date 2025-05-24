@@ -13,18 +13,18 @@ const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
       transition={{ duration: 0.5, ease: "easeInOut" }}
       className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 relative"
     >
-      {/* Quote icon */}
+      {}
       <div className="absolute top-4 right-4 opacity-10">
         <Quote className="w-12 h-12 text-blue-500" />
       </div>
 
-      {/* Testimonial content */}
+      {}
       <p className="text-gray-700 italic mb-6 text-lg leading-relaxed relative z-10">
         "{testimonial.text}"
       </p>
 
       <div className="mt-8 flex items-center">
-        {/* Profile image */}
+        {}
         <div className="relative">
           <img
             src={testimonial.image}
@@ -43,14 +43,14 @@ const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
         </div>
 
         <div className="ml-4">
-          {/* Client info */}
+          {}
           <h3 className="font-bold text-gray-900 text-lg">{testimonial.name}</h3>
           <p className="text-sm text-gray-600 flex items-center">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 mr-2"></span>
             {testimonial.location}
           </p>
           
-          {/* Star rating */}
+          {}
           <div className="flex mt-1">
             {[...Array(5)].map((_, i) => (
               <Star
@@ -62,7 +62,7 @@ const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
         </div>
       </div>
 
-      {/* Position indicator */}
+      {}
       <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-1">
         {testimonials.map((_, i) => (
           <div
@@ -120,11 +120,11 @@ const Testimonials = () => {
           <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-4">What Our Clients Say</h2>
           <div className="w-24 h-1 bg-blue-600 mx-auto mb-6 rounded-full"></div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover why homeowners trust BuildEstate to find their perfect property
+            Discover why homeowners trust HOUSEMATE to find their perfect property
           </p>
         </motion.div>
 
-        {/* Desktop Testimonials */}
+        {}
         <div className="hidden md:block">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial) => (
@@ -179,7 +179,7 @@ const Testimonials = () => {
           </div>
         </div>
 
-        {/* Mobile Testimonial Carousel */}
+        {}
         <div className="md:hidden relative">
           <div className="overflow-hidden px-4">
             <AnimatePresence mode="wait" initial={false}>
@@ -211,7 +211,7 @@ const Testimonials = () => {
           </div>
         </div>
 
-        {/* Call to Action */}
+        {}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

@@ -5,16 +5,13 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import User from '../models/Usermodel.js';
 
-// Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/housemate';
 
-// Sample data for generating users
 const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emma', 'Robert', 'Lisa', 'William', 'Mary'];
 const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
 const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata'];
@@ -24,19 +21,16 @@ const userTypes = ['individual', 'corporate', 'dealer'];
 const genders = ['male', 'female', 'other', 'prefer_not_to_say'];
 const maritalStatuses = ['Bachelor', 'Married', 'Divorced', 'Widowed'];
 
-// Function to generate a random phone number
 const generatePhoneNumber = () => {
   return Math.floor(1000000000 + Math.random() * 9000000000).toString();
 };
 
-// Function to generate a random email
 const generateEmail = (firstName, lastName) => {
   const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
   const domain = domains[Math.floor(Math.random() * domains.length)];
   return `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 1000)}@${domain}`;
 };
 
-// Function to generate a random date of birth (between 18 and 70 years ago)
 const generateDateOfBirth = () => {
   const today = new Date();
   const minAge = 18;
@@ -46,7 +40,6 @@ const generateDateOfBirth = () => {
   return new Date(minDate.getTime() + Math.random() * (maxDate.getTime() - minDate.getTime()));
 };
 
-// Function to generate a random user
 const generateRandomUser = () => {
   const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
   const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
@@ -114,7 +107,6 @@ const generateRandomUser = () => {
   return user;
 };
 
-// Function to seed users
 const seedUsers = async (count = 20) => {
   try {
     // Connect to MongoDB
@@ -149,7 +141,6 @@ const seedUsers = async (count = 20) => {
   }
 };
 
-// Run the seed function if this file is executed directly
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const count = parseInt(process.argv[2]) || 20;
   seedUsers(count)

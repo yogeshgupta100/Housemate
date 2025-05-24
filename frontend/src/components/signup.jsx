@@ -231,18 +231,18 @@ const Signup = () => {
         className="w-full max-w-md"
       >
         <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 mt-14">
-          {/* Logo & Title */}
+          {}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
               <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                BuildEstate
+                HOUSEMATE
               </h2>
             </Link>
             <h2 className="mt-6 text-2xl font-semibold text-gray-800">Create an account</h2>
             <p className="mt-2 text-gray-600">Join our community of property enthusiasts</p>
           </div>
 
-          {/* Progress Steps */}
+          {}
           <div className="flex justify-between mb-8">
             <div className={`step ${step >= 1 ? 'active' : ''}`}>
               <div className="step-circle">1</div>
@@ -259,10 +259,10 @@ const Signup = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Step 1: Basic Information */}
+            {}
             {step === 1 && (
               <div className="space-y-6">
-                {/* First Name Field */}
+                {}
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                     First Name *
@@ -282,7 +282,7 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {/* Last Name Field */}
+                {}
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                     Last Name *
@@ -302,7 +302,7 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {/* Email Field */}
+                {}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                     Email address *
@@ -322,7 +322,7 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {/* Password Field */}
+                {}
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                     Password *
@@ -350,7 +350,7 @@ const Signup = () => {
                   <p className="mt-1 text-xs text-gray-500">Password must be at least 6 characters long</p>
                 </div>
 
-                {/* Next Button */}
+                {}
                 <button
                   type="button"
                   onClick={nextStep}
@@ -361,10 +361,10 @@ const Signup = () => {
               </div>
             )}
 
-            {/* Step 2: Contact Information */}
+            {}
             {step === 2 && (
               <div className="space-y-6">
-                {/* Phone Field */}
+                {}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number *
@@ -384,7 +384,7 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {/* Gender Field */}
+                {}
                 <div>
                   <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
                     Gender *
@@ -408,7 +408,7 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {/* Navigation Buttons */}
+                {}
                 <div className="flex space-x-4">
                   <button
                     type="button"
@@ -428,10 +428,10 @@ const Signup = () => {
               </div>
             )}
 
-            {/* Step 3: Account Type */}
+            {}
             {step === 3 && (
                 <div className="space-y-6">
-                  {/* Role Selection */}
+                  {}
                   <div>
                     <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
                       Account Type *
@@ -510,7 +510,7 @@ const Signup = () => {
                   </>
                 )}
 
-                {/* Conditional Fields for Dealer Users */}
+                {}
                   {selectedRole && roles.find(role => role.id === selectedRole)?.name === 'dealer' && (
                   <div>
                     <label htmlFor="dealerLicense" className="block text-sm font-medium text-gray-700 mb-1">
@@ -532,7 +532,7 @@ const Signup = () => {
                   </div>
                 )}
 
-                {/* Navigation Buttons */}
+                {}
                 <div className="flex space-x-4">
                   <button
                     type="button"
@@ -560,7 +560,7 @@ const Signup = () => {
             )}
           </form>
 
-          {/* Divider */}
+          {}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200"></div>
@@ -570,7 +570,7 @@ const Signup = () => {
             </div>
           </div>
 
-          {/* Sign In Link */}
+          {}
           <Link
             to="/login"
             className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"

@@ -11,6 +11,7 @@ import newsrouter from './routes/newsRoute.js';
 import appointmentRouter from './routes/appointmentRoute.js';
 import adminRouter from './routes/adminRoute.js';
 import propertyRoutes from './routes/propertyRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js';
 import {initializeRoles} from "./scripts/initRoles.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -91,6 +92,7 @@ app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/favorites', favoritesRoutes);
+app.use('/api/pg', pdfRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -125,7 +127,7 @@ app.get("/", (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BuildEstate API Status</title>
+        <title>HOUSEMATE API Status</title>
         <style>
           body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
           .container { background: #f9fafb; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -137,7 +139,7 @@ app.get("/", (req, res) => {
       </head>
       <body>
         <div class="container">
-          <h1>BuildEstate API</h1>
+          <h1>HOUSEMATE API</h1>
           <p>Status: <span class="status">Online</span></p>
           <p>Server Time: ${new Date().toLocaleString()}</p>
           

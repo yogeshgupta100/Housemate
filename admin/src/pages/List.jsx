@@ -126,7 +126,7 @@ const PropertyListings = () => {
   return (
     <div className="min-h-screen pt-32 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">
@@ -146,7 +146,7 @@ const PropertyListings = () => {
           </Link>
         </div>
 
-        {/* Filters */}
+        {}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
           <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="relative flex-1">
@@ -189,7 +189,7 @@ const PropertyListings = () => {
           </div>
         </div>
 
-        {/* Property Grid */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
             {filteredProperties.map((property) => (
@@ -200,7 +200,7 @@ const PropertyListings = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
               >
-                {/* Property Image */}
+                {}
                 <div className="relative h-48">
                   <img
                     src={property.images?.[0] ? `${backendurl}/uploads/${property.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
@@ -229,7 +229,7 @@ const PropertyListings = () => {
                   </div>
                 </div>
 
-                {/* Property Details */}
+                {}
                 <div className="p-6">
                   <div className="mb-4">
                     <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -269,7 +269,7 @@ const PropertyListings = () => {
                     </div>
                   </div>
 
-                  {/* Amenities */}
+                  {}
                   {property.amenities.length > 0 && (
                     <div className="border-t pt-4">
                       <h3 className="text-sm font-medium text-gray-900 mb-2">Amenities</h3>

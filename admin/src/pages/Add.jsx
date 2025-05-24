@@ -310,14 +310,14 @@ const PropertyForm = () => {
   return (
     <div className="min-h-screen pt-24 pb-12 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Add New Property</h1>
           <p className="mt-2 text-gray-600">Fill in the details to list a new property</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-xl shadow-lg p-6 md:p-8">
-          {/* Basic Information Section */}
+          {}
           <div className="space-y-6">
             <div className="flex items-center space-x-2 pb-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Basic Information</h2>

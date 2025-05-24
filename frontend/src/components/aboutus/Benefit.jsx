@@ -35,7 +35,7 @@ export default function Benefits() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-bold mb-4">Why Choose BuildEstate?</h2>
+          <h2 className="text-4xl font-bold mb-4">Why Choose HOUSEMATE?</h2>
           <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Experience the difference with our comprehensive property solutions

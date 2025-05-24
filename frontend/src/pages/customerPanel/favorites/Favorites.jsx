@@ -4,6 +4,7 @@ import { FaHeart, FaBed, FaBath, FaRulerCombined, FaMapMarkerAlt } from 'react-i
 import './Favorites.css';
 import {Backendurl} from "@/App.jsx";
 import axios from "axios";
+import { backendurl } from '../../../../../admin/src/App';
 
 const Favorites = () => {
     const [favorites, setFavorites] = useState([]);
@@ -23,8 +24,8 @@ const Favorites = () => {
                 }
             );
 
-            if (response.data) {
-                setFavorites(response.data);
+            if (response.data && Array.isArray(response.data.favorites)) {
+                setFavorites(response.data.favorites);
             } else {
                 setFavorites([]);
             }
@@ -37,7 +38,9 @@ const Favorites = () => {
     };
 
     useEffect(() => {
+        console.log("useEffect called");
         fetchFavoriteProperties();
+        // eslint-disable-next-line
     }, []);
 
     const removeFavorite = async (propertyId) => {
@@ -51,18 +54,17 @@ const Favorites = () => {
                     },
                 }
             );
-            if (response.data.favorites !== undefined) {
+            if (response.data && Array.isArray(response.data.favorites)) {
                 setFavorites(response.data.favorites);
             } else {
                 setFavorites(prevFavorites =>
-                    prevFavorites.filter(property => property._id !== propertyId)
+                    prevFavorites.filter(property => (property._id || property.id) !== propertyId)
                 );
             }
         } catch (error) {
             console.error('Error removing favorite:', error);
         }
     };
-
 
     if (loading) {
     return (
@@ -81,10 +83,10 @@ const Favorites = () => {
   }
 
   return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold mb-8">Favorite Properties</h1>
 
-        {favorites.length === 0 ? (
+        {favorites?.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">You haven't saved any properties yet.</p>
               <Link
@@ -96,12 +98,12 @@ const Favorites = () => {
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {favorites.map(property => (
-                  <div key={property._id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+              {favorites?.map(property => (
+                  <div key={property._id || property.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div className="relative h-48">
-                      {property.images && property.images.length > 0 ? (
+                      {property.images?.[0] && property.images.length > 0 ? (
                           <img
-                              src={property.images[0]}
+                          src={property.images?.[0]}
                               alt={property.title}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -114,7 +116,7 @@ const Favorites = () => {
                           </div>
                       )}
                       <button
-                          onClick={() => removeFavorite(property._id)}
+                          onClick={() => removeFavorite(property._id || property.id)}
                           className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors"
                           aria-label="Remove from favorites"
                       >
@@ -147,7 +149,7 @@ const Favorites = () => {
                           {property.listingType === 'rent' ? '/month' : ''}
                         </div>
                         <Link
-                            to={`/properties/${property._id}`}
+                            to={`/customer-panel/favorites/${property?._id || property?.id}`}
                             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
                         >
                           View Details

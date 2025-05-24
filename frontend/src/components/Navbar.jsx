@@ -11,12 +11,11 @@ import {
   Building,
   Users,
   MessageCircle,
-  Sparkles,
-  BotMessageSquare,
 } from "lucide-react";
-import logo from "../assets/home-regular-24.png";
+import logo from "../assets/housemate_logo.png";
 import { useAuth } from "../context/AuthContext";
 import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -25,6 +24,7 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const { isLoggedIn, user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Handle click outside of dropdown
   useEffect(() => {
@@ -64,6 +64,7 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     setIsDropdownOpen(false);
+    navigate('/login');
   };
 
   const getInitials = (name) => {
@@ -88,25 +89,22 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
             <motion.div
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
               className="p-2 rounded-lg"
             >
-              <img src={logo} alt="BuildEstate logo" className="w-6 h-6" />
+              <img src={logo} alt="HOUSEMATE logo" className="w-8 h-8" />
             </motion.div>
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:from-indigo-600 group-hover:to-blue-600 transition-all duration-300">
-              BuildEstate
+            HOUSEMATE
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <NavLinks currentPath={location.pathname} />
 
-            {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
               {isLoggedIn ? (
                 <div className="relative" ref={dropdownRef}>
@@ -119,7 +117,7 @@ const Navbar = () => {
                   >
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-md hover:shadow-lg transition-shadow">
-                        {getInitials(user?.name)}
+                        {getInitials(user?.data?.first_name)}
                       </div>
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
                     </div>
@@ -131,7 +129,6 @@ const Navbar = () => {
                     </motion.div>
                   </motion.button>
 
-                  {/* Dropdown Menu */}
                   <AnimatePresence>
                     {isDropdownOpen && (
                       <motion.div
@@ -143,39 +140,37 @@ const Navbar = () => {
                       >
                         <div className="px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-semibold text-gray-900">
-                            {user?.name}
+                            {user?.data?.first_name}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
-                            {user?.email}
+                            {user?.data?.email}
                           </p>
                         </div>
-                        
-                        {/* Dashboard Links */}
                         <Link
-                          to="/dashboard/profile"
+                          to="/customer-panel/profile"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
-                          My Profile
+                          Dashboard
                         </Link>
-                        <Link
-                          to="/dashboard/favorites"
+                        {/* <Link
+                          to="/customer-panel/favorites"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
                           Favorite Properties
                         </Link>
                         <Link
-                          to="/dashboard/wallet"
+                          to="/customer-panel/wallet"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
                           My Wallet
-                        </Link>
+                        </Link> */}
                         
                         <div className="border-t border-gray-100 my-1"></div>
                         
                         <motion.button
                           whileHover={{ x: 5 }}
                           onClick={handleLogout}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 flex items-center space-x-2 transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2 transition-colors"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Sign out</span>
@@ -208,7 +203,6 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={toggleMobileMenu}
@@ -225,7 +219,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -239,7 +232,7 @@ const Navbar = () => {
               <MobileNavLinks
                 setMobileMenuOpen={setIsMobileMenuOpen}
                 isLoggedIn={isLoggedIn}
-                user={user}
+                user={user?.data}
                 handleLogout={handleLogout}
                 currentPath={location.pathname}
               />
@@ -264,7 +257,6 @@ const NavLinks = ({ currentPath }) => {
 
   return (
     <div className="flex space-x-4 items-center">
-      {/* Main Navigation Links */}
       <div className="flex space-x-2">
         {navLinks.map(({ name, path, icon: Icon }) => {
           const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
@@ -292,10 +284,7 @@ const NavLinks = ({ currentPath }) => {
           );
         })}
       </div>
-
-      {/* Special Links */}
       <div className="flex items-center space-x-3 pl-2 border-l border-gray-200">
-        {/* List Property Button */}
         <Link
           to="/list-property"
           className={`px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-sm hover:shadow-md
@@ -307,7 +296,6 @@ const NavLinks = ({ currentPath }) => {
           <span>List Property</span>
         </Link>
 
-        {/* AI Property Hub Link */}
         {/* <Link
           to="/ai-property-hub"
           className={`relative font-medium transition-all duration-300 flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -370,7 +358,6 @@ const MobileNavLinks = ({
           Home
         </Link>
         
-        {/* Add Dashboard Links for Mobile */}
         {isLoggedIn && (
           <>
             <Link
@@ -409,7 +396,6 @@ const MobileNavLinks = ({
           </>
         )}
         
-        {/* Rest of the mobile menu items */}
         {navLinks.map(({ name, path, icon: Icon }) => {
           const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
           return (
@@ -430,17 +416,16 @@ const MobileNavLinks = ({
           );
         })}
 
-        {/* Auth Section */}
         <div className="pt-4 mt-2 border-t border-gray-100">
           {isLoggedIn ? (
             <div className="space-y-3 px-3">
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
-                  {user?.name ? user.name[0].toUpperCase() : "U"}
+                  {user?.data?.first_name ? user.data.first_name[0].toUpperCase() : "U"}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <p className="text-sm font-medium text-gray-900">{user?.data?.first_name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.data?.email}</p>
                 </div>
               </div>
               <motion.button

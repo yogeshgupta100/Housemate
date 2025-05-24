@@ -10,7 +10,7 @@ const StructuredData = ({ type, data }) => {
     website: {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
-      name: 'BuildEstate',
+      name: 'HOUSEMATE',
       url: 'https://buildestate.vercel.app',
       potentialAction: {
         '@type': 'SearchAction',
@@ -21,7 +21,7 @@ const StructuredData = ({ type, data }) => {
     organization: {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'BuildEstate',
+      name: 'HOUSEMATE',
       url: 'https://buildestate.vercel.app',
       logo: 'https://buildestate.vercel.app/logo.png',
       sameAs: [

@@ -90,7 +90,7 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar Toggle Button (Mobile) */}
+      {}
       <button 
         className="sidebar-toggle"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -98,7 +98,7 @@ const Dashboard = () => {
         {isSidebarOpen ? <FaTimes /> : <FaBars />}
       </button>
 
-      {/* Sidebar */}
+      {}
       <div className={`dashboard-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <h2>User Dashboard</h2>
@@ -140,7 +140,7 @@ const Dashboard = () => {
         </nav>
       </div>
 
-      {/* Main Content */}
+      {}
       <div className={`dashboard-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <Outlet />
       </div>

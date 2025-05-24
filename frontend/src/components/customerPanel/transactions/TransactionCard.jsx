@@ -125,7 +125,7 @@ const TransactionCard = ({ transaction }) => {
           </div>
           
           <Link 
-            to={`/transactions/${id}`}
+            to={`/customer-panel/transactions/${id}`}
             className="flex items-center text-blue-600 hover:text-blue-800 transition-colors text-sm font-medium"
           >
             View Details

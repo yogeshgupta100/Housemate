@@ -79,7 +79,7 @@ const FooterLink = ({ href, children }) => {
   return (
     <a 
       href={href} 
-      className="flex items-center text-base text-gray-600 transition-all duration-200 hover:text-blue-600 hover:translate-x-1 py-1.5 lg:py-0"
+      className="flex items-start text-base text-gray-600 transition-all duration-200 hover:text-blue-600 hover:translate-x-1 py-1.5 lg:py-0"
     >
       <ChevronRight className="w-3.5 h-3.5 mr-1 text-blue-500 opacity-0 transition-all duration-200 group-hover:opacity-100" />
       {children}
@@ -259,7 +259,7 @@ const Footer = () => {
             <FooterColumn title="Quick Links" className="col-span-2" delay={0.2}>
               <ul className="space-y-3">
                 {companyLinks.map(link => (
-                  <li key={link.name} className="group">
+                  <li key={link.name} className="group ml-[-18px]">
                     <FooterLink href={link.href}>{link.name}</FooterLink>
                   </li>
                 ))}
@@ -270,7 +270,7 @@ const Footer = () => {
             <FooterColumn title="Support" className="col-span-2" delay={0.3}>
               <ul className="space-y-3">
                 {helpLinks.map(link => (
-                  <li key={link.name} className="group">
+                  <li key={link.name} className="group ml-[-18px]">
                     <FooterLink href={link.href}>{link.name}</FooterLink>
                   </li>
                 ))}

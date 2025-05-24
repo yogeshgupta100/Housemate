@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { features } from "../assets/featuredata";
 
-// Enhanced animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -32,7 +31,6 @@ const Features = () => {
   return (
     <section className="py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -49,7 +47,6 @@ const Features = () => {
           </p>
         </motion.div>
 
-        {/* Features Grid */}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4"
           variants={containerVariants}
@@ -90,7 +87,6 @@ const Features = () => {
           ))}
         </motion.div>
         
-        {/* Call to action */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

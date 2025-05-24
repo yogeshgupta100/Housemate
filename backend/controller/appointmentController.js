@@ -4,7 +4,6 @@ import Appointment from '../models/appointmentModel.js';
 import User from '../models/userModel.js';
 import { getSchedulingEmailTemplate,getEmailTemplate } from '../email.js';
 
-// Format helpers
 const formatRecentProperties = (properties) => {
   return properties.map(property => ({
     type: 'property',
@@ -21,7 +20,6 @@ const formatRecentAppointments = (appointments) => {
   }));
 };
 
-// Main stats controller
 export const getAdminStats = async (req, res) => {
   try {
     const [
@@ -63,7 +61,6 @@ export const getAdminStats = async (req, res) => {
   }
 };
 
-// Activity tracker
 const getRecentActivity = async () => {
   try {
     const [recentProperties, recentAppointments] = await Promise.all([
@@ -88,7 +85,6 @@ const getRecentActivity = async () => {
   }
 };
 
-// Views analytics
 const getViewsData = async () => {
   try {
     const thirtyDaysAgo = new Date();
@@ -152,7 +148,6 @@ const getViewsData = async () => {
   }
 };
 
-// Revenue calculation
 const calculateRevenue = async () => {
   try {
     const properties = await Property.find();
@@ -214,7 +209,6 @@ export const updateAppointmentStatus = async (req, res) => {
   }
 };
 
-// Add scheduling functionality
 export const scheduleViewing = async (req, res) => {
   try {
     const { propertyId, date, time, notes } = req.body;
@@ -272,7 +266,6 @@ export const scheduleViewing = async (req, res) => {
   }
 };
 
-// Add this with other exports
 export const cancelAppointment = async (req, res) => {
   try {
     const appointmentId = req.params.id;
@@ -312,7 +305,6 @@ export const cancelAppointment = async (req, res) => {
   }
 };
 
-// Add this function to get user's appointments
 export const getAppointmentsByUser = async (req, res) => {
   try {
     const appointments = await Appointment.find({ userId: req.user._id })
@@ -364,7 +356,6 @@ export const updateAppointmentMeetingLink = async (req, res) => {
 };
 
 
-// Add at the end of the file
 
 export const getAppointmentStats = async (req, res) => {
   try {

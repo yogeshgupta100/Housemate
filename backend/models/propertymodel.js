@@ -89,7 +89,6 @@ const createPropertyTable = async () => {
   }
 };
 
-// Create the table if it doesn't exist
 createPropertyTable();
 
 export default {
@@ -311,20 +310,6 @@ console.log('With values:', values);
     return rows[0];
   },
 
-//   async findByUser(userId) {
-//     const { rows } = await pool.query(
-//       `SELECT p.*, 
-//                     u.first_name as owner_first_name, u.last_name as owner_last_name,
-//                     c.first_name as creator_first_name, c.last_name as creator_last_name
-//              FROM properties p
-//              LEFT JOIN users u ON p.user_id = u.id
-//              LEFT JOIN users c ON p.created_by = c.id
-//              WHERE p.created_by = $1
-//              ORDER BY p.created_at DESC`,
-//       [userId]
-//     );
-//     return rows;
-//   },
 
 async findByUser(userId) {
     const { rows } = await pool.query(

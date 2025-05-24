@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
 import Navbar from './components/Navbar'
@@ -18,26 +18,18 @@ import NotFoundPage from './components/Notfound';
 import { AuthProvider } from './context/AuthContext';
 import AIPropertyHub from './pages/Aiagent'
 import StructuredData from './components/SEO/StructuredData';
-import Dashboard from './components/dashboard/Dashboard';
-import Profile from './components/dashboard/Profile';
-import Favorites from './components/dashboard/Favorites';
-import Wallet from './components/dashboard/Wallet';
-import 'react-toastify/dist/ReactToastify.css';
 import AdminDashboard from './components/admin/Dashboard';
 import Users from './components/admin/Users';
-import MyCoupons from './components/dashboard/MyCoupons';
-import DraftProperties from './components/dashboard/DraftProperties';
 import CustomerPanel from './components/customerPanel/CustomerPanel';
-
 
 export const Backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
-const App = () => {
+const AppContent = () => {
+  const location = useLocation();
+  const isCustomerPanel = location.pathname.startsWith('/customer-panel');
+
   return (
-    <HelmetProvider>
-    <AuthProvider>
-    <Router>
-      {/* Base website structured data */}
+    <>
       <StructuredData type="website" />
       <StructuredData type="organization" />
       
@@ -55,14 +47,7 @@ const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/ai-property-hub" element={<AIPropertyHub />} />
         
-        {/* Dashboard Routes */}
-        <Route path="/dashboard" element={<Dashboard />}>
-          <Route path="profile" element={<Profile />} />
-          <Route path="favorites" element={<Favorites />} />
-          <Route path="wallet" element={<Wallet />} />
-          <Route path="coupons" element={<MyCoupons />} />
-          <Route path="draft-properties" element={<DraftProperties />} />
-        </Route>
+        <Route path="/customer-panel/*" element={<CustomerPanel />} />
         
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<div>Admin Dashboard</div>} />
@@ -71,16 +56,24 @@ const App = () => {
           <Route path="settings" element={<div>Settings</div>} />
         </Route>
 
-        <Route path="/*" element={<CustomerPanel />} />
-        
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <Footer />
+      {!isCustomerPanel && <Footer />}
       <ToastContainer />
-    </Router>
-    </AuthProvider>
-    </HelmetProvider>
-  )
-}
+    </>
+  );
+};
 
-export default App
+const App = () => {
+  return (
+    <HelmetProvider>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </HelmetProvider>
+  );
+};
+
+export default App;

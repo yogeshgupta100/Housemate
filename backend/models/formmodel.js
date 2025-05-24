@@ -19,7 +19,6 @@ const createFormTable = async () => {
     }
 };
 
-// Create the table if it doesn't exist
 createFormTable();
 
 export async function createForm(data) {
