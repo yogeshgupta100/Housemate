@@ -28,8 +28,18 @@ const addDescriptionColumn = async () => {
         throw error;
     } finally {
         client.release();
+        // End the pool to allow the process to exit
+        await pool.end();
     }
 };
 
-// Run the migration
-addDescriptionColumn().catch(console.error); 
+// Run the migration and exit
+addDescriptionColumn()
+    .then(() => {
+        console.log('Script completed successfully');
+        process.exit(0);
+    })
+    .catch(error => {
+        console.error('Script failed:', error);
+        process.exit(1);
+    }); 
