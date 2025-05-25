@@ -92,6 +92,7 @@ const initializeDatabase = async () => {
                 title VARCHAR(100) NOT NULL CHECK (length(title) >= 5),
                 subtitle VARCHAR(200),
                 slug VARCHAR(255) UNIQUE,
+                description TEXT,
                 listing_type VARCHAR(10) NOT NULL CHECK (listing_type IN ('sale', 'rent')),
                 type VARCHAR(50) NOT NULL CHECK (
                     (listing_type = 'sale' AND type IN ('house', 'apartment', 'office', 'villa', 'flat', 'commercial', 'residential plot', 'commercial plot')) OR
