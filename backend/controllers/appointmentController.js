@@ -82,7 +82,7 @@ export const scheduleViewing = async (req, res) => {
             const mailOptions = {
                 from: process.env.EMAIL || 'yogeshgupta6524@gmail.com',
                 to: req.user.email || 'yjinlove05@gmail.com',
-                subject: 'Viewing Appointment Scheduled - BuildEstate',
+                subject: 'Viewing Appointment Scheduled - HOUSEMATE',
                 html: getEmailTemplate(formattedAppointment, 'pending')
             };
 
@@ -258,7 +258,7 @@ export const updateAppointmentStatus = async (req, res) => {
             const mailOptions = {
                 from: process.env.EMAIL,
                 to: fullAppointment.user_email,
-                subject: `Viewing Appointment ${status.charAt(0).toUpperCase() + status.slice(1)} - BuildEstate`,
+                subject: `Viewing Appointment ${status.charAt(0).toUpperCase() + status.slice(1)} - HOUSEMATE`,
                 html: getEmailTemplate(formattedAppointment, status)
             };
             await transporter.sendMail(mailOptions);
@@ -301,7 +301,7 @@ export const cancelAppointment = async (req, res) => {
         const mailOptions = {
             from: process.env.EMAIL,
             to: req.user.email,
-            subject: 'Viewing Appointment Cancelled - BuildEstate',
+            subject: 'Viewing Appointment Cancelled - HOUSEMATE',
             html: getEmailTemplate(appointment, 'cancelled')
         };
 
@@ -350,7 +350,7 @@ export const updateAppointmentMeetingLink = async (req, res) => {
         const mailOptions = {
             from: process.env.EMAIL,
             to: appointment.userId.email,
-            subject: 'Viewing Appointment Meeting Link - BuildEstate',
+            subject: 'Viewing Appointment Meeting Link - HOUSEMATE',
             html: getEmailTemplate(appointment, 'meeting_link')
         };
 

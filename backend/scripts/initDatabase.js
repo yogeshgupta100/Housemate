@@ -284,7 +284,7 @@ const initializeDatabase = async () => {
                 role_id, user_type, is_active
             )
             SELECT 
-                'Admin', 'User', 'admin@buildestate.com', $1, '1234567890', 'other',
+                'Admin', 'User', 'admin@housemate.com', $1, '1234567890', 'other',
                 r.id, 'admin', true
             FROM roles r
             WHERE r.name = 'admin'

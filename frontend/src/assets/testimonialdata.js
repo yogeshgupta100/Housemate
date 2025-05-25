@@ -5,7 +5,7 @@ export const testimonials = [
     location: "New York, NY",
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
     rating: 5,
-    text: "Found my dream home through BuildEstate. The process was seamless and their team was incredibly helpful throughout the entire journey."
+    text: "Found my dream home through HOUSEMATE. The process was seamless and their team was incredibly helpful throughout the entire journey."
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ export const testimonials = [
     location: "Chicago, IL",
     image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
     rating: 5,
-    text: "BuildEstate's AI property recommendations were spot-on! I found exactly what I was looking for in half the time I expected. Their technology is truly impressive."
+    text: "HOUSEMATE's AI property recommendations were spot-on! I found exactly what I was looking for in half the time I expected. Their technology is truly impressive."
   },
   {
     id: 5,
@@ -37,7 +37,7 @@ export const testimonials = [
     location: "Austin, TX",
     image: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
     rating: 5,
-    text: "The virtual tours saved me so much time. I was relocating from another state, and BuildEstate made the entire process stress-free with their detailed property insights."
+    text: "The virtual tours saved me so much time. I was relocating from another state, and HOUSEMATE made the entire process stress-free with their detailed property insights."
   },
   {
     id: 6,

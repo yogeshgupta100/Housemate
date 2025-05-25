@@ -144,12 +144,12 @@ app.get("/", (req, res) => {
           <p>Server Time: ${new Date().toLocaleString()}</p>
           
           <div class="info">
-            <p>The BuildEstate API is running properly. This backend serves property listings, user authentication, 
-            and AI analysis features for the BuildEstate property platform.</p>
+            <p>The HOUSEMATE API is running properly. This backend serves property listings, user authentication, 
+            and AI analysis features for the HOUSEMATE property platform.</p>
           </div>
           
           <div class="footer">
-            <p>© ${new Date().getFullYear()} BuildEstate. All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} HOUSEMATE. All rights reserved.</p>
           </div>
         </div>
       </body>

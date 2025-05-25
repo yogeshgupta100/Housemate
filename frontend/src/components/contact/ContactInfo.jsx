@@ -13,8 +13,8 @@ const contactInfo = [
   {
     icon: Mail,
     title: 'Email',
-    content: 'support@buildestate.com',
-    link: 'mailto:support@buildestate.com',
+    content: 'support@housemate.com',
+    link: 'mailto:support@housemate.com',
   },
   {
     icon: MapPin,
