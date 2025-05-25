@@ -203,27 +203,27 @@ const companyLinks = [
 ];
 
 const helpLinks = [
-  { name: 'Customer Support', href: '/' },
-  { name: 'FAQs', href: '/' },
-  { name: 'Terms & Conditions', href: '/' },
-  { name: 'Privacy Policy', href: '/' },
+  { name: 'Customer Support', href: '/contact' },
+  { name: 'FAQs', href: '/faqs' },
+  { name: 'Terms & Conditions', href: '/terms' },
+  { name: 'Privacy Policy', href: '/privacy' },
 ];
 
 const contactInfo = [
   { 
     icon: MapPin, 
-    text: '123 Property Plaza, Silicon Valley, CA 94088',
-    href: 'https://maps.google.com/?q=123+Property+Plaza,Silicon+Valley,CA+94088' 
+    text: 'sec 28 gurugram',
+    href: 'https://maps.google.com/?q=sec+28+gurugram' 
   },
   { 
     icon: Phone, 
-    text: '+1 (234) 567-890',
-    href: 'tel:+1234567890'
+    text: '+91 9518212905',
+    href: 'tel:+919518212905'
   },
   { 
     icon: Mail, 
-    text: 'support@buildestate.com',
-    href: 'mailto:support@buildestate.com' 
+    text: 'Be.housemate@gmail.com',
+    href: 'mailto:Be.housemate@gmail.com' 
   },
 ];
 
@@ -240,7 +240,7 @@ const Footer = () => {
                 <Home className="h-6 w-6 text-blue-600" />
               </div>
               <span className="ml-3 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                BuildEstate
+              HOUSEMATE
               </span>
             </div>
             
@@ -353,7 +353,7 @@ const Footer = () => {
       <div className="bg-gray-100 border-t border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-gray-600 mb-4 md:mb-0 text-center md:text-left">
-            © {new Date().getFullYear()} BuildEstate. All Rights Reserved.
+            © {new Date().getFullYear()} HOUSEMATE. All Rights Reserved.
           </p>
           
           <motion.a

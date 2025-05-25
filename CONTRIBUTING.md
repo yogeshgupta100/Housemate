@@ -1,6 +1,6 @@
-# Contributing to BuildEstate
+# Contributing to HOUSEMATE
 
-Thank you for considering contributing to BuildEstate! This document outlines the process for contributing to this project.
+Thank you for considering contributing to HOUSEMATE! This document outlines the process for contributing to this project.
 
 ## Code of Conduct
 
@@ -8,7 +8,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ## How to Contribute
 
-There are several ways you can contribute to the BuildEstate project:
+There are several ways you can contribute to the HOUSEMATE project:
 
 1. **Reporting Bugs**: Open an issue describing the bug, how to reproduce it, and any potential solutions.
 2. **Suggesting Features**: Open an issue describing your feature idea and how it would benefit the project.
@@ -90,4 +90,4 @@ There are several ways you can contribute to the BuildEstate project:
 
 If you have any questions or need help, feel free to open an issue or contact the maintainers.
 
-Thank you for contributing to BuildEstate!
+Thank you for contributing to HOUSEMATE!
