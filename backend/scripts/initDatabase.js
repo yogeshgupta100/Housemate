@@ -6,6 +6,21 @@ const initializeDatabase = async () => {
     try {
         await client.query('BEGIN');
 
+        // Drop existing tables in reverse order of dependencies
+        await client.query(`
+            DROP TABLE IF EXISTS news_subscribers CASCADE;
+            DROP TABLE IF EXISTS newsletter_subscribers CASCADE;
+            DROP TABLE IF EXISTS stats CASCADE;
+            DROP TABLE IF EXISTS forms CASCADE;
+            DROP TABLE IF EXISTS appointments CASCADE;
+            DROP TABLE IF EXISTS user_favorites CASCADE;
+            DROP TABLE IF EXISTS rooms CASCADE;
+            DROP TABLE IF EXISTS floors CASCADE;
+            DROP TABLE IF EXISTS properties CASCADE;
+            DROP TABLE IF EXISTS users CASCADE;
+            DROP TABLE IF EXISTS roles CASCADE;
+        `);
+
         // 1. Create roles table first (since other tables depend on it)
         await client.query(`
             CREATE TABLE IF NOT EXISTS roles (
@@ -180,7 +195,10 @@ const initializeDatabase = async () => {
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(property_id, floor_number)
             );
+        `);
 
+        // Create floor index
+        await client.query(`
             CREATE INDEX IF NOT EXISTS idx_floors_property_id ON floors(property_id);
         `);
 
@@ -204,7 +222,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // Create room indexes after table creation
+        // Create room indexes
         await client.query(`
             CREATE INDEX IF NOT EXISTS idx_rooms_floor_id ON rooms(floor_id);
             CREATE INDEX IF NOT EXISTS idx_rooms_rent_amount ON rooms(rent_amount);
