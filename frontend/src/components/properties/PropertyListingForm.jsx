@@ -12,7 +12,8 @@ import {
   Building,
   Upload,
   Save,
-  X
+  X,
+  CodeSquare
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -51,25 +52,6 @@ const DIAL_CODES = [
   { code: '+60', country: 'Malaysia' },
   { code: '+66', country: 'Thailand' },
 ];
-
-const validateField = (name, value) => {
-  switch (name) {
-    case 'price':
-      return value <= 0 ? 'Price must be greater than 0' : '';
-    case 'beds':
-    case 'baths':
-      return value < 0 ? 'Cannot be negative' : 
-             !Number.isInteger(Number(value)) ? 'Must be a whole number' : '';
-    case 'sqft':
-      return value <= 0 ? 'Area must be greater than 0' : '';
-    case 'title':
-      return value.length < 5 ? 'Title must be at least 5 characters' : '';
-    case 'phone':
-      return !/^\d{10}$/.test(value) ? 'Enter valid 10-digit phone number' : '';
-    default:
-      return '';
-  }
-};
 
 const PropertyListingForm = () => {
   const { isLoggedIn, user } = useAuth();
@@ -117,6 +99,7 @@ const PropertyListingForm = () => {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [calculatedDeposit, setCalculatedDeposit] = useState(0);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [currentType, setCurrentType] = useState('');
 
   const locationInputRef = useRef(null);
 
@@ -129,6 +112,25 @@ const PropertyListingForm = () => {
       occupied: 0,
     }]
   }]);
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'price' && !['pg','rk'].includes(currentType):
+        return value <= 0 ? 'Price must be greater than 0' : '';
+      case 'beds' && !['pg','rk'].includes(currentType):
+      case 'baths' && !['pg','rk'].includes(currentType):
+        return value < 0 && value !== '' ? 'Cannot be negative' : 
+               !Number.isInteger(Number(value)) ? 'Must be a whole number' : '';
+      case 'sqft' && !['pg','rk'].includes(currentType):
+        return value <= 0 ? 'Area must be greater than 0' : '';
+      case 'title':
+        return value.length < 5 ? 'Title must be at least 5 characters' : '';
+      case 'phone':
+        return !/^\d{10}$/.test(value) ? 'Enter valid 10-digit phone number' : '';
+      default:
+        return '';
+    }
+  };
 
   // Add useEffect to initialize Google Places Autocomplete
   useEffect(() => {
@@ -268,6 +270,10 @@ const PropertyListingForm = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
+    if(name === 'type') {
+      setCurrentType(value);
+    }
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -325,7 +331,7 @@ const PropertyListingForm = () => {
       
       for (const file of files) {
         const formData = new FormData();
-        formData.append('pdf', file); // Using the same endpoint but for images
+        formData.append('pdf', file);
 
         const response = await axios.post(
           `${Backendurl}/api/pg/upload`,
@@ -543,10 +549,14 @@ const PropertyListingForm = () => {
       return;
     }
 
-    if (!formData.location || !formData.address.city || !formData.address.state) {
-      toast.error("Please select a complete address from the suggestions");
-      return;
-    }
+    // if (!formData.location || !formData.address.city || !formData.address.state) {
+    //   console.log('formData', formData);
+    //   console.log('formData.location', formData.location);
+    //   console.log('formData.address.city', formData.address.city);
+    //   console.log('formData.address.state', formData.address.state);
+    //   toast.error("Please select a complete address from the suggestions");
+    //   return;
+    // }
 
     if (!isLoggedIn) {
       toast.info("Please login to list a property");
@@ -561,7 +571,7 @@ const PropertyListingForm = () => {
     }
 
     // Validate rental-specific fields
-    if (formData.listingType === 'rent') {
+    if (formData.listingType === 'rent' && !['pg','rk'].includes(formData.type)) {
       if (!formData.availability || !formData.availability.availableFrom) {
         toast.error("Please select when the property will be available");
         return;
@@ -614,7 +624,8 @@ const PropertyListingForm = () => {
 
       // Add availability data for rental properties
       if (formData.listingType === 'rent') {
-        const availableFromISO = new Date(formData.availability.availableFrom).toISOString();
+        const availableFromISO = new Date(formData.availability.availableFrom).getTime;
+        console.log('availableFromISO', availableFromISO);
         payload.availability = {
           status: 'Available',
           availableFrom: availableFromISO,
