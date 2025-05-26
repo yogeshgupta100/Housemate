@@ -202,7 +202,10 @@ const initializeDatabase = async () => {
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(floor_id, room_number)
             );
+        `);
 
+        // Create room indexes after table creation
+        await client.query(`
             CREATE INDEX IF NOT EXISTS idx_rooms_floor_id ON rooms(floor_id);
             CREATE INDEX IF NOT EXISTS idx_rooms_rent_amount ON rooms(rent_amount);
             CREATE INDEX IF NOT EXISTS idx_rooms_available_from ON rooms(available_from);
