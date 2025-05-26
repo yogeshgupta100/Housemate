@@ -453,6 +453,12 @@ const PropertyListingForm = () => {
         // Ensure occupied doesn't exceed capacity
         const maxOccupied = newDetails[floorIndex].rooms[roomIndex].capacity;
         newDetails[floorIndex].rooms[roomIndex].occupied = Math.min(value, maxOccupied);
+      } else if (field === 'rent') {
+        newDetails[floorIndex].rooms[roomIndex].rent = value;
+      } else if (field === 'availableFrom') {
+        newDetails[floorIndex].rooms[roomIndex].availableFrom = value;
+      } else if (field === 'hasBalcony') {
+        newDetails[floorIndex].rooms[roomIndex].hasBalcony = value;
       }
       return newDetails;
     });
@@ -881,7 +887,7 @@ const PropertyListingForm = () => {
                   )}
                 </div>
 
-                <div>
+                {formData.listingType === 'rent' && !['pg', 'rk'].includes(formData.type) && <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {formData.listingType === 'rent' ? 'Monthly Rent *' : 'Selling Price *'}
                   </label>
@@ -907,7 +913,7 @@ const PropertyListingForm = () => {
                   {fieldErrors.price && (
                     <p className="mt-1 text-sm text-red-600">{fieldErrors.price}</p>
                   )}
-                </div>
+                </div>}
               </div>
 
               {formData.listingType === 'rent' && formData.price > 0 && (
@@ -926,7 +932,7 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
-          {formData.listingType === 'rent' && (
+          {formData.listingType === 'rent' && !['pg', 'rk'].includes(formData.type) && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
                 Availability Details
@@ -1082,7 +1088,7 @@ const PropertyListingForm = () => {
                   : 'md:grid-cols-3'
               } gap-6`}>
                 {/* Area Field */}
-                <div>
+                {formData.listingType === 'rent' && !['pg', 'rk'].includes(formData.type) && (<div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Area (sq ft) *
                   </label>
@@ -1095,10 +1101,10 @@ const PropertyListingForm = () => {
                     style={inputStyles}
                     className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
+                </div>)}
 
                 {/* Only show beds/baths for non-plot properties */}
-                {!formData.type?.includes('plot') && (
+                {!formData.type?.includes('plot') && !['pg', 'rk'].includes(formData.type) && (
                   <>
                     {/* Bedrooms Field */}
                     <div>
@@ -1225,7 +1231,7 @@ const PropertyListingForm = () => {
 
                     <div className="space-y-4">
                       {floor.rooms.map((room, roomIndex) => (
-                        <div key={roomIndex} className={`grid grid-cols-1 gap-4 p-3 bg-gray-50 rounded ${formData.type !== 'rk' ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                        <div key={roomIndex} className={`grid grid-cols-1 gap-4 p-3 bg-gray-50 rounded md:grid-cols-3`}>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Room Number
@@ -1266,8 +1272,46 @@ const PropertyListingForm = () => {
                               Max: {room.capacity}
                             </p>
                           </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Rent Amount (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={room.rent || ''}
+                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'rent', parseInt(e.target.value))}
+                              min="0"
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter rent amount"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Available From
+                            </label>
+                            <input
+                              type="date"
+                              value={room.availableFrom || ''}
+                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'availableFrom', e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <br/>
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`balcony-${floorIndex}-${roomIndex}`}
+                              checked={room.hasBalcony || false}
+                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'hasBalcony', e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor={`balcony-${floorIndex}-${roomIndex}`} className="ml-2 block text-sm text-gray-700">
+                              Has Balcony
+                            </label>
+                          </div>
                           {floor.rooms.length > 1 && (
-                            <div className="md:col-span-3 flex justify-end">
+                            <div className="md:col-span-4 flex justify-end">
                               <button
                                 type="button"
                                 onClick={() => removeRoom(floorIndex, roomIndex)}

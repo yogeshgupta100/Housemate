@@ -92,7 +92,6 @@ const initializeDatabase = async () => {
                 title VARCHAR(100) NOT NULL CHECK (length(title) >= 5),
                 subtitle VARCHAR(200),
                 slug VARCHAR(255) UNIQUE,
-                description TEXT,
                 listing_type VARCHAR(10) NOT NULL CHECK (listing_type IN ('sale', 'rent')),
                 type VARCHAR(50) NOT NULL CHECK (
                     (listing_type = 'sale' AND type IN ('house', 'apartment', 'office', 'villa', 'flat', 'commercial', 'residential plot', 'commercial plot')) OR
@@ -101,9 +100,13 @@ const initializeDatabase = async () => {
                 price DECIMAL(12,2) NOT NULL CHECK (price >= 0),
                 rent_type VARCHAR(10) CHECK (rent_type IN ('monthly', 'yearly', 'daily')) DEFAULT 'monthly',
                 deposit DECIMAL(12,2) CHECK (deposit >= 0),
+                
+                -- Sale-specific fields
                 property_age INTEGER CHECK (property_age >= 0),
                 property_condition VARCHAR(20) CHECK (property_condition IN ('new', 'good', 'average', 'needs_repair')),
                 property_status VARCHAR(20) CHECK (property_status IN ('ready_to_move', 'under_construction', 'renovated')),
+                
+                -- Location
                 location VARCHAR(255) NOT NULL,
                 region VARCHAR(100),
                 latitude DECIMAL(10,8) NOT NULL,
@@ -113,29 +116,43 @@ const initializeDatabase = async () => {
                 state VARCHAR(100),
                 pincode VARCHAR(20),
                 country VARCHAR(100) DEFAULT 'India',
+                
+                -- Property Features
                 floor_area DECIMAL(10,2) DEFAULT 0,
                 sqft DECIMAL(10,2) NOT NULL CHECK (sqft >= 0),
                 floor_no INTEGER CHECK (floor_no >= 0),
                 total_floors INTEGER CHECK (total_floors >= 1),
                 beds INTEGER CHECK (beds >= 0),
                 baths INTEGER CHECK (baths >= 0),
+                
+                -- Furnishing and Amenities
                 furnishing VARCHAR(20) CHECK (furnishing IN ('Furnished', 'Semi-Furnished', 'Unfurnished')) DEFAULT 'Unfurnished',
                 amenities TEXT[] DEFAULT '{}',
+                
+                -- Commercial Property Features
                 balcony BOOLEAN DEFAULT false,
                 central_ac BOOLEAN DEFAULT false,
                 power_backup BOOLEAN DEFAULT false,
+                
+                -- Additional Features
                 parking BOOLEAN DEFAULT false,
                 security BOOLEAN DEFAULT false,
                 swimming_pool BOOLEAN DEFAULT false,
                 gym BOOLEAN DEFAULT false,
                 garden BOOLEAN DEFAULT false,
                 lift BOOLEAN DEFAULT false,
+                
+                -- Images and Media
                 images TEXT[] DEFAULT '{}',
                 videos TEXT[] DEFAULT '{}',
+                
+                -- Status and Ownership
                 status VARCHAR(20) DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Sold', 'Rented')),
                 featured BOOLEAN DEFAULT false,
                 user_id INTEGER REFERENCES users(id),
                 created_by INTEGER REFERENCES users(id),
+                
+                -- Timestamps
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
@@ -159,8 +176,6 @@ const initializeDatabase = async () => {
                 id SERIAL PRIMARY KEY,
                 property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
                 floor_number INTEGER NOT NULL,
-                floor_area DECIMAL(10,2) NOT NULL,
-                description TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(property_id, floor_number)
@@ -174,16 +189,23 @@ const initializeDatabase = async () => {
             CREATE TABLE IF NOT EXISTS rooms (
                 id SERIAL PRIMARY KEY,
                 floor_id INTEGER REFERENCES floors(id) ON DELETE CASCADE,
-                room_number VARCHAR(50) NOT NULL,
-                room_type VARCHAR(50) NOT NULL,
-                area DECIMAL(10,2) NOT NULL,
+                room_number INTEGER NOT NULL,
+                room_type VARCHAR(50),
+                area DECIMAL(10,2),
                 description TEXT,
+                rent_amount DECIMAL(12,2) NOT NULL CHECK (rent_amount >= 0),
+                available_from DATE,
+                has_balcony BOOLEAN DEFAULT false,
+                capacity INTEGER DEFAULT 1 CHECK (capacity > 0),
+                occupied INTEGER DEFAULT 0 CHECK (occupied >= 0),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(floor_id, room_number)
             );
 
             CREATE INDEX IF NOT EXISTS idx_rooms_floor_id ON rooms(floor_id);
+            CREATE INDEX IF NOT EXISTS idx_rooms_rent_amount ON rooms(rent_amount);
+            CREATE INDEX IF NOT EXISTS idx_rooms_available_from ON rooms(available_from);
         `);
 
         // 6. Create user_favorites table
