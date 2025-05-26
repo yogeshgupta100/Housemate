@@ -7,6 +7,7 @@ const createPropertyTable = async () => {
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(100) NOT NULL CHECK (length(title) >= 5),
                 subtitle VARCHAR(200),
+                description TEXT,
                 slug VARCHAR(255) UNIQUE,
                 listing_type VARCHAR(10) NOT NULL CHECK (listing_type IN ('sale', 'rent')),
                 type VARCHAR(50) NOT NULL CHECK (
@@ -123,7 +124,7 @@ export default {
 
       const { rows } = await client.query(
         `INSERT INTO properties (
-                    title, subtitle, slug, listing_type, type, price, rent_type,
+                    title, subtitle, description, slug, listing_type, type, price, rent_type,
                     deposit, property_age, property_condition, property_status,
                     location, region, latitude, longitude, street, city, state,
                     pincode, country, floor_area, sqft, floor_no, total_floors,
@@ -134,12 +135,13 @@ export default {
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
                     $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
                     $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
-                    $39, $40, $41, $42
+                    $39, $40, $41, $42, $43
                 ) RETURNING *`,
         [
           [
             propertyData.title,
             propertyData.subtitle,
+            propertyData.description,
             propertyData.slug,
             propertyData.listing_type,
             propertyData.type,
@@ -177,9 +179,9 @@ export default {
             propertyData.lift,
             propertyData.images,
             propertyData.videos,
-            propertyData.featured || false, // 41
-            propertyData.user_id, // 42
-            propertyData.created_by, // 43 ← now matches the column count
+            propertyData.featured || false,
+            propertyData.user_id,
+            propertyData.created_by,
           ],
         ]
       );
