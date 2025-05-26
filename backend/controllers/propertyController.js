@@ -265,6 +265,36 @@ export const createProperty = async (req, res) => {
 
     const property = await propertyService.createProperty(propertyData);
 
+    if (floorDetails && Array.isArray(floorDetails)) {
+      for (const floor of floorDetails) {
+        const floorResult = await pool.query(
+          'INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id',
+          [property.id, floor.floorNumber]
+        );
+        const floorId = floorResult.rows[0].id;
+
+        if (floor.rooms && Array.isArray(floor.rooms)) {
+          for (const room of floor.rooms) {
+            await pool.query(
+              `INSERT INTO rooms (
+                floor_id, room_number, capacity, occupied,
+                rent_amount, available_from, has_balcony
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [
+                floorId,
+                room.roomNumber,
+                room.capacity || 1,
+                room.occupied || 0,
+                room.rent,
+                room.availableFrom,
+                room.hasBalcony || false
+              ]
+            );
+          }
+        }
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: property,
