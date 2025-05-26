@@ -106,6 +106,7 @@ const initializeDatabase = async () => {
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(100) NOT NULL CHECK (length(title) >= 5),
                 subtitle VARCHAR(200),
+                description TEXT,
                 slug VARCHAR(255) UNIQUE,
                 listing_type VARCHAR(10) NOT NULL CHECK (listing_type IN ('sale', 'rent')),
                 type VARCHAR(50) NOT NULL CHECK (
@@ -120,9 +121,11 @@ const initializeDatabase = async () => {
                 property_age INTEGER CHECK (property_age >= 0),
                 property_condition VARCHAR(20) CHECK (property_condition IN ('new', 'good', 'average', 'needs_repair')),
                 property_status VARCHAR(20) CHECK (property_status IN ('ready_to_move', 'under_construction', 'renovated')),
+                availability JSONB,
                 
                 -- Location
                 location VARCHAR(255) NOT NULL,
+                phone VARCHAR(20),
                 region VARCHAR(100),
                 latitude DECIMAL(10,8) NOT NULL,
                 longitude DECIMAL(11,8) NOT NULL,
@@ -347,4 +350,4 @@ const initializeDatabase = async () => {
 };
 
 // Run the initialization
-initializeDatabase().catch(console.error); 
+initializeDatabase().catch(console.error);
