@@ -130,7 +130,12 @@ const Newsletter = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${Backendurl || 'http://localhost:4000'}/news/newsdata`, { email });
+      const response = await axios.post(`${Backendurl}/api/news/newsdata`, { email } ,{
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (response.status === 200) {
         toast.success('Successfully subscribed to our newsletter!');
         setEmail('');
