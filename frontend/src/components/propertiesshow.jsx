@@ -29,21 +29,41 @@ const PropertyCard = ({ property }) => {
     navigate(`/properties/single/${property.id}`);
   };
 
+  // useEffect(() => {
+  //   const checkFavoriteStatus = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //           `${Backendurl}/api/favorites/${property.id}/check`,
+  //           {
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //               "Authorization": `Bearer ${localStorage.getItem('token')}`
+  //             },
+  //           }
+  //       );
+  //       if (response.data.success) {
+  //         setIsFavorite(response.data.isFavorited);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error checking favorite status:", error);
+  //     }
+  //   };
+  //   checkFavoriteStatus();
+  // }, [property.id]);
+
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       try {
         const response = await axios.get(
-            `${Backendurl}/api/favorites/${property.id}/check`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem('token')}`
-              },
-            }
+          `${Backendurl}/api/favorites/${property.id}/check`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem('token')}`
+            },
+          }
         );
-        if (response.data.success) {
-          setIsFavorite(response.data.isFavorited);
-        }
+        setIsFavorite(!!response.data.isFavorited);
       } catch (error) {
         console.error("Error checking favorite status:", error);
       }
