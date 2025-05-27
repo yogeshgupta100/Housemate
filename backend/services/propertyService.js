@@ -91,7 +91,9 @@ class PropertyService {
                'roomNumber', r.room_number,
                'capacity', r.capacity,
                'occupied', r.occupied,
-               'isAvailable', r.is_available
+               'rent', r.rent_amount,
+               'availableFrom', r.available_from,
+               'hasBalcony', r.has_balcony
              )
            ) as rooms
            FROM floors f
