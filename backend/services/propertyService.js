@@ -168,12 +168,12 @@ class PropertyService {
         [
           propertyData.title,
           propertyData.type,
-          propertyData.price,
+          propertyData.price || 0,
           propertyData.location,
           propertyData.description,
-          propertyData.beds,
-          propertyData.baths,
-          propertyData.sqft,
+          propertyData.beds || 0,
+          propertyData.baths || 0,
+          propertyData.sqft || 0,
           propertyData.phone,
           propertyData.listingType,
           propertyData.amenities,
@@ -185,10 +185,10 @@ class PropertyService {
           propertyData.address?.state || '',
           propertyData.address?.pincode || '',
           propertyData.address?.country || 'India',
-          propertyData.floorArea,
-          propertyData.propertyAge,
-          propertyData.propertyCondition,
-          propertyData.propertyStatus,
+          propertyData.floorArea || 0,
+          propertyData.propertyAge || 0,
+          propertyData.propertyCondition || '',
+          propertyData.propertyStatus || '',
           propertyData.availability ? JSON.stringify(propertyData.availability) : null,
           propertyData.status || 'Active',
           propertyData.slug,
@@ -212,9 +212,17 @@ class PropertyService {
           if (floor.rooms && Array.isArray(floor.rooms)) {
             for (const room of floor.rooms) {
               await client.query(
-                `INSERT INTO rooms (floor_id, room_number, capacity, occupied)
-                 VALUES ($1, $2, $3, $4)`,
-                [floorRecord.id, room.roomNumber, room.capacity, room.occupied || 0]
+                `INSERT INTO rooms (floor_id, room_number, capacity, occupied, rent_amount, available_from, has_balcony)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                  floorRecord.id,
+                  room.roomNumber,
+                  room.capacity,
+                  room.occupied || 0,
+                  room.rent_amount ?? 0,
+                  room.availableFrom || null,
+                  room.hasBalcony || false
+                ]
               );
             }
           }

@@ -103,7 +103,6 @@ const PropertyListingForm = () => {
 
   const locationInputRef = useRef(null);
 
-  // Add new state for floor and room details
   const [floorDetails, setFloorDetails] = useState([{
     floorNumber: 1,
     rooms: [{
@@ -132,7 +131,6 @@ const PropertyListingForm = () => {
     }
   };
 
-  // Add useEffect to initialize Google Places Autocomplete
   useEffect(() => {
     if (!locationInputRef.current || !window.google) return;
 
@@ -149,7 +147,6 @@ const PropertyListingForm = () => {
         return;
       }
 
-      // Extract address components
       const addressComponents = {
         street: '',
         city: '',
@@ -175,7 +172,6 @@ const PropertyListingForm = () => {
         }
       });
 
-      // Update form data with location details
       setFormData(prev => ({
         ...prev,
         location: place.formatted_address,
@@ -194,27 +190,23 @@ const PropertyListingForm = () => {
     });
 
     return () => {
-      // Cleanup
       if (autocomplete) {
         google.maps.event.clearInstanceListeners(autocomplete);
       }
     };
   }, []);
 
-    // Check if user is allowed to list property and load draft if exists
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
       return;
     }
 
-    // Check if user is corporate
     if (user?.userType === "corporate") {
       setError("Corporate users cannot list properties. Please contact support for assistance.");
       return;
     }
 
-    // Set default contact information based on user type
     if (user) {
       setFormData(prev => ({
         ...prev,
@@ -226,7 +218,6 @@ const PropertyListingForm = () => {
       }));
     }
 
-    // Load draft if draftId exists
     if (draftId) {
       loadDraft(draftId);
     }
@@ -243,14 +234,14 @@ const PropertyListingForm = () => {
       setFormData(response.data.draft);
       toast.info('Draft loaded successfully');
     } catch (err) {
-      console.error('Error loading draft:', err);
-      toast.error('Failed to load draft');
+      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+      console.error('Error loading draft:', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate deposit when price or type changes for rent listings
   useEffect(() => {
     if (formData.listingType === 'rent' && formData.price && formData.type) {
       const multipliers = {
@@ -284,20 +275,18 @@ const PropertyListingForm = () => {
         }
       }));
     } else {
-      // Validate numeric fields
       if (type === 'number') {
         const numValue = Number(value);
         if (numValue < 0) {
-          return; // Prevent negative values
+          return;
         }
         if (name === 'beds' || name === 'baths') {
           if (!Number.isInteger(numValue)) {
-            return; // Only allow whole numbers
+            return;
           }
         }
       }
 
-      // Update form data
       if (name === 'listingType') {
         setFormData(prev => ({
           ...prev,
@@ -314,7 +303,6 @@ const PropertyListingForm = () => {
         }));
       }
 
-      // Validate field
       const error = validateField(name, value);
       setFieldErrors(prev => ({
         ...prev,
@@ -349,13 +337,11 @@ const PropertyListingForm = () => {
         }
       }
 
-      // Update form data with the new image URLs
       setFormData(prev => ({
         ...prev,
         images: [...prev.images, ...uploadedUrls]
       }));
 
-      // Update preview URLs
       setPreviewUrls(prev => [...prev, ...uploadedUrls]);
 
     } catch (error) {
@@ -451,7 +437,6 @@ const PropertyListingForm = () => {
         newDetails[floorIndex].rooms[roomIndex].roomNumber = value;
       } else if (field === 'capacity') {
         newDetails[floorIndex].rooms[roomIndex].capacity = value;
-        // Ensure occupied doesn't exceed new capacity
         if (newDetails[floorIndex].rooms[roomIndex].occupied > value) {
           newDetails[floorIndex].rooms[roomIndex].occupied = value;
         }
@@ -459,8 +444,8 @@ const PropertyListingForm = () => {
         // Ensure occupied doesn't exceed capacity
         const maxOccupied = newDetails[floorIndex].rooms[roomIndex].capacity;
         newDetails[floorIndex].rooms[roomIndex].occupied = Math.min(value, maxOccupied);
-      } else if (field === 'rent') {
-        newDetails[floorIndex].rooms[roomIndex].rent = value;
+      } else if (field === 'rent_amount') {
+        newDetails[floorIndex].rooms[roomIndex].rent_amount = value;
       } else if (field === 'availableFrom') {
         newDetails[floorIndex].rooms[roomIndex].availableFrom = value;
       } else if (field === 'hasBalcony') {
@@ -1242,74 +1227,77 @@ const PropertyListingForm = () => {
 
                     <div className="space-y-4">
                       {floor.rooms.map((room, roomIndex) => (
-                        <div key={roomIndex} className={`grid grid-cols-1 gap-4 p-3 bg-gray-50 rounded md:grid-cols-3`}>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Room Number
-                            </label>
-                            <input
-                              type="number"
-                              value={room.roomNumber}
-                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'roomNumber', parseInt(e.target.value))}
-                              min="1"
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
+                        <div key={roomIndex} className="p-3 bg-gray-50 rounded mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Room Number
+                              </label>
+                              <input
+                                type="number"
+                                value={room.roomNumber}
+                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'roomNumber', parseInt(e.target.value))}
+                                min="1"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>
+                            {formData.type !== 'rk' && <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Capacity
+                              </label>
+                              <input
+                                type="number"
+                                value={room.capacity}
+                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'capacity', parseInt(e.target.value))}
+                                min="1"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Currently Occupied
+                              </label>
+                              <input
+                                type="number"
+                                value={room.occupied}
+                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'occupied', parseInt(e.target.value))}
+                                min="0"
+                                max={room.capacity}
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Max: {room.capacity}
+                              </p>
+                            </div>
                           </div>
-                          {formData.type !== 'rk' && <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Capacity
-                            </label>
-                            <input
-                              type="number"
-                              value={room.capacity}
-                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'capacity', parseInt(e.target.value))}
-                              min="1"
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Currently Occupied
-                            </label>
-                            <input
-                              type="number"
-                              value={room.occupied}
-                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'occupied', parseInt(e.target.value))}
-                              min="0"
-                              max={room.capacity}
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Max: {room.capacity}
-                            </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Rent Amount (₹)
+                              </label>
+                              <input
+                                type="number"
+                                value={room.rent_amount || ''}
+                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'rent_amount', parseInt(e.target.value))}
+                                min="0"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Enter rent amount"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Available From
+                              </label>
+                              <input
+                                type="date"
+                                value={room.availableFrom || ''}
+                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'availableFrom', e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Rent Amount (₹)
-                            </label>
-                            <input
-                              type="number"
-                              value={room.rent || ''}
-                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'rent', parseInt(e.target.value))}
-                              min="0"
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Enter rent amount"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Available From
-                            </label>
-                            <input
-                              type="date"
-                              value={room.availableFrom || ''}
-                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'availableFrom', e.target.value)}
-                              min={new Date().toISOString().split('T')[0]}
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <br/>
-                          <div className="flex items-center">
+                          <div className="flex items-center mt-4">
                             <input
                               type="checkbox"
                               id={`balcony-${floorIndex}-${roomIndex}`}
@@ -1321,17 +1309,6 @@ const PropertyListingForm = () => {
                               Has Balcony
                             </label>
                           </div>
-                          {floor.rooms.length > 1 && (
-                            <div className="md:col-span-4 flex justify-end">
-                              <button
-                                type="button"
-                                onClick={() => removeRoom(floorIndex, roomIndex)}
-                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                              >
-                                Remove Room
-                              </button>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>

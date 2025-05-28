@@ -53,7 +53,9 @@ const Profile = () => {
         setPreviewImage(userData.profileImage || null);
       }
     } catch (error) {
-      console.error('Error fetching user details:', error);
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      console.error('Error fetching user details:', errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -124,11 +126,12 @@ const Profile = () => {
       if (response.data.success === true) {
         updateUser(response.data.data);
         setIsEditing(false);
-        alert('Profile updated successfully');
+        toast.success(response.data.message);
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      alert(error.response?.data?.message || 'Error updating profile');
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      console.error('Error updating profile:', errorMessage);
+      toast.error(errorMessage);
     }
   };
 

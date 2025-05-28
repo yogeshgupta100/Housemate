@@ -27,7 +27,8 @@ const MyCoupons = () => {
       setCoupons(response.data.coupons);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch coupons. Please try again later.');
+      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+      setError(errorMessage);
       console.error('Error fetching coupons:', err);
     } finally {
       setLoading(false);

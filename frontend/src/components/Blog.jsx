@@ -55,8 +55,8 @@ const BlogCard = ({ post }) => {
         toast.success("Link copied to clipboard!");
       }
     } catch (error) {
-      console.error('Error sharing:', error);
-      toast.error("Unable to share post");
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     }
   };
 
