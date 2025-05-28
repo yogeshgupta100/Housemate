@@ -15,7 +15,8 @@ const ProtectedRoute = () => {
       const tokenData = JSON.parse(atob(token.split('.')[1]));
       return tokenData.exp * 1000 < Date.now();
     } catch (error) {
-      console.error('Error verifying token:', error);
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
       return true;
     }
   };

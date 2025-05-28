@@ -88,8 +88,8 @@ const Update = () => {
           toast.error(response.data.message);
         }
       } catch (error) {
-        console.log('Error fetching property:', error); // Log the error
-        toast.error('An error occurred. Please try again.');
+        const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+        toast.error(errorMessage);
       }
     };
 
@@ -208,7 +208,6 @@ const Update = () => {
         toast.error(response.data.message || 'Failed to update property');
       }
     } catch (error) {
-      console.error('Error updating property:', error);
       toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);

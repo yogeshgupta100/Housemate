@@ -42,8 +42,8 @@ const Appointments = () => {
         toast.error(response.data.message);
       }
     } catch (error) {
-      console.error("Error fetching appointments:", error);
-      toast.error("Failed to fetch appointments");
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -65,8 +65,8 @@ const Appointments = () => {
         toast.error(response.data.message);
       }
     } catch (error) {
-      console.error("Error updating appointment:", error);
-      toast.error("Failed to update appointment status");
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     }
   };
 
@@ -97,8 +97,8 @@ const Appointments = () => {
         toast.error(response.data.message);
       }
     } catch (error) {
-      console.error("Error updating meeting link:", error);
-      toast.error("Failed to update meeting link");
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     }
   };
 

@@ -300,7 +300,6 @@ const PropertyForm = () => {
         setPreviewUrls([]);
       }
     } catch (error) {
-      console.error('Error adding property:', error);
       toast.error(error.response?.data?.message || 'Failed to add property');
     } finally {
       setLoading(false);

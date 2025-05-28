@@ -148,8 +148,8 @@ const Hero = () => {
       }
 
     } catch (error) {
-      console.error('Error during property search:', error);
-      toast.error(error.message || 'Error searching properties');
+      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

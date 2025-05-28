@@ -42,7 +42,8 @@ const Coupons = () => {
       setCoupons(response.data.coupons);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch coupons. Please try again later.');
+      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+      setError(errorMessage);
       console.error('Error fetching coupons:', err);
     } finally {
       setLoading(false);
@@ -69,7 +70,8 @@ const Coupons = () => {
       fetchCoupons();
       resetForm();
     } catch (err) {
-      setError('Failed to save coupon. Please try again later.');
+      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+      setError(errorMessage);
       console.error('Error saving coupon:', err);
     }
   };
@@ -84,7 +86,8 @@ const Coupons = () => {
         });
         fetchCoupons();
       } catch (err) {
-        setError('Failed to delete coupon. Please try again later.');
+        const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+        setError(errorMessage);
         console.error('Error deleting coupon:', err);
       }
     }

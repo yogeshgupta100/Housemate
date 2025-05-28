@@ -26,7 +26,8 @@ const MyProperties = () => {
       setProperties(response.data.property);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch properties. Please try again later.');
+      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+      setError(errorMessage);
       console.error('Error fetching properties:', err);
     } finally {
       setLoading(false);
@@ -43,7 +44,8 @@ const MyProperties = () => {
         });
         fetchProperties();
       } catch (err) {
-        setError('Failed to delete property. Please try again later.');
+        const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
+        setError(errorMessage);
         console.error('Error deleting property:', err);
       }
     }
