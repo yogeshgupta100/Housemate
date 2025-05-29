@@ -126,10 +126,12 @@ export default {
       const allowedConditions = ["new", "good", "average", "needs_repair"];
       if (
         !allowedConditions.includes(propertyData.property_condition) ||
-        !propertyData.property_condition
+        propertyData.property_condition === "" ||
+        propertyData.property_condition === undefined
       ) {
         propertyData.property_condition = null;
       }
+      console.log('property_condition to insert:', propertyData.property_condition, typeof propertyData.property_condition);
 
       const { rows } = await client.query(
         `INSERT INTO properties (
