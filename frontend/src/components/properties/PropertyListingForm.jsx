@@ -1,9 +1,9 @@
-import {useState, useEffect, useRef} from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import axios from 'axios';
-import { Backendurl } from '../../App';
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import axios from "axios";
+import { Backendurl } from "../../App";
 import {
   Home,
   IndianRupee,
@@ -13,179 +13,230 @@ import {
   Upload,
   Save,
   X,
-  CodeSquare
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+  CodeSquare,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const PROPERTY_TYPES = {
-  rent: ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 'commercial'],
-  sale: ['house', 'apartment', 'office', 'villa', 'flat', 'commercial', 
-         'residential plot', 'commercial plot']
+  rent: [
+    "house",
+    "apartment",
+    "office",
+    "villa",
+    "pg",
+    "flat",
+    "rk",
+    "commercial",
+  ],
+  sale: [
+    "house",
+    "apartment",
+    "office",
+    "villa",
+    "flat",
+    "commercial",
+    "residential plot",
+    "commercial plot",
+  ],
 };
 
-const LISTING_TYPES = ['rent', 'sale'];
-const AVAILABILITY_TYPES = ['rent', 'sale', 'buy'];
-const LEASE_PERIODS = ['3 months', '6 months', '12 months', '18 months', '24 months'];
-const AMENITIES = ['Lake View', 'Fireplace', 'Central heating and air conditioning', 'Dock', 'Pool', 'Garage', 'Garden', 'Gym', 'Security system', 'Master bathroom', 'Guest bathroom', 'Home theater', 'Exercise room/gym', 'Covered parking', 'High-speed internet ready'];
-const PROPERTY_CONDITIONS = ['new', 'good', 'average', 'needs_repair'];
-const PROPERTY_STATUSES = ['ready_to_move', 'under_construction', 'renovated'];
+const LISTING_TYPES = ["rent", "sale"];
+const AVAILABILITY_TYPES = ["rent", "sale", "buy"];
+const LEASE_PERIODS = [
+  "3 months",
+  "6 months",
+  "12 months",
+  "18 months",
+  "24 months",
+];
+const AMENITIES = [
+  "Lake View",
+  "Fireplace",
+  "Central heating and air conditioning",
+  "Dock",
+  "Pool",
+  "Garage",
+  "Garden",
+  "Gym",
+  "Security system",
+  "Master bathroom",
+  "Guest bathroom",
+  "Home theater",
+  "Exercise room/gym",
+  "Covered parking",
+  "High-speed internet ready",
+];
+const PROPERTY_CONDITIONS = ["new", "good", "average", "needs_repair"];
+const PROPERTY_STATUSES = ["ready_to_move", "under_construction", "renovated"];
 
 const DIAL_CODES = [
-  { code: '+91', country: 'India' },
-  { code: '+1', country: 'USA' },
-  { code: '+44', country: 'UK' },
-  { code: '+61', country: 'Australia' },
-  { code: '+86', country: 'China' },
-  { code: '+81', country: 'Japan' },
-  { code: '+82', country: 'South Korea' },
-  { code: '+65', country: 'Singapore' },
-  { code: '+971', country: 'UAE' },
-  { code: '+33', country: 'France' },
-  { code: '+49', country: 'Germany' },
-  { code: '+39', country: 'Italy' },
-  { code: '+34', country: 'Spain' },
-  { code: '+7', country: 'Russia' },
-  { code: '+55', country: 'Brazil' },
-  { code: '+52', country: 'Mexico' },
-  { code: '+20', country: 'Egypt' },
-  { code: '+27', country: 'South Africa' },
-  { code: '+60', country: 'Malaysia' },
-  { code: '+66', country: 'Thailand' },
+  { code: "+91", country: "India" },
+  { code: "+1", country: "USA" },
+  { code: "+44", country: "UK" },
+  { code: "+61", country: "Australia" },
+  { code: "+86", country: "China" },
+  { code: "+81", country: "Japan" },
+  { code: "+82", country: "South Korea" },
+  { code: "+65", country: "Singapore" },
+  { code: "+971", country: "UAE" },
+  { code: "+33", country: "France" },
+  { code: "+49", country: "Germany" },
+  { code: "+39", country: "Italy" },
+  { code: "+34", country: "Spain" },
+  { code: "+7", country: "Russia" },
+  { code: "+55", country: "Brazil" },
+  { code: "+52", country: "Mexico" },
+  { code: "+20", country: "Egypt" },
+  { code: "+27", country: "South Africa" },
+  { code: "+60", country: "Malaysia" },
+  { code: "+66", country: "Thailand" },
 ];
 
 const PropertyListingForm = () => {
   const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const draftId = searchParams.get('draft');
+  const draftId = searchParams.get("draft");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    type: '',
-    price: '',
-    location: '',
+    title: "",
+    type: "",
+    price: "",
+    location: "",
     coordinates: {
       latitude: 0,
-      longitude: 0
+      longitude: 0,
     },
     address: {
-      street: '',
-      city: '',
-      state: '',
-      pincode: '',
-      country: 'India'
+      street: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
     },
-    description: '',
-    beds: '',
-    baths: '',
-    sqft: '',
-    phone: '',
-    dialCode: '+91',
+    description: "",
+    beds: "",
+    baths: "",
+    sqft: "",
+    phone: "",
+    dialCode: "+91",
     availability: {
-      status: 'Available',
-      availableFrom: '',
-      minLeasePeriod: '12 months'
+      status: "Available",
+      availableFrom: "",
+      minLeasePeriod: "12 months",
     },
     amenities: [],
     images: [],
-    listingType: 'rent',
-    propertyAge: '',
-    propertyCondition: '',
-    propertyStatus: ''
+    listingType: "rent",
+    propertyAge: "",
+    propertyCondition: "",
+    propertyStatus: "",
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
   const [calculatedDeposit, setCalculatedDeposit] = useState(0);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [currentType, setCurrentType] = useState('');
+  const [currentType, setCurrentType] = useState("");
 
   const locationInputRef = useRef(null);
 
-  const [floorDetails, setFloorDetails] = useState([{
-    floorNumber: 1,
-    rooms: [{
-      roomNumber: 1,
-      capacity: 1,
-      occupied: 0,
-    }]
-  }]);
+  const [floorDetails, setFloorDetails] = useState([
+    {
+      floorNumber: 1,
+      rooms: [
+        {
+          roomNumber: 1,
+          capacity: 1,
+          occupied: 0,
+        },
+      ],
+    },
+  ]);
 
   const validateField = (name, value) => {
     switch (name) {
-      case 'price' && !['pg','rk'].includes(currentType):
-        return value <= 0 ? 'Price must be greater than 0' : '';
-      case 'beds' && !['pg','rk'].includes(currentType):
-      case 'baths' && !['pg','rk'].includes(currentType):
-        return value < 0 && value !== '' ? 'Cannot be negative' : 
-               !Number.isInteger(Number(value)) ? 'Must be a whole number' : '';
-      case 'sqft' && !['pg','rk'].includes(currentType):
-        return value <= 0 ? 'Area must be greater than 0' : '';
-      case 'title':
-        return value.length < 5 ? 'Title must be at least 5 characters' : '';
-      case 'phone':
-        return !/^\d{10}$/.test(value) ? 'Enter valid 10-digit phone number' : '';
+      case "price" && !["pg", "rk"].includes(currentType):
+        return value <= 0 ? "Price must be greater than 0" : "";
+      case "beds" && !["pg", "rk"].includes(currentType):
+      case "baths" && !["pg", "rk"].includes(currentType):
+        return value < 0 && value !== ""
+          ? "Cannot be negative"
+          : !Number.isInteger(Number(value))
+          ? "Must be a whole number"
+          : "";
+      case "sqft" && !["pg", "rk"].includes(currentType):
+        return value <= 0 ? "Area must be greater than 0" : "";
+      case "title":
+        return value.length < 5 ? "Title must be at least 5 characters" : "";
+      case "phone":
+        return !/^\d{10}$/.test(value)
+          ? "Enter valid 10-digit phone number"
+          : "";
       default:
-        return '';
+        return "";
     }
   };
 
   useEffect(() => {
     if (!locationInputRef.current || !window.google) return;
 
-    const autocomplete = new window.google.maps.places.Autocomplete(locationInputRef.current, {
-      componentRestrictions: { country: 'IN' },
-      fields: ['address_components', 'geometry', 'formatted_address']
-    });
+    const autocomplete = new window.google.maps.places.Autocomplete(
+      locationInputRef.current,
+      {
+        componentRestrictions: { country: "IN" },
+        fields: ["address_components", "geometry", "formatted_address"],
+      }
+    );
 
-    autocomplete.addListener('place_changed', () => {
+    autocomplete.addListener("place_changed", () => {
       const place = autocomplete.getPlace();
 
       if (!place.geometry) {
-        toast.error('Please select a location from the suggestions');
+        toast.error("Please select a location from the suggestions");
         return;
       }
 
       const addressComponents = {
-        street: '',
-        city: '',
-        state: '',
-        pincode: '',
-        country: 'India'
+        street: "",
+        city: "",
+        state: "",
+        pincode: "",
+        country: "India",
       };
 
-      place.address_components.forEach(component => {
+      place.address_components.forEach((component) => {
         const types = component.types;
 
-        if (types.includes('street_number') || types.includes('route')) {
-          addressComponents.street += component.long_name + ' ';
+        if (types.includes("street_number") || types.includes("route")) {
+          addressComponents.street += component.long_name + " ";
         }
-        if (types.includes('locality')) {
+        if (types.includes("locality")) {
           addressComponents.city = component.long_name;
         }
-        if (types.includes('administrative_area_level_1')) {
+        if (types.includes("administrative_area_level_1")) {
           addressComponents.state = component.long_name;
         }
-        if (types.includes('postal_code')) {
+        if (types.includes("postal_code")) {
           addressComponents.pincode = component.long_name;
         }
       });
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         location: place.formatted_address,
         coordinates: {
           latitude: place.geometry.location.lat(),
-          longitude: place.geometry.location.lng()
+          longitude: place.geometry.location.lng(),
         },
         address: {
           street: addressComponents.street.trim(),
           city: addressComponents.city,
           state: addressComponents.state,
           pincode: addressComponents.pincode,
-          country: 'India'
-        }
+          country: "India",
+        },
       }));
     });
 
@@ -203,18 +254,20 @@ const PropertyListingForm = () => {
     }
 
     if (user?.userType === "corporate") {
-      setError("Corporate users cannot list properties. Please contact support for assistance.");
+      setError(
+        "Corporate users cannot list properties. Please contact support for assistance."
+      );
       return;
     }
 
     if (user) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         contact: {
           name: user.name || "",
           phone: user.phone || "",
           email: user.email || "",
-        }
+        },
       }));
     }
 
@@ -226,16 +279,20 @@ const PropertyListingForm = () => {
   const loadDraft = async (id) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${Backendurl}/api/properties/drafts/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      const response = await axios.get(
+        `${Backendurl}/api/properties/drafts/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-      });
+      );
       setFormData(response.data.draft);
-      toast.info('Draft loaded successfully');
+      toast.info("Draft loaded successfully");
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-      console.error('Error loading draft:', errorMessage);
+      const errorMessage =
+        err.response?.data?.message || "An error occurred. Please try again.";
+      console.error("Error loading draft:", errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -243,16 +300,16 @@ const PropertyListingForm = () => {
   };
 
   useEffect(() => {
-    if (formData.listingType === 'rent' && formData.price && formData.type) {
+    if (formData.listingType === "rent" && formData.price && formData.type) {
       const multipliers = {
-        'house': 2,
-        'apartment': 3,
-        'office': 3,
-        'villa': 3,
-        'commercial': 3,
-        'flat': 2,
-        'pg': 1,
-        'rk': 1
+        house: 2,
+        apartment: 3,
+        office: 3,
+        villa: 3,
+        commercial: 3,
+        flat: 2,
+        pg: 1,
+        rk: 1,
       };
       setCalculatedDeposit(formData.price * (multipliers[formData.type] || 2));
     }
@@ -261,74 +318,74 @@ const PropertyListingForm = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if(name === 'type') {
+    if (name === "type") {
       setCurrentType(value);
     }
 
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
         ...prev,
         [parent]: {
           ...prev[parent],
-          [child]: value
-        }
+          [child]: value,
+        },
       }));
     } else {
-      if (type === 'number') {
+      if (type === "number") {
         const numValue = Number(value);
         if (numValue < 0) {
           return;
         }
-        if (name === 'beds' || name === 'baths') {
+        if (name === "beds" || name === "baths") {
           if (!Number.isInteger(numValue)) {
             return;
           }
         }
       }
 
-      if (name === 'listingType') {
-        setFormData(prev => ({
+      if (name === "listingType") {
+        setFormData((prev) => ({
           ...prev,
           [name]: value,
-          type: '',
-          propertyAge: value === 'sale' ? '' : undefined,
-          propertyCondition: value === 'sale' ? '' : undefined,
-          propertyStatus: value === 'sale' ? '' : undefined
+          type: "",
+          propertyAge: value === "sale" ? "" : undefined,
+          propertyCondition: value === "sale" ? "" : undefined,
+          propertyStatus: value === "sale" ? "" : undefined,
         }));
       } else {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          [name]: type === 'checkbox' ? checked : value
+          [name]: type === "checkbox" ? checked : value,
         }));
       }
 
       const error = validateField(name, value);
-      setFieldErrors(prev => ({
+      setFieldErrors((prev) => ({
         ...prev,
-        [name]: error
+        [name]: error,
       }));
     }
   };
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
+
     try {
       const uploadedUrls = [];
-      
+
       for (const file of files) {
         const formData = new FormData();
-        formData.append('pdf', file);
+        formData.append("pdf", file);
 
         const response = await axios.post(
           `${Backendurl}/api/pg/upload`,
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           }
         );
 
@@ -337,25 +394,24 @@ const PropertyListingForm = () => {
         }
       }
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...uploadedUrls]
+        images: [...prev.images, ...uploadedUrls],
       }));
 
-      setPreviewUrls(prev => [...prev, ...uploadedUrls]);
-
+      setPreviewUrls((prev) => [...prev, ...uploadedUrls]);
     } catch (error) {
-      console.error('Error uploading images:', error);
-      toast.error('Failed to upload some images');
+      console.error("Error uploading images:", error);
+      toast.error("Failed to upload some images");
     }
   };
 
   const handleRemoveImage = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }));
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSaveDraft = async () => {
@@ -367,63 +423,61 @@ const PropertyListingForm = () => {
 
     setLoading(true);
     setError(null);
-    
+
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        setError('Please login to save a draft');
+        setError("Please login to save a draft");
         navigate("/login");
         return;
       }
 
       const formDataToSend = new FormData();
-      
+
       Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'images') {
-          value.forEach(file => {
-            formDataToSend.append('images', file);
+        if (key === "images") {
+          value.forEach((file) => {
+            formDataToSend.append("images", file);
           });
-        } else if (typeof value === 'object') {
+        } else if (typeof value === "object") {
           formDataToSend.append(key, JSON.stringify(value));
         } else {
           formDataToSend.append(key, value);
         }
       });
 
-      const url = draftId 
+      const url = draftId
         ? `${Backendurl}/api/properties/drafts/${draftId}`
         : `${Backendurl}/api/properties/drafts`;
 
-      const method = draftId ? 'put' : 'post';
+      const method = draftId ? "put" : "post";
 
-      const response = await axios[method](
-        url,
-        formDataToSend,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
+      const response = await axios[method](url, formDataToSend, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data.success) {
-        toast.success(draftId ? 'Draft updated successfully!' : 'Draft saved successfully!');
-        navigate('/dashboard/draft-properties');
+        toast.success(
+          draftId ? "Draft updated successfully!" : "Draft saved successfully!"
+        );
+        navigate("/dashboard/draft-properties");
       }
     } catch (error) {
-      console.error('Error saving draft:', error);
-      setError(error.response?.data?.message || 'Failed to save draft');
-      toast.error(error.response?.data?.message || 'Failed to save draft');
+      console.error("Error saving draft:", error);
+      setError(error.response?.data?.message || "Failed to save draft");
+      toast.error(error.response?.data?.message || "Failed to save draft");
     } finally {
       setLoading(false);
     }
   };
 
   const handleFloorDetailsChange = (floorIndex, field, value) => {
-    setFloorDetails(prev => {
+    setFloorDetails((prev) => {
       const newDetails = [...prev];
-      if (field === 'floorNumber') {
+      if (field === "floorNumber") {
         newDetails[floorIndex].floorNumber = value;
       }
       return newDetails;
@@ -431,24 +485,27 @@ const PropertyListingForm = () => {
   };
 
   const handleRoomDetailsChange = (floorIndex, roomIndex, field, value) => {
-    setFloorDetails(prev => {
+    setFloorDetails((prev) => {
       const newDetails = [...prev];
-      if (field === 'roomNumber') {
+      if (field === "roomNumber") {
         newDetails[floorIndex].rooms[roomIndex].roomNumber = value;
-      } else if (field === 'capacity') {
+      } else if (field === "capacity") {
         newDetails[floorIndex].rooms[roomIndex].capacity = value;
         if (newDetails[floorIndex].rooms[roomIndex].occupied > value) {
           newDetails[floorIndex].rooms[roomIndex].occupied = value;
         }
-      } else if (field === 'occupied') {
+      } else if (field === "occupied") {
         // Ensure occupied doesn't exceed capacity
         const maxOccupied = newDetails[floorIndex].rooms[roomIndex].capacity;
-        newDetails[floorIndex].rooms[roomIndex].occupied = Math.min(value, maxOccupied);
-      } else if (field === 'rent_amount') {
+        newDetails[floorIndex].rooms[roomIndex].occupied = Math.min(
+          value,
+          maxOccupied
+        );
+      } else if (field === "rent_amount") {
         newDetails[floorIndex].rooms[roomIndex].rent_amount = value;
-      } else if (field === 'availableFrom') {
+      } else if (field === "availableFrom") {
         newDetails[floorIndex].rooms[roomIndex].availableFrom = value;
-      } else if (field === 'hasBalcony') {
+      } else if (field === "hasBalcony") {
         newDetails[floorIndex].rooms[roomIndex].hasBalcony = value;
       }
       return newDetails;
@@ -456,47 +513,57 @@ const PropertyListingForm = () => {
   };
 
   const addFloor = () => {
-    setFloorDetails(prev => [...prev, {
-      floorNumber: prev.length + 1,
-      rooms: [{
-        roomNumber: 1,
-        capacity: 1,
-        occupied: 0
-      }]
-    }]);
+    setFloorDetails((prev) => [
+      ...prev,
+      {
+        floorNumber: prev.length + 1,
+        rooms: [
+          {
+            roomNumber: 1,
+            capacity: 1,
+            occupied: 0,
+          },
+        ],
+      },
+    ]);
   };
 
   const removeFloor = (floorIndex) => {
-    setFloorDetails(prev => prev.filter((_, index) => index !== floorIndex));
+    setFloorDetails((prev) => prev.filter((_, index) => index !== floorIndex));
   };
 
   const addRoom = (floorIndex) => {
-    setFloorDetails(prev => {
+    setFloorDetails((prev) => {
       const newDetails = [...prev];
       const currentFloor = newDetails[floorIndex];
       const nextRoomNumber = currentFloor.rooms.length + 1;
-      
+
       // Create a new rooms array with the new room
-      const updatedRooms = [...currentFloor.rooms, {
-        roomNumber: nextRoomNumber,
-        capacity: 1,
-        occupied: 0
-      }];
-      
+      const updatedRooms = [
+        ...currentFloor.rooms,
+        {
+          roomNumber: nextRoomNumber,
+          capacity: 1,
+          occupied: 0,
+        },
+      ];
+
       // Update the floor with the new rooms array
       newDetails[floorIndex] = {
         ...currentFloor,
-        rooms: updatedRooms
+        rooms: updatedRooms,
       };
-      
+
       return newDetails;
     });
   };
 
   const removeRoom = (floorIndex, roomIndex) => {
-    setFloorDetails(prev => {
+    setFloorDetails((prev) => {
       const newDetails = [...prev];
-      newDetails[floorIndex].rooms = newDetails[floorIndex].rooms.filter((_, index) => index !== roomIndex);
+      newDetails[floorIndex].rooms = newDetails[floorIndex].rooms.filter(
+        (_, index) => index !== roomIndex
+      );
       return newDetails;
     });
   };
@@ -506,14 +573,14 @@ const PropertyListingForm = () => {
 
     // Validate all fields
     const errors = {};
-    Object.keys(formData).forEach(key => {
+    Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key]);
       if (error) errors[key] = error;
     });
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      toast.error('Please fix the errors before submitting');
+      toast.error("Please fix the errors before submitting");
       return;
     }
 
@@ -524,8 +591,10 @@ const PropertyListingForm = () => {
     }
 
     // Validate area for apartment
-    if (formData.type === 'apartment' && Number(formData.sqft) < 500) {
-      toast.error("Apartment area seems too small. Please verify the square footage.");
+    if (formData.type === "apartment" && Number(formData.sqft) < 500) {
+      toast.error(
+        "Apartment area seems too small. Please verify the square footage."
+      );
       return;
     }
 
@@ -556,7 +625,10 @@ const PropertyListingForm = () => {
     }
 
     // Validate rental-specific fields
-    if (formData.listingType === 'rent' && !['pg','rk'].includes(formData.type)) {
+    if (
+      formData.listingType === "rent" &&
+      !["pg", "rk"].includes(formData.type)
+    ) {
       if (!formData.availability || !formData.availability.availableFrom) {
         toast.error("Please select when the property will be available");
         return;
@@ -567,19 +639,24 @@ const PropertyListingForm = () => {
       }
     }
 
+    const allowedConditions = ["new", "good", "average", "needs_repair"];
+    if (!allowedConditions.includes(formData.propertyCondition)) {
+      formData.propertyCondition = null;
+    }
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        setError('Please login to list a property');
+        setError("Please login to list a property");
         navigate("/login");
         return;
       }
 
-      console.log('Preparing form data for submission...');
-      
+      console.log("Preparing form data for submission...");
+
       // Create the request payload
       const payload = {
         title: formData.title,
@@ -592,70 +669,78 @@ const PropertyListingForm = () => {
         sqft: formData.sqft,
         phone: formData.phone,
         listingType: formData.listingType.toLowerCase(),
+        property_condition: formData.propertyCondition,
         amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
         coordinates: {
           latitude: formData.coordinates.latitude,
-          longitude: formData.coordinates.longitude
+          longitude: formData.coordinates.longitude,
         },
         address: {
           street: formData.address.street,
           city: formData.address.city,
           state: formData.address.state,
           pincode: formData.address.pincode,
-          country: formData.address.country
+          country: formData.address.country,
         },
-        images: formData.images // Now this will be an array of S3 URLs
+        images: formData.images, // Now this will be an array of S3 URLs
       };
 
       // Add availability data for rental properties
-      if (formData.listingType === 'rent') {
-        const availableFromISO = new Date(formData.availability.availableFrom).getTime;
-        console.log('availableFromISO', availableFromISO);
+      if (formData.listingType === "rent") {
+        const availableFromISO = new Date(formData.availability.availableFrom)
+          .getTime;
+        console.log("availableFromISO", availableFromISO);
         payload.availability = {
-          status: 'Available',
+          status: "Available",
           availableFrom: availableFromISO,
-          minLeasePeriod: formData.availability.minLeasePeriod
+          minLeasePeriod: formData.availability.minLeasePeriod,
         };
       }
 
       // Add floor details for specific property types
-      if (formData.listingType === 'rent' && ['pg', 'rk', 'flat'].includes(formData.type)) {
+      if (
+        formData.listingType === "rent" &&
+        ["pg", "rk", "flat"].includes(formData.type)
+      ) {
         payload.floorDetails = floorDetails;
       }
 
-      console.log('Sending request to:', `${Backendurl}/api/properties/add`);
-      console.log('Payload being sent:', payload);
+      console.log("Sending request to:", `${Backendurl}/api/properties/add`);
+      console.log("Payload being sent:", payload);
 
       const response = await axios.post(
         `${Backendurl}/api/properties/add`,
         payload,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      console.log('Response received:', response.data);
+      console.log("Response received:", response.data);
 
       if (response.data.success) {
         setSuccess(true);
-        toast.success('Property listed successfully!');
-        navigate('/customer-panel');
+        toast.success("Property listed successfully!");
+        navigate("/customer-panel");
       } else {
-        throw new Error(response.data.message || 'Failed to list property');
+        throw new Error(response.data.message || "Failed to list property");
       }
     } catch (error) {
-      console.error('Error listing property:', error);
-      console.error('Error details:', {
+      console.error("Error listing property:", error);
+      console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        config: error.config
+        config: error.config,
       });
-      
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to list property';
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to list property";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -665,29 +750,29 @@ const PropertyListingForm = () => {
 
   // Add this new function for handling amenities
   const handleAmenityChange = (amenity) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter(item => item !== amenity)
-        : [...prev.amenities, amenity]
+        ? prev.amenities.filter((item) => item !== amenity)
+        : [...prev.amenities, amenity],
     }));
   };
 
   // nice input style
   const inputStyles = {
-    padding: '0.75rem 1rem',
-    fontSize: '1rem',
-    lineHeight: '1.5',
-    borderRadius: '0.5rem',
-    width: '100%',
-    transition: 'all 0.2s',
-    outline: 'none',
+    padding: "0.75rem 1rem",
+    fontSize: "1rem",
+    lineHeight: "1.5",
+    borderRadius: "0.5rem",
+    width: "100%",
+    transition: "all 0.2s",
+    outline: "none",
   };
 
   const textareaStyles = {
     ...inputStyles,
-    minHeight: '120px',
-    resize: 'vertical'
+    minHeight: "120px",
+    resize: "vertical",
   };
 
   //will user latwr
@@ -699,10 +784,14 @@ const PropertyListingForm = () => {
       case "dealer":
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Dealer Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Dealer Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">License Number</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  License Number
+                </label>
                 <input
                   type="text"
                   name="dealerLicense"
@@ -713,7 +802,9 @@ const PropertyListingForm = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Experience (Years)</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Experience (Years)
+                </label>
                 <input
                   type="number"
                   name="dealerExperience"
@@ -729,10 +820,14 @@ const PropertyListingForm = () => {
       case "admin":
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Admin Controls</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Admin Controls
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Property Status</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Property Status
+                </label>
                 <select
                   name="status"
                   value={formData.status || "active"}
@@ -746,7 +841,9 @@ const PropertyListingForm = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Verification Status</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Verification Status
+                </label>
                 <select
                   name="verified"
                   value={formData.verified || false}
@@ -773,7 +870,9 @@ const PropertyListingForm = () => {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-red-800">Access Restricted</h2>
+          <h2 className="text-lg font-semibold text-red-800">
+            Access Restricted
+          </h2>
           <p className="text-red-700 mt-2">{error}</p>
         </div>
       </div>
@@ -789,9 +888,12 @@ const PropertyListingForm = () => {
     >
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">List Your Property</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            List Your Property
+          </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Fill in the details below to list your property. All fields marked with * are required.
+            Fill in the details below to list your property. All fields marked
+            with * are required.
           </p>
         </div>
 
@@ -800,29 +902,35 @@ const PropertyListingForm = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Property Classification
             </h2>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   What would you like to do with your property? *
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {LISTING_TYPES.map(type => (
+                  {LISTING_TYPES.map((type) => (
                     <button
                       key={type}
                       type="button"
-                      onClick={() => handleChange({ target: { name: 'listingType', value: type }})}
+                      onClick={() =>
+                        handleChange({
+                          target: { name: "listingType", value: type },
+                        })
+                      }
                       className={`p-4 rounded-lg border-2 transition-all ${
-                        formData.listingType === type 
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50/50'
+                        formData.listingType === type
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : "border-gray-200 hover:border-blue-200 hover:bg-blue-50/50"
                       }`}
                     >
                       <div className="font-medium text-lg mb-1">
-                        {type === 'rent' ? 'For Rent' : 'For Sale'}
+                        {type === "rent" ? "For Rent" : "For Sale"}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {type === 'rent' ? 'List your property for rental' : 'List your property for sale'}
+                        {type === "rent"
+                          ? "List your property for rental"
+                          : "List your property for sale"}
                       </div>
                     </button>
                   ))}
@@ -835,18 +943,28 @@ const PropertyListingForm = () => {
                     Select Property Type *
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {PROPERTY_TYPES[formData.listingType].map(type => (
+                    {PROPERTY_TYPES[formData.listingType].map((type) => (
                       <button
                         key={type}
                         type="button"
-                        onClick={() => handleChange({ target: { name: 'type', value: type }})}
+                        onClick={() =>
+                          handleChange({
+                            target: { name: "type", value: type },
+                          })
+                        }
                         className={`p-3 rounded-lg border text-sm transition-all ${
                           formData.type === type
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-blue-200'
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-blue-200"
                         }`}
                       >
-                        {type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        {type
+                          .split("_")
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1)
+                          )
+                          .join(" ")}
                       </button>
                     ))}
                   </div>
@@ -860,7 +978,7 @@ const PropertyListingForm = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Basic Information
             </h2>
-            
+
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -874,114 +992,145 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     style={inputStyles}
                     className={`border ${
-                      fieldErrors.title ? 'border-red-300' : 'border-gray-300'
+                      fieldErrors.title ? "border-red-300" : "border-gray-300"
                     } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                     placeholder="Enter a descriptive title"
                   />
                   {fieldErrors.title && (
-                    <p className="mt-1 text-sm text-red-600">{fieldErrors.title}</p>
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors.title}
+                    </p>
                   )}
                 </div>
 
-                {formData.listingType === 'rent' && !['pg', 'rk'].includes(formData.type) && <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {formData.listingType === 'rent' ? 'Monthly Rent *' : 'Selling Price *'}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" >
-                      <IndianRupee className="h-5 w-5 text-gray-400" />
+                {formData.listingType === "rent" &&
+                  !["pg", "rk"].includes(formData.type) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {formData.listingType === "rent"
+                          ? "Monthly Rent *"
+                          : "Selling Price *"}
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <IndianRupee className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="number"
+                          name="price"
+                          value={formData.price}
+                          onChange={handleChange}
+                          min="0"
+                          style={{
+                            padding: "0.75rem 2rem",
+                            fontSize: "1rem",
+                            lineHeight: "1.5",
+                            borderRadius: "0.5rem",
+                            width: "100%",
+                            transition: "all 0.2s",
+                            outline: "none",
+                          }}
+                          className={`pl-10 border ${
+                            fieldErrors.price
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                          placeholder="Enter amount"
+                        />
+                      </div>
+                      {fieldErrors.price && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors.price}
+                        </p>
+                      )}
                     </div>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      min="0"
-                      style={{padding
-                        : '0.75rem 2rem', fontSize: '1rem', lineHeight: '1.5', borderRadius: '0.5rem', width: '100%', transition: 'all 0.2s', outline: 'none'
-                                            }}
-                      className={`pl-10 border ${
-                        fieldErrors.price ? 'border-red-300' : 'border-gray-300'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                      placeholder="Enter amount"
-                    />
-                  </div>
-                  {fieldErrors.price && (
-                    <p className="mt-1 text-sm text-red-600">{fieldErrors.price}</p>
                   )}
-                </div>}
               </div>
 
-              {formData.listingType === 'rent' && formData.price > 0 && (
+              {formData.listingType === "rent" && formData.price > 0 && (
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-700">Security Deposit</span>
+                    <span className="text-sm font-medium text-blue-700">
+                      Security Deposit
+                    </span>
                     <span className="text-lg font-semibold text-blue-700">
                       ₹{calculatedDeposit.toLocaleString()}
                     </span>
                   </div>
                   <p className="text-xs text-blue-600 mt-1">
-                    Security deposit is automatically calculated based on property type
+                    Security deposit is automatically calculated based on
+                    property type
                   </p>
                 </div>
               )}
             </div>
           </div>
 
-          {formData.listingType === 'rent' && !['pg', 'rk'].includes(formData.type) && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                Availability Details
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Available From *
-                  </label>
-                  <input
-                    type="date"
-                    name="availability.availableFrom"
-                    value={formData.availability.availableFrom 
-                      ? new Date(formData.availability.availableFrom).toISOString().split('T')[0]
-                      : ''}
-                    onChange={handleChange}
-                    min={new Date().toISOString().split('T')[0]}
-                    max={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Max 1 year ahead
-                    style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
+          {formData.listingType === "rent" &&
+            !["pg", "rk"].includes(formData.type) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                  Availability Details
+                </h2>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minimum Lease Period *
-                  </label>
-                  <select
-                    name="availability.minLeasePeriod"
-                    value={formData.availability.minLeasePeriod}
-                    onChange={handleChange}
-                    style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    {LEASE_PERIODS.map(period => (
-                      <option key={period} value={period}>{period}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Available From *
+                    </label>
+                    <input
+                      type="date"
+                      name="availability.availableFrom"
+                      value={
+                        formData.availability.availableFrom
+                          ? new Date(formData.availability.availableFrom)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
+                      onChange={handleChange}
+                      min={new Date().toISOString().split("T")[0]}
+                      max={
+                        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                          .toISOString()
+                          .split("T")[0]
+                      } // Max 1 year ahead
+                      style={inputStyles}
+                      className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Minimum Lease Period *
+                    </label>
+                    <select
+                      name="availability.minLeasePeriod"
+                      value={formData.availability.minLeasePeriod}
+                      onChange={handleChange}
+                      style={inputStyles}
+                      className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      {LEASE_PERIODS.map((period) => (
+                        <option key={period} value={period}>
+                          {period}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Sale---------------- */}
-          {formData.listingType === 'sale' && (
+          {formData.listingType === "sale" && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
                 Sale-Specific Details
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1011,9 +1160,15 @@ const PropertyListingForm = () => {
                     className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Select condition</option>
-                    {PROPERTY_CONDITIONS.map(condition => (
+                    {PROPERTY_CONDITIONS.map((condition) => (
                       <option key={condition} value={condition}>
-                        {condition.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        {condition
+                          .split("_")
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1)
+                          )
+                          .join(" ")}
                       </option>
                     ))}
                   </select>
@@ -1031,9 +1186,15 @@ const PropertyListingForm = () => {
                     className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Select status</option>
-                    {PROPERTY_STATUSES.map(status => (
+                    {PROPERTY_STATUSES.map((status) => (
                       <option key={status} value={status}>
-                        {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        {status
+                          .split("_")
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1)
+                          )
+                          .join(" ")}
                       </option>
                     ))}
                   </select>
@@ -1047,7 +1208,7 @@ const PropertyListingForm = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Location Details
             </h2>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1075,66 +1236,72 @@ const PropertyListingForm = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Property Details
             </h2>
-            
+
             <div className="space-y-6">
               {/* First row - Property metrics */}
-              <div className={`grid grid-cols-1 ${
-                formData.type?.includes('plot') 
-                  ? 'md:grid-cols-1' 
-                  : 'md:grid-cols-3'
-              } gap-6`}>
+              <div
+                className={`grid grid-cols-1 ${
+                  formData.type?.includes("plot")
+                    ? "md:grid-cols-1"
+                    : "md:grid-cols-3"
+                } gap-6`}
+              >
                 {/* Area Field */}
-                {formData.listingType === 'rent' && !['pg', 'rk'].includes(formData.type) && (<div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Area (sq ft) *
-                  </label>
-                  <input
-                    type="number"
-                    name="sqft"
-                    value={formData.sqft}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>)}
-
-                {/* Only show beds/baths for non-plot properties */}
-                {!formData.type?.includes('plot') && !['pg', 'rk'].includes(formData.type) && (
-                  <>
-                    {/* Bedrooms Field */}
+                {formData.listingType === "rent" &&
+                  !["pg", "rk"].includes(formData.type) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bedrooms *
+                        Area (sq ft) *
                       </label>
                       <input
                         type="number"
-                        name="beds"
-                        value={formData.beds}
+                        name="sqft"
+                        value={formData.sqft}
                         onChange={handleChange}
                         min="0"
                         style={inputStyles}
                         className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
+                  )}
 
-                    {/* Bathrooms Field */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bathrooms *
-                      </label>
-                      <input
-                        type="number"
-                        name="baths"
-                        value={formData.baths}
-                        onChange={handleChange}
-                        min="0"
-                        style={inputStyles} 
-                        className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </>
-                )}
+                {/* Only show beds/baths for non-plot properties */}
+                {!formData.type?.includes("plot") &&
+                  !["pg", "rk"].includes(formData.type) && (
+                    <>
+                      {/* Bedrooms Field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Bedrooms *
+                        </label>
+                        <input
+                          type="number"
+                          name="beds"
+                          value={formData.beds}
+                          onChange={handleChange}
+                          min="0"
+                          style={inputStyles}
+                          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Bathrooms Field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Bathrooms *
+                        </label>
+                        <input
+                          type="number"
+                          name="baths"
+                          value={formData.baths}
+                          onChange={handleChange}
+                          min="0"
+                          style={inputStyles}
+                          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </>
+                  )}
               </div>
 
               {/* Second row - Contact number */}
@@ -1149,7 +1316,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     className="w-[180px] px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {DIAL_CODES.map(({code, country}) => (
+                    {DIAL_CODES.map(({ code, country }) => (
                       <option key={code} value={code}>
                         {code} {country}
                       </option>
@@ -1162,7 +1329,7 @@ const PropertyListingForm = () => {
                       value={formData.phone}
                       onChange={handleChange}
                       className={`w-full px-4 py-2 border ${
-                        fieldErrors.phone ? 'border-red-300' : 'border-gray-300'
+                        fieldErrors.phone ? "border-red-300" : "border-gray-300"
                       } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                       placeholder="Enter phone number"
                       maxLength={15}
@@ -1194,154 +1361,207 @@ const PropertyListingForm = () => {
           </div>
 
           {/* Add this section after the Property Details section and before the Amenities section */}
-          {formData.listingType === 'rent' && ['pg', 'rk', 'flat'].includes(formData.type) && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                Floor & Room Details
-              </h2>
-              
-              <div className="space-y-6">
-                {floorDetails.map((floor, floorIndex) => (
-                  <div key={floorIndex} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium">Floor {floor.floorNumber}</h3>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => addRoom(floorIndex)}
-                          className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                        >
-                          Add Room
-                        </button>
-                        {floorDetails.length > 1 && (
+          {formData.listingType === "rent" &&
+            ["pg", "rk", "flat"].includes(formData.type) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                  Floor & Room Details
+                </h2>
+
+                <div className="space-y-6">
+                  {floorDetails.map((floor, floorIndex) => (
+                    <div key={floorIndex} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium">
+                          Floor {floor.floorNumber}
+                        </h3>
+                        <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => removeFloor(floorIndex)}
-                            className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            onClick={() => addRoom(floorIndex)}
+                            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                           >
-                            Remove Floor
+                            Add Room
                           </button>
-                        )}
+                          {floorDetails.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeFloor(floorIndex)}
+                              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            >
+                              Remove Floor
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {floor.rooms.map((room, roomIndex) => (
+                          <div
+                            key={roomIndex}
+                            className="p-3 bg-gray-50 rounded mb-4"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Room Number
+                                </label>
+                                <input
+                                  type="number"
+                                  value={room.roomNumber}
+                                  onChange={(e) =>
+                                    handleRoomDetailsChange(
+                                      floorIndex,
+                                      roomIndex,
+                                      "roomNumber",
+                                      parseInt(e.target.value)
+                                    )
+                                  }
+                                  min="1"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                              {formData.type !== "rk" && (
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Capacity
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={room.capacity}
+                                    onChange={(e) =>
+                                      handleRoomDetailsChange(
+                                        floorIndex,
+                                        roomIndex,
+                                        "capacity",
+                                        parseInt(e.target.value)
+                                      )
+                                    }
+                                    min="1"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Currently Occupied
+                                </label>
+                                <input
+                                  type="number"
+                                  value={room.occupied}
+                                  onChange={(e) =>
+                                    handleRoomDetailsChange(
+                                      floorIndex,
+                                      roomIndex,
+                                      "occupied",
+                                      parseInt(e.target.value)
+                                    )
+                                  }
+                                  min="0"
+                                  max={room.capacity}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Max: {room.capacity}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Rent Amount (₹)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={room.rent_amount || ""}
+                                  onChange={(e) =>
+                                    handleRoomDetailsChange(
+                                      floorIndex,
+                                      roomIndex,
+                                      "rent_amount",
+                                      parseInt(e.target.value)
+                                    )
+                                  }
+                                  min="0"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Enter rent amount"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Available From
+                                </label>
+                                <input
+                                  type="date"
+                                  value={room.availableFrom || ""}
+                                  onChange={(e) =>
+                                    handleRoomDetailsChange(
+                                      floorIndex,
+                                      roomIndex,
+                                      "availableFrom",
+                                      e.target.value
+                                    )
+                                  }
+                                  min={new Date().toISOString().split("T")[0]}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center mt-4">
+                              <input
+                                type="checkbox"
+                                id={`balcony-${floorIndex}-${roomIndex}`}
+                                checked={room.hasBalcony || false}
+                                onChange={(e) =>
+                                  handleRoomDetailsChange(
+                                    floorIndex,
+                                    roomIndex,
+                                    "hasBalcony",
+                                    e.target.checked
+                                  )
+                                }
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <label
+                                htmlFor={`balcony-${floorIndex}-${roomIndex}`}
+                                className="ml-2 block text-sm text-gray-700"
+                              >
+                                Has Balcony
+                              </label>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                  ))}
 
-                    <div className="space-y-4">
-                      {floor.rooms.map((room, roomIndex) => (
-                        <div key={roomIndex} className="p-3 bg-gray-50 rounded mb-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Room Number
-                              </label>
-                              <input
-                                type="number"
-                                value={room.roomNumber}
-                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'roomNumber', parseInt(e.target.value))}
-                                min="1"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                            </div>
-                            {formData.type !== 'rk' && <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Capacity
-                              </label>
-                              <input
-                                type="number"
-                                value={room.capacity}
-                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'capacity', parseInt(e.target.value))}
-                                min="1"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                            </div>}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Currently Occupied
-                              </label>
-                              <input
-                                type="number"
-                                value={room.occupied}
-                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'occupied', parseInt(e.target.value))}
-                                min="0"
-                                max={room.capacity}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Max: {room.capacity}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Rent Amount (₹)
-                              </label>
-                              <input
-                                type="number"
-                                value={room.rent_amount || ''}
-                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'rent_amount', parseInt(e.target.value))}
-                                min="0"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Enter rent amount"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Available From
-                              </label>
-                              <input
-                                type="date"
-                                value={room.availableFrom || ''}
-                                onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'availableFrom', e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center mt-4">
-                            <input
-                              type="checkbox"
-                              id={`balcony-${floorIndex}-${roomIndex}`}
-                              checked={room.hasBalcony || false}
-                              onChange={(e) => handleRoomDetailsChange(floorIndex, roomIndex, 'hasBalcony', e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor={`balcony-${floorIndex}-${roomIndex}`} className="ml-2 block text-sm text-gray-700">
-                              Has Balcony
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={addFloor}
-                  className="w-full py-2 px-4 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                >
-                  Add Floor
-                </button>
+                  <button
+                    type="button"
+                    onClick={addFloor}
+                    className="w-full py-2 px-4 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                  >
+                    Add Floor
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Amenities Section */}
           <div className="bg-white rounded-xl shadow-sm p-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Amenities & Features
             </h2>
-            
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {AMENITIES.map(amenity => (
+              {AMENITIES.map((amenity) => (
                 <button
                   key={amenity}
                   type="button"
                   onClick={() => handleAmenityChange(amenity)}
                   className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-all ${
                     formData.amenities.includes(amenity)
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-200 hover:border-blue-200 hover:bg-gray-50"
                   }`}
                 >
                   <input
@@ -1361,11 +1581,14 @@ const PropertyListingForm = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Property Images
             </h2>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {previewUrls.map((url, index) => (
-                  <div key={index} className="relative group aspect-video rounded-lg overflow-hidden">
+                  <div
+                    key={index}
+                    className="relative group aspect-video rounded-lg overflow-hidden"
+                  >
                     <img
                       src={url}
                       alt={`Preview ${index + 1}`}
@@ -1393,7 +1616,8 @@ const PropertyListingForm = () => {
                 </label>
               </div>
               <p className="text-sm text-gray-500">
-                You can upload up to 10 images. Each image should be less than 5MB.
+                You can upload up to 10 images. Each image should be less than
+                5MB.
               </p>
             </div>
           </div>
@@ -1413,7 +1637,7 @@ const PropertyListingForm = () => {
               disabled={loading}
               className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Submitting...' : 'List Property'}
+              {loading ? "Submitting..." : "List Property"}
             </button>
           </div>
         </form>
