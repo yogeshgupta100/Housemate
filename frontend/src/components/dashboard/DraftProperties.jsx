@@ -25,8 +25,7 @@ const DraftProperties = () => {
       setDrafts(response.data.drafts);
       setError(null);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-      setError(errorMessage);
+      setError('Failed to fetch draft properties. Please try again later.');
       console.error('Error fetching draft properties:', err);
     } finally {
       setLoading(false);
@@ -43,8 +42,7 @@ const DraftProperties = () => {
         });
         fetchDraftProperties();
       } catch (err) {
-        const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-        setError(errorMessage);
+        setError('Failed to delete draft. Please try again later.');
         console.error('Error deleting draft:', err);
       }
     }

@@ -41,8 +41,8 @@ const PropertyListings = () => {
         toast.error(response.data.message || "Failed to fetch properties");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      toast.error(errorMessage);
+      console.error("Error fetching properties:", error);
+      toast.error("Failed to fetch properties");
     } finally {
       setLoading(false);
     }
@@ -60,8 +60,7 @@ const PropertyListings = () => {
     try {
       return Array.isArray(amenities) ? amenities : JSON.parse(amenities);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      toast.error(errorMessage);
+      console.error("Error parsing amenities:", error);
       return [];
     }
   };
@@ -84,8 +83,8 @@ const PropertyListings = () => {
           toast.error(response.data.message);
         }
       } catch (error) {
-        const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-        toast.error(errorMessage);
+        console.error("Error removing property:", error);
+        toast.error("Failed to remove property");
       }
     }
   };

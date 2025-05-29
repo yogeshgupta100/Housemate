@@ -58,9 +58,8 @@ const ProfilePage = () => {
         setError('Failed to fetch user data');
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-      setError(errorMessage);
-      console.error('Error fetching user:', errorMessage);
+      setError('Error loading profile data');
+      console.error('Error fetching user:', err);
     } finally {
       setLoading(false);
     }
@@ -169,8 +168,7 @@ const ProfilePage = () => {
         toast.error('Unexpected response from server');
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error('Error updating profile:', errorMessage);
+      console.error('Error updating profile:', error);
       
       if (error.response) {
         console.error('Error response:', error.response);

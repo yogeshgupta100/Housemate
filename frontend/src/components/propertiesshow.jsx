@@ -29,6 +29,28 @@ const PropertyCard = ({ property }) => {
     navigate(`/properties/single/${property.id}`);
   };
 
+  // useEffect(() => {
+  //   const checkFavoriteStatus = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //           `${Backendurl}/api/favorites/${property.id}/check`,
+  //           {
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //               "Authorization": `Bearer ${localStorage.getItem('token')}`
+  //             },
+  //           }
+  //       );
+  //       if (response.data.success) {
+  //         setIsFavorite(response.data.isFavorited);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error checking favorite status:", error);
+  //     }
+  //   };
+  //   checkFavoriteStatus();
+  // }, [property.id]);
+
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       try {
@@ -43,8 +65,7 @@ const PropertyCard = ({ property }) => {
         );
         setIsFavorite(!!response.data.isFavorited);
       } catch (error) {
-        const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-        console.error("Error checking favorite status:", errorMessage);
+        console.error("Error checking favorite status:", error);
       }
     };
     checkFavoriteStatus();
@@ -65,15 +86,15 @@ const PropertyCard = ({ property }) => {
             },
           }
       );
-      if (response.data.success) {
+      if (response.status === 200) {
         setIsFavorite(!isFavorite);
-        toast.success(response.data.message);
+        toast.success(response.message);
       } else {
-        toast.error(response.data.message);
+        toast.error(response.message);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      toast.error(errorMessage);
+      console.error("Error updating favorite:", error);
+      toast.error("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -332,6 +353,7 @@ const PropertiesShow = () => {
           </p>
         </motion.div>
 
+        {}
         <motion.div 
           className="flex flex-wrap justify-center gap-4 mb-12"
           initial={{ opacity: 0, y: 20 }}

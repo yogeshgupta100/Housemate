@@ -18,18 +18,21 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const expiresIn = 24 * 60 * 60 * 1000;
+      const expiresIn = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
       const expiryTime = new Date().getTime() + expiresIn;
       
       localStorage.setItem("token", token);
       localStorage.setItem("tokenExpiry", expiryTime.toString());
       
+      // Set axios default header
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      console.log('Token set successfully:', token);
     } catch (error) {
       console.error('Error setting token:', error);
     }
   };
 
+  // Function to check if token is expired
   const isTokenExpired = () => {
     const token = localStorage.getItem("token");
     const expiryTime = localStorage.getItem("tokenExpiry");
@@ -38,25 +41,34 @@ export const AuthProvider = ({ children }) => {
     
     const now = new Date().getTime();
     const isExpired = now > parseInt(expiryTime);
+    console.log('Token expiry check:', { now, expiryTime, isExpired });
     return isExpired;
   };
 
+  // Function to clear token
   const clearToken = () => {
+    console.log('Clearing token');
     localStorage.removeItem("token");
     localStorage.removeItem("tokenExpiry");
     delete axios.defaults.headers.common["Authorization"];
   };
 
+  // Initialize auth state on mount
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const token = localStorage.getItem("token");
+        console.log('Initializing auth with token:', token);
         
         if (token && !isTokenExpired()) {
+          // Set axios header before making any requests
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          console.log('Set axios header:', axios.defaults.headers.common["Authorization"]);
           
           try {
+            console.log('Making /api/auth/me request...');
             const response = await axios.get(`${Backendurl}/api/auth/me`);
+            console.log('User data response:', response.data);
             
             if (response.data) {
               setUser(response.data);
@@ -77,6 +89,7 @@ export const AuthProvider = ({ children }) => {
             setIsLoggedIn(false);
           }
         } else {
+          console.log('No valid token found or token expired');
           clearToken();
           setUser(null);
           setIsLoggedIn(false);

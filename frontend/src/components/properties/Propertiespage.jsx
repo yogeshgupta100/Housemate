@@ -6,7 +6,6 @@ import SearchBar from "./Searchbar.jsx";
 import FilterSection from "./Filtersection.jsx";
 import PropertyListing from "./PropertyListing.jsx";
 import { Backendurl } from "../../config/index.js";
-import { toast } from 'react-toastify';
 
 const PropertiesPage = () => {
   const [viewState, setViewState] = useState({
@@ -155,6 +154,7 @@ const PropertiesPage = () => {
           queryParams.append("verified", true);
         }
 
+        console.log("Final query:", queryParams.toString());
 
         response = await axios.get(`${Backendurl}/api/properties/search?${queryParams}`);
       }
@@ -166,10 +166,8 @@ const PropertiesPage = () => {
           error: null,
           loading: false,
         }));
-        toast.success(response.data.message);
       } else {
-        const errorMessage = response.data.message || "An error occurred. Please try again.";
-        throw new Error(errorMessage);
+        throw new Error(response.data.message);
       }
     } catch (err) {
       setPropertyState((prev) => ({
@@ -177,9 +175,7 @@ const PropertiesPage = () => {
         error: "Failed to fetch properties. Please try again later.",
         loading: false,
       }));
-      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-      console.error("Error fetching properties:", errorMessage);
-      toast.error(errorMessage);
+      console.error("Error fetching properties:", err);
     }
   };
 
@@ -200,7 +196,7 @@ const PropertiesPage = () => {
     }
     setLoadingSuggestions(true);
     try {
-      const res = await fetch(`${Backendurl}/api/properties/location-suggestions?query=${encodeURIComponent(query)}`);
+      const res = await fetch(`${Backendurl}/api/properties/locations?query=${encodeURIComponent(query)}`);
       const data = await res.json();
       setLocationSuggestions(data.locations || []);
     } catch (e) {
@@ -220,7 +216,7 @@ const PropertiesPage = () => {
     // Set a new timeout
     typingTimeoutRef.current = setTimeout(() => {
       fetchLocations(query);
-    }, 500); // 5 seconds debounce
+    }, 5000); // 5 seconds debounce
   };
 
   const handleSearch = (query) => {

@@ -93,7 +93,6 @@ app.use('/api/admin', adminRouter);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/pg', pdfRoutes);
-app.use('/api/transactions', transactionRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

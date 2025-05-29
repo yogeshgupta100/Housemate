@@ -268,6 +268,8 @@ export default {
              LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
       [...values, limit, offset]
     );
+    console.log('Final query:', query);
+console.log('With values:', values);
 
     return rows;
   },

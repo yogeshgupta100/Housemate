@@ -179,6 +179,7 @@ const PropertyListingForm = () => {
     }
   };
 
+  // Add useEffect to initialize Google Places Autocomplete
   useEffect(() => {
     if (!locationInputRef.current || !window.google) return;
 
@@ -198,6 +199,7 @@ const PropertyListingForm = () => {
         return;
       }
 
+      // Extract address components
       const addressComponents = {
         street: "",
         city: "",
@@ -241,18 +243,21 @@ const PropertyListingForm = () => {
     });
 
     return () => {
+      // Cleanup
       if (autocomplete) {
         google.maps.event.clearInstanceListeners(autocomplete);
       }
     };
   }, []);
 
+    // Check if user is allowed to list property and load draft if exists
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
       return;
     }
 
+    // Check if user is corporate
     if (user?.userType === "corporate") {
       setError(
         "Corporate users cannot list properties. Please contact support for assistance."
@@ -260,6 +265,7 @@ const PropertyListingForm = () => {
       return;
     }
 
+    // Set default contact information based on user type
     if (user) {
       setFormData((prev) => ({
         ...prev,
@@ -271,6 +277,7 @@ const PropertyListingForm = () => {
       }));
     }
 
+    // Load draft if draftId exists
     if (draftId) {
       loadDraft(draftId);
     }
@@ -299,6 +306,7 @@ const PropertyListingForm = () => {
     }
   };
 
+  // Calculate deposit when price or type changes for rent listings
   useEffect(() => {
     if (formData.listingType === "rent" && formData.price && formData.type) {
       const multipliers = {
@@ -335,11 +343,11 @@ const PropertyListingForm = () => {
       if (type === "number") {
         const numValue = Number(value);
         if (numValue < 0) {
-          return;
+          return; // Prevent negative values
         }
         if (name === "beds" || name === "baths") {
           if (!Number.isInteger(numValue)) {
-            return;
+            return; // Only allow whole numbers
           }
         }
       }
@@ -360,6 +368,7 @@ const PropertyListingForm = () => {
         }));
       }
 
+      // Validate field
       const error = validateField(name, value);
       setFieldErrors((prev) => ({
         ...prev,
@@ -491,6 +500,7 @@ const PropertyListingForm = () => {
         newDetails[floorIndex].rooms[roomIndex].roomNumber = value;
       } else if (field === "capacity") {
         newDetails[floorIndex].rooms[roomIndex].capacity = value;
+        // Ensure occupied doesn't exceed new capacity
         if (newDetails[floorIndex].rooms[roomIndex].occupied > value) {
           newDetails[floorIndex].rooms[roomIndex].occupied = value;
         }

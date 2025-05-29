@@ -34,6 +34,7 @@ const Login = () => {
         toast.error(response.data.message || "Login failed");
       }
     } catch (error) {
+      console.error('Error logging in:', error);
       toast.error(error.response?.data?.message || 'Invalid admin credentials');
     } finally {
       setLoading(false);
