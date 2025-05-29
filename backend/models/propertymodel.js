@@ -122,6 +122,15 @@ export default {
           propertyData.price * (multipliers[propertyData.type] || 2);
       }
 
+      // Ensure property_condition is valid or null
+      const allowedConditions = ["new", "good", "average", "needs_repair"];
+      if (
+        !allowedConditions.includes(propertyData.property_condition) ||
+        !propertyData.property_condition
+      ) {
+        propertyData.property_condition = null;
+      }
+
       const { rows } = await client.query(
         `INSERT INTO properties (
                     title, subtitle, description, slug, listing_type, type, price, rent_type,
@@ -260,7 +269,6 @@ export default {
       [...values, limit, offset]
     );
 
-
     return rows;
   },
 
@@ -310,10 +318,9 @@ export default {
     return rows[0];
   },
 
-
-async findByUser(userId) {
+  async findByUser(userId) {
     const { rows } = await pool.query(
-        `SELECT p.*, 
+      `SELECT p.*, 
                 u.first_name as owner_first_name, u.last_name as owner_last_name,
                 c.first_name as creator_first_name, c.last_name as creator_last_name
          FROM properties p
@@ -321,7 +328,7 @@ async findByUser(userId) {
          LEFT JOIN users c ON p.created_by = c.id
          WHERE p.created_by = $1
          ORDER BY p.created_at DESC`,
-        [String(userId)] // 👈 ensure UUID is passed correctly
+      [String(userId)] // 👈 ensure UUID is passed correctly
     );
     return rows;
   },
