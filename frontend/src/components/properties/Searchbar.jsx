@@ -1,12 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, MapPin, History } from 'lucide-react';
+
+
+
+
+
+
+
+
+    
+
+
+
+
+        
+
+
+
+
+import React, { useState, useEffect } from 'react';
+import { Search, X, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SearchBar = ({ onSearch, onInputChange, className , locationSuggestions , loadingSuggestions }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const rootRef = useRef(null);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -20,6 +37,8 @@ const SearchBar = ({ onSearch, onInputChange, className , locationSuggestions , 
     e.preventDefault();
     onSearch(searchQuery);
   };
+
+  // const popularLocations = ['Mumbai', 'Goa', 'Jaipur', 'Ahmedabad'];
 
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
@@ -54,23 +73,8 @@ const SearchBar = ({ onSearch, onInputChange, className , locationSuggestions , 
     }
   };
 
-  useEffect(() => {
-    if (!showSuggestions) return;
-
-    const handleClickOutside = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showSuggestions]);
-
   return (
-    <div ref={rootRef} className={`relative ${className}`}>
+    <div className={`relative ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"
@@ -113,6 +117,7 @@ const SearchBar = ({ onSearch, onInputChange, className , locationSuggestions , 
         </div>
       </form>
 
+      {}
       <AnimatePresence>
         {showSuggestions && (
           <motion.div
@@ -137,7 +142,7 @@ const SearchBar = ({ onSearch, onInputChange, className , locationSuggestions , 
                     className="w-full text-left px-3 py-2 hover:bg-gray-50 
                       rounded-md flex items-center gap-2 text-gray-700"
                   >
-                    <History className="h-4 w-4 text-gray-400" />
+                    <Search className="h-4 w-4 text-gray-400" />
                     {query}
                   </button>
                 ))}
@@ -146,7 +151,7 @@ const SearchBar = ({ onSearch, onInputChange, className , locationSuggestions , 
 
             <div className="border-t border-gray-100 p-2">
               <h3 className="text-xs font-medium text-gray-500 px-3 mb-2">
-                Search Results
+                Popular Locations
               </h3>
               {locationSuggestions?.map((location, index) => (
                 <button

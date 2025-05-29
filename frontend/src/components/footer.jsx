@@ -136,15 +136,15 @@ const Newsletter = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (response.data.success) {
-        toast.success(response.data.message);
+      if (response.status === 200) {
+        toast.success('Successfully subscribed to our newsletter!');
+        setEmail('');
       } else {
-        toast.error(response.data.message);
+        toast.error('Failed to subscribe. Please try again.');
       }
-      setEmail('');
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      toast.error(errorMessage);
+      console.error('Error subscribing to newsletter:', error);
+      toast.error('Failed to subscribe. Please try again.');
     } finally {
       setLoading(false);
     }

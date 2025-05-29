@@ -3,7 +3,7 @@ import axios from 'axios';
 import PropertyCard from '../../components/PropertyCard';
 import PropertyFilters from '../../components/PropertyFilters';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { toast } from 'react-toastify';
+
 const PropertiesPage = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,9 +32,7 @@ const PropertiesPage = () => {
       });
       setProperties(response.data.data || []);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error('Error fetching properties:', errorMessage);
-      toast.error(errorMessage);
+      console.error('Error fetching properties:', error);
       // You might want to show an error message to the user here
     } finally {
       setLoading(false);

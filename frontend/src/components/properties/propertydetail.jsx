@@ -36,9 +36,6 @@ const PropertyDetails = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [openTermsAndConditions, setOpenTermsAndConditions] = useState(false);
-  const [openMoveInModal, setOpenMoveInModal] = useState(false);
-  const [moveInDate, setMoveInDate] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,9 +52,8 @@ const PropertyDetails = () => {
           setError(response.data.message);
         }
       } catch (err) {
-        const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-        console.error("Error fetching property:", errorMessage);
-        setError(errorMessage);
+        console.error("Error fetching property:", err);
+        setError("Failed to fetch property details");
       } finally {
         setLoading(false);
       }
@@ -86,8 +82,7 @@ const PropertyDetails = () => {
     try {
       return typeof amenities === "string" ? JSON.parse(amenities) : [];
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error("Error parsing amenities:", errorMessage);
+      console.error("Error parsing amenities:", error);
       return [];
     }
   };
@@ -139,28 +134,7 @@ const PropertyDetails = () => {
         setTimeout(() => setCopySuccess(false), 2000);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error("Error sharing:", errorMessage);
-    }
-  };
-
-  const handleMoveInSubmit = async () => {
-    setSubmitting(true);
-    try {
-      const userId = localStorage.getItem('userId');
-      await axios.post(`${Backendurl}/api/transactions`, {
-        propertyId: property.id,
-        userId,
-        moveInDate,
-        status: "pending"
-      });
-      setOpenMoveInModal(false);
-      setMoveInDate("");
-      // Optionally show a toast or redirect
-    } catch (error) {
-      // Optionally show a toast for error
-    } finally {
-      setSubmitting(false);
+      console.error("Error sharing:", error);
     }
   };
 
@@ -626,36 +600,10 @@ const PropertyDetails = () => {
             >
               <TermsAndConditions />
               <div className="flex flex-row items-center justify-center mt-2">
-                <button
-                  className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={() => {
-                    setOpenTermsAndConditions(false);
-                    setOpenMoveInModal(true);
-                  }}
+                <button className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => setOpenTermsAndConditions(false)}
                 >
                   Accept
-                </button>
-              </div>
-            </GeneralModal>
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {openMoveInModal && (
-            <GeneralModal open={openMoveInModal} onClose={() => setOpenMoveInModal(false)}>
-              <div className="p-4">
-                <h2 className="text-xl font-semibold mb-4">Select Move-In Date</h2>
-                <input
-                  type="date"
-                  value={moveInDate}
-                  onChange={e => setMoveInDate(e.target.value)}
-                  className="border rounded px-3 py-2 w-full mb-4"
-                />
-                <button
-                  className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={handleMoveInSubmit}
-                  disabled={submitting || !moveInDate}
-                >
-                  {submitting ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </GeneralModal>

@@ -29,12 +29,10 @@ const Wallet = () => {
         setBalance(balanceData.balance);
         setTransactions(transactionsData);
       } else {
-        const errorMessage = balanceResponse.statusText || transactionsResponse.statusText || 'Failed to fetch wallet data';
-        throw new Error(errorMessage);
+        throw new Error('Failed to fetch wallet data');
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-      setError(errorMessage);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -58,12 +56,10 @@ const Wallet = () => {
         setShowAddMoney(false);
         setAmount('');
       } else {
-        const errorMessage = response.statusText || 'Failed to add money';
-        throw new Error(errorMessage);
+        throw new Error('Failed to add money');
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "An error occurred. Please try again.";
-      setError(errorMessage);
+      setError(err.message);
     }
   };
 

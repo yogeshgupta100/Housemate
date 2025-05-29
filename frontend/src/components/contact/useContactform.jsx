@@ -52,8 +52,8 @@ export default function useContactForm() {
         // Reset form
         setFormData({ name: '', email: '', phone: '', message: '' });
       } catch (error) {
-        const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-        toast.error(errorMessage);
+        toast.error('Error submitting form. Please try again.');
+        console.error('Error submitting form:', error);
       }
     } else {
       console.log('Validation errors:', errors); // Debugging log

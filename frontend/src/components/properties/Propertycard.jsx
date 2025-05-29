@@ -50,11 +50,10 @@ const PropertyCard = ({ property, viewType }) => {
         });
       } else {
         await navigator.clipboard.writeText(window.location.href);
-        toast.success('Link copied to clipboard!');
+        alert('Link copied to clipboard!');
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error('Error sharing:', errorMessage);
+      console.error('Error sharing:', error);
     }
   };
 

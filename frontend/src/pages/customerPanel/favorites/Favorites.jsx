@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaHeart, FaBed, FaBath, FaRulerCombined, FaMapMarkerAlt } from 'react-icons/fa';
 import './Favorites.css';
-import {Backendurl} from "../../../App.jsx";
+import {Backendurl} from "@/App.jsx";
 import axios from "axios";
+import { backendurl } from '../../../../../admin/src/App';
 
 const Favorites = () => {
     const [favorites, setFavorites] = useState([]);
@@ -62,8 +63,6 @@ const Favorites = () => {
             }
         } catch (error) {
             console.error('Error removing favorite:', error);
-            const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-            toast.error(errorMessage);
         }
     };
 

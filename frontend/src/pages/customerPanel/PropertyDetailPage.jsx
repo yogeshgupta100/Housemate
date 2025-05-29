@@ -97,8 +97,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
     try {
       return typeof amenities === 'string' ? JSON.parse(amenities) : [];
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error("Error parsing amenities:", errorMessage);
+      console.error("Error parsing amenities:", error);
       return [];
     }
   };
@@ -140,8 +139,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
         setTimeout(() => setCopySuccess(false), 2000);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      console.error('Error sharing:', errorMessage);
+      console.error('Error sharing:', error);
     }
   };
 

@@ -70,6 +70,7 @@ const Users = () => {
                 setRoles(response.data.data.map((role) => role.name || role));
             }
         } catch (error) {
+            console.error("Error fetching roles:", error);
             toast.error(error.response?.data?.message || "Failed to fetch roles");
         }
     };
@@ -98,8 +99,8 @@ const Users = () => {
                 setTotalItems(response.data.pagination.totalItems);
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-            toast.error(errorMessage);
+            console.error("Error fetching users:", error);
+            toast.error(error.response?.data?.message || "Failed to fetch users");
         } finally {
             setLoading(false);
         }
@@ -121,6 +122,7 @@ const Users = () => {
                 fetchUsers();
             }
         } catch (error) {
+            console.error("Error updating role:", error);
             toast.error(error.response?.data?.message || "Failed to update role");
         }
     };
@@ -141,6 +143,7 @@ const Users = () => {
                 fetchUsers();
             }
         } catch (error) {
+            console.error("Error updating verification status:", error);
             toast.error(error.response?.data?.message || "Failed to update verification status");
         }
     };
@@ -172,6 +175,7 @@ const Users = () => {
                 fetchUsers();
             }
         } catch (error) {
+            console.error("Error creating user:", error);
             toast.error(error.response?.data?.message || "Failed to create user");
         }
     };
@@ -199,6 +203,7 @@ const Users = () => {
                 fetchUsers();
             }
         } catch (error) {
+            console.error("Error deleting user:", error);
             toast.error(error.response?.data?.message || "Failed to delete user");
         } finally {
             setShowConfirmDialog(false);

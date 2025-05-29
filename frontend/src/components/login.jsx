@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -17,6 +18,7 @@ const Login = () => {
   const location = useLocation();
   const { login } = useAuth();
 
+  // Get the redirect path from location state or default to home
   const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e) => {
@@ -32,7 +34,10 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      console.log('Attempting login with:', { email: formData.email });
+      
       const result = await login(formData.email, formData.password);
+      console.log('Login result:', result);
       
       if (result.success) {
         toast.success("Login successful!");
@@ -41,8 +46,8 @@ const Login = () => {
         toast.error(result.message || "Login failed");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again.";
-      toast.error(errorMessage);
+      console.error("Error logging in:", error);
+      toast.error("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
