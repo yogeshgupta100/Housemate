@@ -5,236 +5,70 @@ import PageHeader from '../../components/customerPanel/common/PageHeader';
 import PropertyCard from '../../components/customerPanel/profile/ProfileCard';
 import InvoicePreview from '../../components/customerPanel/transactions/InvoicePreview';
 import AgreementPreview from '../../components/customerPanel/transactions/AgreementPreview';
-
-const mockTransactions = [
-  {
-    id: '1',
-    type: 'Purchase',
-    status: 'Completed',
-    amount: 450000,
-    property: {
-      id: '101',
-      title: 'Modern Apartment in Downtown',
-      description: 'A beautiful modern apartment in the heart of downtown',
-      type: 'Apartment',
-      status: 'Sold',
-      price: 450000,
-      bedrooms: 2,
-      bathrooms: 2,
-      area: 1200,
-      location: 'Downtown',
-      city: 'New York',
-      state: 'NY',
-      images: ['https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'],
-      features: ['Parking', 'Gym', 'Pool'],
-      ownerId: '2',
-      createdAt: '2023-01-01T00:00:00.000Z',
-      updatedAt: '2023-02-15T00:00:00.000Z',
-    },
-    buyer: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234 567 890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10001',
-      country: 'USA',
-      createdAt: '2023-01-01T00:00:00.000Z',
-    },
-    seller: {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+1 234 567 891',
-      address: '456 Oak St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10002',
-      country: 'USA',
-      createdAt: '2022-01-01T00:00:00.000Z',
-    },
-    date: '2023-02-15T00:00:00.000Z',
-    documents: {
-      invoice: 'invoice_1.pdf',
-      agreement: 'agreement_1.pdf',
-    },
-  },
-  {
-    id: '2',
-    type: 'Rent',
-    status: 'Pending',
-    amount: 2500,
-    property: {
-      id: '102',
-      title: 'Luxury Villa with Pool',
-      description: 'Spacious luxury villa with a private pool',
-      type: 'Villa',
-      status: 'Rented',
-      price: 2500,
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 3000,
-      location: 'Suburbs',
-      city: 'Los Angeles',
-      state: 'CA',
-      images: ['https://images.pexels.com/photos/53610/large-home-residential-house-architecture-53610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'],
-      features: ['Pool', 'Garden', 'Garage'],
-      ownerId: '3',
-      createdAt: '2023-02-01T00:00:00.000Z',
-      updatedAt: '2023-03-01T00:00:00.000Z',
-    },
-    buyer: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234 567 890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10001',
-      country: 'USA',
-      createdAt: '2023-01-01T00:00:00.000Z',
-    },
-    seller: {
-      id: '3',
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      phone: '+1 234 567 892',
-      address: '789 Pine St',
-      city: 'Los Angeles',
-      state: 'CA',
-      zip: '90001',
-      country: 'USA',
-      createdAt: '2022-02-01T00:00:00.000Z',
-    },
-    date: '2023-03-01T00:00:00.000Z',
-    documents: {
-      agreement: 'agreement_2.pdf',
-    },
-  },
-];
-
-const mockInvoice = {
-  id: '1',
-  transactionId: '1',
-  invoiceNumber: 'INV-2023-001',
-  date: '2023-02-15T00:00:00.000Z',
-  amount: 450000,
-  items: [
-    {
-      description: 'Modern Apartment in Downtown',
-      amount: 450000,
-    },
-  ],
-  taxes: [
-    {
-      description: 'Property Transfer Tax',
-      percentage: 2,
-      amount: 9000,
-    },
-  ],
-  totalAmount: 459000,
-  paidAmount: 459000,
-  dueAmount: 0,
-  dueDate: '2023-03-15T00:00:00.000Z',
-};
-
-const mockAgreement = {
-  id: '1',
-  transactionId: '1',
-  agreementNumber: 'AGR-2023-001',
-  date: '2023-02-15T00:00:00.000Z',
-  parties: {
-    buyer: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234 567 890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10001',
-      country: 'USA',
-      createdAt: '2023-01-01T00:00:00.000Z',
-    },
-    seller: {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+1 234 567 891',
-      address: '456 Oak St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10002',
-      country: 'USA',
-      createdAt: '2022-01-01T00:00:00.000Z',
-    },
-  },
-  property: {
-    id: '101',
-    title: 'Modern Apartment in Downtown',
-    description: 'A beautiful modern apartment in the heart of downtown',
-    type: 'Apartment',
-    status: 'Sold',
-    price: 450000,
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 1200,
-    location: 'Downtown',
-    city: 'New York',
-    state: 'NY',
-    images: ['https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'],
-    features: ['Parking', 'Gym', 'Pool'],
-    ownerId: '2',
-    createdAt: '2023-01-01T00:00:00.000Z',
-    updatedAt: '2023-02-15T00:00:00.000Z',
-  },
-  terms: [
-    'The buyer agrees to purchase the property from the seller for the amount specified.',
-    'The buyer shall pay the full amount on the closing date.',
-    'The seller guarantees that the property is free from all encumbrances.',
-    'The buyer has inspected the property and accepts it in its current condition.',
-    'This agreement is binding upon both parties once signed.',
-  ],
-  signatures: {
-    buyer: 'John Doe',
-    seller: 'Jane Smith',
-  },
-};
-
+import { useAuth } from '../../context/AuthContext.jsx';
+import { Backendurl } from '../../App.jsx';
+import { toast } from 'react-toastify';
 const TransactionDetailPage = () => {
   const { id } = useParams();
   const [transaction, setTransaction] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState(null);
   const [agreement, setAgreement] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
+  const {user} = useAuth();
+  console.log("user", user);
 
-  // In a real app, you would fetch the transaction, invoice, and agreement from an API
   useEffect(() => {
-    const foundTransaction = mockTransactions.find(t => t.id === id);
-    if (foundTransaction) {
-      setTransaction(foundTransaction);
-      // In a real app, you would fetch these based on the transaction ID
-      if (foundTransaction.documents.invoice) {
-        setInvoice(mockInvoice);
+    const fetchTransaction = async () => {
+      try {
+        const res = await fetch(`${Backendurl}/api/transactions/${id}`);
+        const data = await res.json();
+        if (data.success && data.transaction) {
+          setTransaction(data.transaction);
+          // In a real app, you would fetch these based on the transaction ID
+          if (data.transaction?.documents?.invoice) {
+            setInvoice(data.invoice);
+          }
+          if (data.transaction?.documents?.agreement) {
+            setAgreement(data.agreement);
+          }
+        } else {
+          toast.error("Transaction not found");
+          setTransaction(null);
+        }
+      } catch (err) {
+        toast.error("Fetch error");
+        setTransaction(null);
+      } finally {
+        setLoading(false);
       }
-      if (foundTransaction.documents.agreement) {
-        setAgreement(mockAgreement);
-      }
-    }
+    };
+    fetchTransaction();
   }, [id]);
 
-  if (!transaction) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <p>Loading transaction details...</p>
-      </div>
-    );
+  if (loading) {
+    return <div className="flex justify-center items-center h-full">Loading transaction details...</div>;
   }
 
+  if (!transaction) {
+    return <div className="flex justify-center items-center h-full">Transaction not found.</div>;
+  }
+
+  const property = {
+    ...transaction.property,
+    images: Array.isArray(transaction.property?.images)
+      ? transaction.property.images
+      : (transaction.property_images || []),
+  };
+  const amount = transaction.amount || Number(transaction.property_price) || 0;
+  const status = transaction.status || 'Pending';
+  const type = transaction.type || 'Rent';
+  const date = transaction.created_at || transaction.date;
+  const documents = transaction.documents || {};
+  const seller = transaction.seller || {};
+
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -252,7 +86,7 @@ const TransactionDetailPage = () => {
   };
 
   const getStatusIcon = () => {
-    switch (transaction.status) {
+    switch (status) {
       case 'Pending':
         return <Clock className="w-5 h-5 text-yellow-500" />;
       case 'Completed':
@@ -265,7 +99,7 @@ const TransactionDetailPage = () => {
   };
 
   const getStatusClass = () => {
-    switch (transaction.status) {
+    switch (status) {
       case 'Pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'Completed':
@@ -278,7 +112,7 @@ const TransactionDetailPage = () => {
   };
 
   const getTypeClass = () => {
-    switch (transaction.type) {
+    switch (type) {
       case 'Purchase':
         return 'bg-blue-100 text-blue-800';
       case 'Sale':
@@ -296,7 +130,7 @@ const TransactionDetailPage = () => {
         title="Transaction Details" 
         description={`Details for transaction #${transaction.id}`}
         backLink={
-          <Link to="/transactions" className="flex items-center text-blue-600 hover:text-blue-800">
+          <Link to="/customer-panel/transactions" className="flex items-center text-blue-600 hover:text-blue-800">
             <ChevronLeft className="w-4 h-4 mr-1" />
             Back to Transactions
           </Link>
@@ -305,11 +139,11 @@ const TransactionDetailPage = () => {
 
       <div className="mt-6 flex flex-wrap gap-4 mb-6">
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTypeClass()}`}>
-          {transaction.type}
+          {type}
         </span>
         <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${getStatusClass()}`}>
           {getStatusIcon()}
-          <span className="ml-1">{transaction.status}</span>
+          <span className="ml-1">{status}</span>
         </span>
       </div>
 
@@ -368,12 +202,12 @@ const TransactionDetailPage = () => {
                       <span className="text-sm text-gray-500 block mb-1">Date</span>
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        <span className="font-medium">{formatDate(transaction.date)}</span>
+                        <span className="font-medium">{formatDate(date)}</span>
                       </div>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500 block mb-1">Type</span>
-                      <span className="font-medium">{transaction.type}</span>
+                      <span className="font-medium">{type}</span>
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -381,14 +215,14 @@ const TransactionDetailPage = () => {
                       <span className="text-sm text-gray-500 block mb-1">Status</span>
                       <div className="flex items-center">
                         {getStatusIcon()}
-                        <span className="font-medium ml-2">{transaction.status}</span>
+                        <span className="font-medium ml-2">{status}</span>
                       </div>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500 block mb-1">Amount</span>
                       <div className="flex items-center">
-                        <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
-                        <span className="font-medium text-xl">{formatCurrency(transaction.amount)}</span>
+                        {/* <DollarSign className="w-4 h-4 text-gray-400 mr-2" /> */}
+                        <span className="font-medium text-xl">{formatCurrency(amount)}</span>
                       </div>
                     </div>
                   </div>
@@ -406,12 +240,12 @@ const TransactionDetailPage = () => {
                       Buyer
                     </h4>
                     <div>
-                      <p className="font-medium">{transaction.buyer.name}</p>
-                      <p className="text-sm text-gray-500">{transaction.buyer.email}</p>
-                      <p className="text-sm text-gray-500">{transaction.buyer.phone}</p>
+                      <p className="font-medium">{user?.data?.first_name} {user?.data?.last_name}</p>
+                      <p className="text-sm text-gray-500">{user?.data?.email}</p>
+                      {/* <p className="text-sm text-gray-500">{user?.data?.phone}</p>
                       <p className="text-sm text-gray-500 mt-2">
-                        {transaction.buyer.address}, {transaction.buyer.city}, {transaction.buyer.state} {transaction.buyer.zip}
-                      </p>
+                        {transaction.buyer?.address}, {transaction.buyer?.city}, {transaction.buyer?.state} {transaction.buyer?.zip}
+                      </p> */}
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -420,12 +254,8 @@ const TransactionDetailPage = () => {
                       Seller
                     </h4>
                     <div>
-                      <p className="font-medium">{transaction.seller.name}</p>
-                      <p className="text-sm text-gray-500">{transaction.seller.email}</p>
-                      <p className="text-sm text-gray-500">{transaction.seller.phone}</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        {transaction.seller.address}, {transaction.seller.city}, {transaction.seller.state} {transaction.seller.zip}
-                      </p>
+                      <p className="font-medium">{seller.name}</p>
+                      <p className="text-sm text-gray-500">{seller.email}</p>
                     </div>
                   </div>
                 </div>
@@ -436,7 +266,7 @@ const TransactionDetailPage = () => {
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Documents</h3>
                 <div className="flex flex-wrap gap-4">
-                  {transaction.documents.invoice && (
+                  {documents.invoice && (
                     <a 
                       href="#"
                       onClick={(e) => {
@@ -449,7 +279,7 @@ const TransactionDetailPage = () => {
                       View Invoice
                     </a>
                   )}
-                  {transaction.documents.agreement && (
+                  {documents.agreement && (
                     <a 
                       href="#"
                       onClick={(e) => {
@@ -469,7 +299,7 @@ const TransactionDetailPage = () => {
 
           <div className="lg:col-span-1">
             <h3 className="text-lg font-semibold mb-4">Property Information</h3>
-            <PropertyCard property={transaction.property} isCompact />
+            <PropertyCard property={property} isCompact />
           </div>
         </div>
       )}

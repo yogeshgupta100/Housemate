@@ -96,7 +96,7 @@ const TransactionCard = ({ transaction }) => {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {documents.invoice && (
+          {documents?.invoice && (
             <a 
               href="#"
               className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors"
@@ -105,7 +105,7 @@ const TransactionCard = ({ transaction }) => {
               Invoice
             </a>
           )}
-          {documents.agreement && (
+          {documents?.agreement && (
             <a 
               href="#"
               className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors"

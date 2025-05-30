@@ -150,6 +150,7 @@ const PropertyListingForm = () => {
           roomNumber: 1,
           capacity: 1,
           occupied: 0,
+          rent_amount: 0,
         },
       ],
     },
@@ -179,7 +180,6 @@ const PropertyListingForm = () => {
     }
   };
 
-  // Add useEffect to initialize Google Places Autocomplete
   useEffect(() => {
     if (!locationInputRef.current || !window.google) return;
 
@@ -199,7 +199,6 @@ const PropertyListingForm = () => {
         return;
       }
 
-      // Extract address components
       const addressComponents = {
         street: "",
         city: "",
@@ -250,14 +249,12 @@ const PropertyListingForm = () => {
     };
   }, []);
 
-    // Check if user is allowed to list property and load draft if exists
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
       return;
     }
 
-    // Check if user is corporate
     if (user?.userType === "corporate") {
       setError(
         "Corporate users cannot list properties. Please contact support for assistance."
@@ -265,7 +262,6 @@ const PropertyListingForm = () => {
       return;
     }
 
-    // Set default contact information based on user type
     if (user) {
       setFormData((prev) => ({
         ...prev,
@@ -277,7 +273,6 @@ const PropertyListingForm = () => {
       }));
     }
 
-    // Load draft if draftId exists
     if (draftId) {
       loadDraft(draftId);
     }
@@ -306,7 +301,6 @@ const PropertyListingForm = () => {
     }
   };
 
-  // Calculate deposit when price or type changes for rent listings
   useEffect(() => {
     if (formData.listingType === "rent" && formData.price && formData.type) {
       const multipliers = {
@@ -343,11 +337,11 @@ const PropertyListingForm = () => {
       if (type === "number") {
         const numValue = Number(value);
         if (numValue < 0) {
-          return; // Prevent negative values
+          return; 
         }
         if (name === "beds" || name === "baths") {
           if (!Number.isInteger(numValue)) {
-            return; // Only allow whole numbers
+            return;
           }
         }
       }
@@ -368,7 +362,6 @@ const PropertyListingForm = () => {
         }));
       }
 
-      // Validate field
       const error = validateField(name, value);
       setFieldErrors((prev) => ({
         ...prev,
@@ -500,12 +493,10 @@ const PropertyListingForm = () => {
         newDetails[floorIndex].rooms[roomIndex].roomNumber = value;
       } else if (field === "capacity") {
         newDetails[floorIndex].rooms[roomIndex].capacity = value;
-        // Ensure occupied doesn't exceed new capacity
         if (newDetails[floorIndex].rooms[roomIndex].occupied > value) {
           newDetails[floorIndex].rooms[roomIndex].occupied = value;
         }
       } else if (field === "occupied") {
-        // Ensure occupied doesn't exceed capacity
         const maxOccupied = newDetails[floorIndex].rooms[roomIndex].capacity;
         newDetails[floorIndex].rooms[roomIndex].occupied = Math.min(
           value,
@@ -532,6 +523,7 @@ const PropertyListingForm = () => {
             roomNumber: 1,
             capacity: 1,
             occupied: 0,
+            rent_amount: 0,
           },
         ],
       },
@@ -547,23 +539,19 @@ const PropertyListingForm = () => {
       const newDetails = [...prev];
       const currentFloor = newDetails[floorIndex];
       const nextRoomNumber = currentFloor.rooms.length + 1;
-
-      // Create a new rooms array with the new room
       const updatedRooms = [
         ...currentFloor.rooms,
         {
           roomNumber: nextRoomNumber,
           capacity: 1,
           occupied: 0,
+          rent_amount: 0,
         },
       ];
-
-      // Update the floor with the new rooms array
       newDetails[floorIndex] = {
         ...currentFloor,
         rooms: updatedRooms,
       };
-
       return newDetails;
     });
   };
@@ -581,7 +569,6 @@ const PropertyListingForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate all fields
     const errors = {};
     Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key]);
@@ -594,13 +581,11 @@ const PropertyListingForm = () => {
       return;
     }
 
-    // Add validation for listingType
     if (!formData.listingType) {
       toast.error("Please select a listing type (Rent/Sale)");
       return;
     }
 
-    // Validate area for apartment
     if (formData.type === "apartment" && Number(formData.sqft) < 500) {
       toast.error(
         "Apartment area seems too small. Please verify the square footage."
@@ -613,28 +598,17 @@ const PropertyListingForm = () => {
       return;
     }
 
-    // if (!formData.location || !formData.address.city || !formData.address.state) {
-    //   console.log('formData', formData);
-    //   console.log('formData.location', formData.location);
-    //   console.log('formData.address.city', formData.address.city);
-    //   console.log('formData.address.state', formData.address.state);
-    //   toast.error("Please select a complete address from the suggestions");
-    //   return;
-    // }
-
     if (!isLoggedIn) {
       toast.info("Please login to list a property");
       navigate("/login");
       return;
     }
 
-    // Validate images
     if (!formData.images || formData.images.length === 0) {
       toast.error("Please upload at least one image of the property");
       return;
     }
 
-    // Validate rental-specific fields
     if (
       formData.listingType === "rent" &&
       !["pg", "rk"].includes(formData.type)
@@ -667,7 +641,6 @@ const PropertyListingForm = () => {
 
       console.log("Preparing form data for submission...");
 
-      // Create the request payload
       const payload = {
         title: formData.title,
         type: formData.type.toLowerCase(),
@@ -692,10 +665,9 @@ const PropertyListingForm = () => {
           pincode: formData.address.pincode,
           country: formData.address.country,
         },
-        images: formData.images, // Now this will be an array of S3 URLs
+        images: formData.images,
       };
 
-      // Add availability data for rental properties
       if (formData.listingType === "rent") {
         const availableFromISO = new Date(formData.availability.availableFrom)
           .getTime;
@@ -707,7 +679,6 @@ const PropertyListingForm = () => {
         };
       }
 
-      // Add floor details for specific property types
       if (
         formData.listingType === "rent" &&
         ["pg", "rk", "flat"].includes(formData.type)
@@ -734,7 +705,7 @@ const PropertyListingForm = () => {
       if (response.data.success) {
         setSuccess(true);
         toast.success("Property listed successfully!");
-        navigate("/customer-panel");
+        navigate("/properties");
       } else {
         throw new Error(response.data.message || "Failed to list property");
       }
@@ -758,7 +729,6 @@ const PropertyListingForm = () => {
     }
   };
 
-  // Add this new function for handling amenities
   const handleAmenityChange = (amenity) => {
     setFormData((prev) => ({
       ...prev,
@@ -768,7 +738,6 @@ const PropertyListingForm = () => {
     }));
   };
 
-  // nice input style
   const inputStyles = {
     padding: "0.75rem 1rem",
     fontSize: "1rem",
@@ -784,8 +753,6 @@ const PropertyListingForm = () => {
     minHeight: "120px",
     resize: "vertical",
   };
-
-  //will user latwr
 
   const getUserSpecificFields = () => {
     if (!user) return null;
@@ -983,7 +950,6 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
-          {/* Basic Information Section */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Basic Information
@@ -1104,7 +1070,7 @@ const PropertyListingForm = () => {
                         new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
                           .toISOString()
                           .split("T")[0]
-                      } // Max 1 year ahead
+                      }
                       style={inputStyles}
                       className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
@@ -1134,7 +1100,6 @@ const PropertyListingForm = () => {
               </div>
             )}
 
-          {/* Sale---------------- */}
           {formData.listingType === "sale" && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
@@ -1213,7 +1178,6 @@ const PropertyListingForm = () => {
             </div>
           )}
 
-          {/* Location Section */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Location Details
@@ -1241,14 +1205,12 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
-          {/* Property Details Section */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Property Details
             </h2>
 
             <div className="space-y-6">
-              {/* First row - Property metrics */}
               <div
                 className={`grid grid-cols-1 ${
                   formData.type?.includes("plot")
@@ -1275,11 +1237,9 @@ const PropertyListingForm = () => {
                     </div>
                   )}
 
-                {/* Only show beds/baths for non-plot properties */}
                 {!formData.type?.includes("plot") &&
                   !["pg", "rk"].includes(formData.type) && (
                     <>
-                      {/* Bedrooms Field */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Bedrooms *
@@ -1295,7 +1255,6 @@ const PropertyListingForm = () => {
                         />
                       </div>
 
-                      {/* Bathrooms Field */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Bathrooms *
@@ -1314,7 +1273,6 @@ const PropertyListingForm = () => {
                   )}
               </div>
 
-              {/* Second row - Contact number */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Number *
@@ -1353,7 +1311,6 @@ const PropertyListingForm = () => {
                 </div>
               </div>
 
-              {/* Description Field */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Property Description *
@@ -1370,7 +1327,6 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
-          {/* Add this section after the Property Details section and before the Amenities section */}
           {formData.listingType === "rent" &&
             ["pg", "rk", "flat"].includes(formData.type) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
@@ -1556,7 +1512,6 @@ const PropertyListingForm = () => {
               </div>
             )}
 
-          {/* Amenities Section */}
           <div className="bg-white rounded-xl shadow-sm p-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Amenities & Features
@@ -1577,7 +1532,7 @@ const PropertyListingForm = () => {
                   <input
                     type="checkbox"
                     checked={formData.amenities.includes(amenity)}
-                    onChange={() => {}} // Empty handler since parent button handles the click
+                    onChange={() => {}}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm font-medium">{amenity}</span>
@@ -1586,7 +1541,6 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
-          {/* Images Section */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
               Property Images
@@ -1632,7 +1586,6 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-4 pt-6">
             <button
               type="button"

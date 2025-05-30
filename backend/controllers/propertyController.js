@@ -275,6 +275,10 @@ export const createProperty = async (req, res) => {
 
         if (floor.rooms && Array.isArray(floor.rooms)) {
           for (const room of floor.rooms) {
+            console.log('Inserting room:', JSON.stringify(room));
+            if (room.rent_amount === undefined || room.rent_amount === null) {
+              throw new Error('Each room must have a rent_amount');
+            }
             await pool.query(
               `INSERT INTO rooms (
                 floor_id, room_number, capacity, occupied,
@@ -285,7 +289,7 @@ export const createProperty = async (req, res) => {
                 room.roomNumber,
                 room.capacity || 1,
                 room.occupied || 0,
-                room.rent,
+                room.rent_amount,
                 room.availableFrom,
                 room.hasBalcony || false
               ]
@@ -293,6 +297,20 @@ export const createProperty = async (req, res) => {
           }
         }
       }
+    }
+
+    const { rows: [{ min }] } = await pool.query(
+      `SELECT MIN(rent_amount) as min FROM rooms WHERE floor_id IN (
+        SELECT id FROM floors WHERE property_id = $1
+      )`,
+      [property.id]
+    );
+    if (min !== null && min !== undefined) {
+      await pool.query(
+        'UPDATE properties SET price = $1 WHERE id = $2',
+        [min, property.id]
+      );
+      property.price = min;
     }
 
     res.status(201).json({

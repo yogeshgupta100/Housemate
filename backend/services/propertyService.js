@@ -197,30 +197,6 @@ class PropertyService {
         ]
       );
 
-      // If floor details are provided, insert them
-      if (propertyData.floorDetails && Array.isArray(propertyData.floorDetails)) {
-        for (const floor of propertyData.floorDetails) {
-          // Insert floor
-          const { rows: [floorRecord] } = await client.query(
-            `INSERT INTO floors (property_id, floor_number)
-             VALUES ($1, $2)
-             RETURNING *`,
-            [property.id, floor.floorNumber]
-          );
-
-          // Insert rooms for this floor
-          if (floor.rooms && Array.isArray(floor.rooms)) {
-            for (const room of floor.rooms) {
-              await client.query(
-                `INSERT INTO rooms (floor_id, room_number, capacity, occupied)
-                 VALUES ($1, $2, $3, $4)`,
-                [floorRecord.id, room.roomNumber, room.capacity, room.occupied || 0]
-              );
-            }
-          }
-        }
-      }
-
       await client.query('COMMIT');
       return property;
     } catch (error) {

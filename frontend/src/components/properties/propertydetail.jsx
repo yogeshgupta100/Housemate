@@ -25,6 +25,8 @@ import ScheduleViewing from "./ScheduleViewing";
 import { RoomGrid } from "./RoomGrid";
 import GeneralModal from "../GeneralModal.jsx";
 import TermsAndConditions from "../TermsAndConditions.jsx";
+import { toast } from "react-toastify";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -37,6 +39,7 @@ const PropertyDetails = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [openTermsAndConditions, setOpenTermsAndConditions] = useState(false);
   const navigate = useNavigate();
+  const {user} = useAuth();
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -135,6 +138,41 @@ const PropertyDetails = () => {
       }
     } catch (error) {
       console.error("Error sharing:", error);
+    }
+  };
+
+  const handleAccept = async () => {
+    try {
+      const user_id = user?.data?.id;
+      if (!user_id) {
+        navigate("/login");
+        toast.error("Please login to continue");
+        window.scrollTo(0, 0 , {
+          behavior: "smooth"
+        });
+        return;
+      }
+      if (!selectedRoom) {
+        toast.error('Please select a room.');
+        return;
+      }
+      const transactionData = {
+        property_id: property.id,
+        floor_id: selectedRoom.floor_id,
+        room_id: selectedRoom.id,
+        user_id,
+        move_in_date: new Date().toISOString().split('T')[0],
+        status: 'pending',
+      };
+      const response = await axios.post(`${Backendurl}/api/transactions`, transactionData);
+      if (response.data.success) {
+        setOpenTermsAndConditions(false);
+        navigate('/customer-panel/transactions');
+      } else {
+        toast.error('Failed to create transaction: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Error creating transaction: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -541,16 +579,16 @@ const PropertyDetails = () => {
                 </div>
 
                 {/* RoomGrid for rental properties */}
-                {property.type === "pg" && (
+                {["pg", "rk", "flat"].includes(property.type) && (
                   <div className="my-8">
                     <h2 className="text-lg font-semibold mb-2">
                       Available Rooms
                     </h2>
                     <RoomGrid
                       floorDetails={property?.floorDetails}
-                      selectedRoom={selectedRoom}
-                      onReserve={(roomId) => {
-                        setSelectedRoom(roomId);
+                      selectedRoom={selectedRoom?.id}
+                      onReserve={(room, floorId) => {
+                        setSelectedRoom({ ...room, floor_id: floorId });
                         setOpenTermsAndConditions(true);
                       }}
                     />
@@ -601,7 +639,7 @@ const PropertyDetails = () => {
               <TermsAndConditions />
               <div className="flex flex-row items-center justify-center mt-2">
                 <button className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                onClick={() => setOpenTermsAndConditions(false)}
+                onClick={handleAccept}
                 >
                   Accept
                 </button>

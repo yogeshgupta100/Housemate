@@ -1,187 +1,171 @@
-import mongoose from 'mongoose';
+import pool from '../config/postgres.js';
 
-const transactionSchema = new mongoose.Schema({
-  // References
-  wallet: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Wallet',
-    required: true
+const TransactionModel = {
+  async create(data) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { property_id, floor_id, room_id, user_id, move_in_date, status } = data;
+      const { rows } = await client.query(
+        `INSERT INTO transactions
+          (property_id, floor_id, room_id, user_id, move_in_date, status)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          property_id,
+          floor_id,
+          room_id,
+          user_id,
+          move_in_date,
+          status || 'pending'
+        ]
+      );
+      await client.query('COMMIT');
+      return rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  
-  // Transaction Details
-  type: {
-    type: String,
-    enum: ['CREDIT', 'DEBIT', 'HOLD', 'RELEASE', 'REFUND'],
-    required: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    min: [0, 'Amount cannot be negative']
-  },
-  currency: {
-    type: String,
-    default: 'INR',
-    required: true
-  },
-  balanceAfter: {
-    type: Number,
-    required: true
-  },
-  
-  // Transaction Information
-  description: {
-    type: String,
-    trim: true
-  },
-  category: {
-    type: String,
-    enum: ['Rent', 'Deposit', 'Refund', 'Commission', 'Other'],
-    default: 'Other'
-  },
-  status: {
-    type: String,
-    enum: ['Pending', 'Completed', 'Failed', 'Cancelled'],
-    default: 'Completed'
-  },
-  
-  // Reference Information
-  referenceId: {
-    type: String,
-    trim: true
-  },
-  property: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Property'
-  },
-  bill: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Bill'
-  },
-  
-  // Payment Information
-  paymentMethod: {
-    type: String,
-    enum: ['Wallet', 'Bank', 'Card', 'UPI', 'Cash', 'Other'],
-    default: 'Wallet'
-  },
-  paymentDetails: {
-    bankName: String,
-    accountNumber: String,
-    transactionId: String,
-    upiId: String,
-    cardLast4: String
-  },
-  
-  // Metadata
-  metadata: {
-    type: Map,
-    of: String
-  },
-  notes: {
-    type: String,
-    trim: true
-  },
-  
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
-  completedAt: Date,
-  failedAt: Date,
-  cancelledAt: Date
-}, {
-  timestamps: true
-});
 
-transactionSchema.index({ wallet: 1, createdAt: -1 });
-transactionSchema.index({ user: 1, createdAt: -1 });
-transactionSchema.index({ type: 1, status: 1 });
-transactionSchema.index({ referenceId: 1 });
+  async find() {
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query(`
+        SELECT t.*, 
+               p.title as property_title, 
+               p.images as property_images, 
+               p.location as property_location, 
+               p.city as property_city, 
+               p.state as property_state,
+               p.price as property_price,
+               u.id as seller_id,
+               u.first_name as seller_first_name,
+               u.last_name as seller_last_name,
+               u.email as seller_email
+        FROM transactions t
+        JOIN properties p ON t.property_id = p.id
+        JOIN users u ON p.user_id = u.id
+      `);
+      return rows.map(row => ({
+        ...row,
+        amount: Number(row.property_price) || 0,
+        property: {
+          title: row.property_title,
+          images: row.property_images,
+          location: row.property_location,
+          city: row.property_city,
+          state: row.property_state,
+        },
+        seller: {
+          id: row.seller_id,
+          name: `${row.seller_first_name} ${row.seller_last_name}`,
+          email: row.seller_email,
+        }
+      }));
+    } finally {
+      client.release();
+    }
+  },
 
-transactionSchema.pre('save', function(next) {
-  if (this.isModified('status')) {
-    switch (this.status) {
-      case 'Completed':
-        this.completedAt = Date.now();
-        break;
-      case 'Failed':
-        this.failedAt = Date.now();
-        break;
-      case 'Cancelled':
-        this.cancelledAt = Date.now();
-        break;
+  async update(id, data) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { property_id, floor_id, room_id, user_id, move_in_date, status } = data;
+      const { rows } = await client.query(
+        `UPDATE transactions SET
+          property_id = $1,
+          floor_id = $2,
+          room_id = $3,
+          user_id = $4,
+          move_in_date = $5,
+          status = $6,
+          updated_at = CURRENT_TIMESTAMP
+         WHERE id = $7
+         RETURNING *`,
+        [
+          property_id,
+          floor_id,
+          room_id,
+          user_id,
+          move_in_date,
+          status,
+          id
+        ]
+      );
+      await client.query('COMMIT');
+      return rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async remove(id) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `DELETE FROM transactions WHERE id = $1 RETURNING *`,
+        [id]
+      );
+      await client.query('COMMIT');
+      return rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async getById(id) {
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query(`
+        SELECT t.*, 
+               p.title as property_title, 
+               p.images as property_images, 
+               p.location as property_location, 
+               p.city as property_city, 
+               p.state as property_state,
+               p.price as property_price,
+               u.id as seller_id,
+               u.first_name as seller_first_name,
+               u.last_name as seller_last_name,
+               u.email as seller_email
+        FROM transactions t
+        JOIN properties p ON t.property_id = p.id
+        JOIN users u ON p.user_id = u.id
+        WHERE t.id = $1
+      `, [id]);
+      if (rows.length === 0) return null;
+      const row = rows[0];
+      return {
+        ...row,
+        amount: Number(row.property_price) || 0,
+        property: {
+          title: row.property_title,
+          images: row.property_images,
+          location: row.property_location,
+          city: row.property_city,
+          state: row.property_state,
+        },
+        seller: {
+          id: row.seller_id,
+          name: `${row.seller_first_name} ${row.seller_last_name}`,
+          email: row.seller_email,
+        }
+      };
+    } finally {
+      client.release();
     }
   }
-  next();
-});
-
-transactionSchema.methods.getReceipt = async function() {
-  const receipt = {
-    transactionId: this._id,
-    referenceId: this.referenceId,
-    date: this.createdAt,
-    type: this.type,
-    amount: this.amount,
-    currency: this.currency,
-    status: this.status,
-    description: this.description,
-    category: this.category,
-    paymentMethod: this.paymentMethod
-  };
-  
-  // Populate user details
-  await this.populate('user', 'firstName lastName email');
-  receipt.user = {
-    name: `${this.user.firstName} ${this.user.lastName}`,
-    email: this.user.email
-  };
-  
-  // Populate property details if exists
-  if (this.property) {
-    await this.populate('property', 'title location');
-    receipt.property = {
-      title: this.property.title,
-      location: this.property.location
-    };
-  }
-  
-  return receipt;
 };
 
-transactionSchema.statics.getByDateRange = function(startDate, endDate, filter = {}) {
-  return this.find({
-    createdAt: {
-      $gte: startDate,
-      $lte: endDate
-    },
-    ...filter
-  }).sort({ createdAt: -1 });
-};
-
-transactionSchema.statics.getStatistics = async function(filter = {}) {
-  return this.aggregate([
-    { $match: filter },
-    {
-      $group: {
-        _id: '$type',
-        count: { $sum: 1 },
-        totalAmount: { $sum: '$amount' }
-      }
-    }
-  ]);
-};
-
-const Transaction = mongoose.model('Transaction', transactionSchema);
-
-export default Transaction; 
+export default TransactionModel; 

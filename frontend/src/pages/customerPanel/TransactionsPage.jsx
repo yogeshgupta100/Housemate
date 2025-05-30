@@ -1,131 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Search, Filter, FileText, Download } from 'lucide-react';
 import PageHeader from '../../components/customerPanel/common/PageHeader';
 import TransactionCard from '../../components/customerPanel/transactions/TransactionCard';
-
-const mockTransactions = [
-  {
-    id: '1',
-    type: 'Purchase',
-    status: 'Completed',
-    amount: 450000,
-    property: {
-      id: '101',
-      title: 'Modern Apartment in Downtown',
-      description: 'A beautiful modern apartment in the heart of downtown',
-      type: 'Apartment',
-      status: 'Sold',
-      price: 450000,
-      bedrooms: 2,
-      bathrooms: 2,
-      area: 1200,
-      location: 'Downtown',
-      city: 'New York',
-      state: 'NY',
-      images: ['https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'],
-      features: ['Parking', 'Gym', 'Pool'],
-      ownerId: '2',
-      createdAt: '2023-01-01T00:00:00.000Z',
-      updatedAt: '2023-02-15T00:00:00.000Z',
-    },
-    buyer: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234 567 890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10001',
-      country: 'USA',
-      createdAt: '2023-01-01T00:00:00.000Z',
-    },
-    seller: {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+1 234 567 891',
-      address: '456 Oak St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10002',
-      country: 'USA',
-      createdAt: '2022-01-01T00:00:00.000Z',
-    },
-    date: '2023-02-15T00:00:00.000Z',
-    documents: {
-      invoice: 'invoice_1.pdf',
-      agreement: 'agreement_1.pdf',
-    },
-  },
-  {
-    id: '2',
-    type: 'Rent',
-    status: 'Pending',
-    amount: 2500,
-    property: {
-      id: '102',
-      title: 'Luxury Villa with Pool',
-      description: 'Spacious luxury villa with a private pool',
-      type: 'Villa',
-      status: 'Rented',
-      price: 2500,
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 3000,
-      location: 'Suburbs',
-      city: 'Los Angeles',
-      state: 'CA',
-      images: ['https://images.pexels.com/photos/53610/large-home-residential-house-architecture-53610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'],
-      features: ['Pool', 'Garden', 'Garage'],
-      ownerId: '3',
-      createdAt: '2023-02-01T00:00:00.000Z',
-      updatedAt: '2023-03-01T00:00:00.000Z',
-    },
-    buyer: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234 567 890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zip: '10001',
-      country: 'USA',
-      createdAt: '2023-01-01T00:00:00.000Z',
-    },
-    seller: {
-      id: '3',
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      phone: '+1 234 567 892',
-      address: '789 Pine St',
-      city: 'Los Angeles',
-      state: 'CA',
-      zip: '90001',
-      country: 'USA',
-      createdAt: '2022-02-01T00:00:00.000Z',
-    },
-    date: '2023-03-01T00:00:00.000Z',
-    documents: {
-      agreement: 'agreement_2.pdf',
-    },
-  },
-];
+import { Backendurl } from '../../App.jsx';
 
 const TransactionsPage = () => {
-  const [transactions, setTransactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const res = await axios.get(`${Backendurl}/api/transactions`);
+        if (res.data.success) {
+          setTransactions(res.data.transactions);
+        }
+      } catch (err) {
+        setTransactions([]);
+      }
+    };
+    fetchTransactions();
+  }, []);
+
+
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          transaction.property.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = transaction.property_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          transaction.location?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !filterType || transaction.type === filterType;
     const matchesStatus = !filterStatus || transaction.status === filterStatus;
-    
     return matchesSearch && matchesType && matchesStatus;
   });
 

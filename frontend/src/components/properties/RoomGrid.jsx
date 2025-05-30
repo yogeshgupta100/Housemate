@@ -1,75 +1,3 @@
-// import React from 'react';
-// import PropTypes from 'prop-types';
-
-// export const RoomGrid = ({ floorDetails, selectedRoom, onReserve }) => {
-//   const reversedFloors = [...(floorDetails || [])].reverse();
-//   return (
-//     <div className="overflow-x-auto">
-//       <table className="border-separate border-spacing-2">
-//         <tbody>
-//           {reversedFloors.map((floor, floorIdx) => (
-//             <tr key={floor.id}>
-//               <td className="pr-2 font-bold">
-//                 {String.fromCharCode(65 + (reversedFloors.length - 1 - floorIdx))}
-//               </td>
-//               {floor.rooms.map((room, colIdx) => {
-//                 const availability = room?.capacity - room?.occupied;
-//                 console.log({availability})
-//                 let cellClass = "w-20 h-8 border-2 rounded-2xl flex items-center justify-center ";
-//                 if (!availability) {
-//                   cellClass += "border-red-500 bg-red-100 cursor-not-allowed";
-//                 } else if (selectedRoom === room.id) {
-//                   cellClass += "border-green-500 bg-green-200 cursor-pointer";
-//                 } else {
-//                   cellClass += "border-green-500 bg-white cursor-pointer hover:bg-green-100";
-//                 }
-//                 return (
-//                   <td key={colIdx}>
-//                     <div
-//                       className={cellClass}
-//                       onClick={
-//                         availability > 0 && onReserve
-//                           ? () => onReserve(room.id)
-//                           : undefined
-//                       }
-//                       style={{
-//                         pointerEvents: !availability ? "none" : "auto",
-//                       }}
-//                       title={`Room ${room.roomNumber} (Capacity: ${room.capacity}, Occupied: ${room.occupied})`}
-//                     >
-//                       {room.roomNumber}
-//                     </div>
-//                   </td>
-//                 );
-//               })}
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// };
-
-// RoomGrid.propTypes = {
-//   floorDetails: PropTypes.arrayOf(
-//     PropTypes.shape({
-//       id: PropTypes.number.isRequired,
-//       floorNumber: PropTypes.number.isRequired,
-//       rooms: PropTypes.arrayOf(
-//         PropTypes.shape({
-//           id: PropTypes.number.isRequired,
-//           roomNumber: PropTypes.number.isRequired,
-//           capacity: PropTypes.number.isRequired,
-//           occupied: PropTypes.number,
-//           isAvailable: PropTypes.bool.isRequired
-//         })
-//       ).isRequired
-//     })
-//   ).isRequired,
-//   selectedRoom: PropTypes.number,
-//   onReserve: PropTypes.func.isRequired
-// }; 
-
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -94,7 +22,7 @@ export const RoomGrid = ({ floorDetails, selectedRoom, onReserve }) => {
                       className="relative w-20 h-8 border-2 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer"
                       onClick={
                         availability > 0 && onReserve
-                          ? () => onReserve(room.id)
+                          ? () => onReserve(room, floor.id)
                           : undefined
                       }
                       style={{
@@ -103,13 +31,11 @@ export const RoomGrid = ({ floorDetails, selectedRoom, onReserve }) => {
                       }}
                       title={`Room ${room.roomNumber} (Capacity: ${room.capacity}, Occupied: ${room.occupied})`}
                     >
-                      {/* Red section (occupied) */}
                       <div 
                         className="absolute left-0 top-0 bottom-0 bg-red-300"
                         style={{ width: `${occupiedWidth}%` }}
                       />
                       
-                      {/* Green section (available) */}
                       <div 
                         className="absolute top-0 bottom-0 bg-green-200"
                         style={{ 
@@ -118,14 +44,10 @@ export const RoomGrid = ({ floorDetails, selectedRoom, onReserve }) => {
                         }}
                       />
                       
-                      {/* Room number overlay */}
                       <div className="z-10 font-medium bg-opacity-75 rounded flex flex-col items-center justify-center p-2">
                         <span className="text-sm">
                           {room.roomNumber}
                         </span>
-                        {/* <span className={`text-[12px] ${room.occupied === 0 ? 'text-green-600' : room.occupied === room.capacity ? 'text-red-600' : 'text-gray-600'}`}>
-                          {room.occupied}/{room.capacity}
-                        </span> */}
                       </div>
                     </div>
                   </td>
