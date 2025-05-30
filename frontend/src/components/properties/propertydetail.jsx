@@ -47,8 +47,6 @@ const PropertyDetails = () => {
         setLoading(true);
         const response = await axios.get(`${Backendurl}/api/properties/${id}`);
 
-        console.log({ response });
-
         if (response.data.success) {
           setProperty(response.data.property);
         } else {
@@ -68,7 +66,6 @@ const PropertyDetails = () => {
   }, [id]);
 
   useEffect(() => {
-    // Reset scroll position and active image when component mounts
     window.scrollTo(0, 0);
     setActiveImage(0);
   }, [id]);
@@ -181,27 +178,20 @@ const PropertyDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Navigation Skeleton */}
           <div className="flex items-center justify-between mb-8">
             <div className="w-32 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
             <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
 
-          {/* Main Content Skeleton */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            {/* Image Gallery Skeleton */}
             <div className="relative h-[500px] bg-gray-200 rounded-xl mb-8 animate-pulse">
-              {/* Image Navigation Buttons */}
               <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 rounded-full"></div>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 rounded-full"></div>
 
-              {/* Image Counter */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-20 h-8 bg-black/20 rounded-full"></div>
             </div>
 
-            {/* Content Skeleton */}
             <div className="p-8">
-              {/* Title and Location */}
               <div className="flex justify-between items-start mb-6">
                 <div className="space-y-3 w-full max-w-md">
                   <div className="h-10 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
@@ -210,14 +200,9 @@ const PropertyDetails = () => {
                 <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
               </div>
 
-              {/* Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Left Column */}
                 <div className="space-y-6">
-                  {/* Price Box */}
                   <div className="h-28 bg-blue-50/50 rounded-lg animate-pulse"></div>
-
-                  {/* Features Grid */}
                   <div className="grid grid-cols-3 gap-4">
                     {[1, 2, 3].map((i) => (
                       <div
@@ -227,19 +212,15 @@ const PropertyDetails = () => {
                     ))}
                   </div>
 
-                  {/* Contact */}
                   <div className="space-y-2">
                     <div className="h-7 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
                     <div className="h-6 bg-gray-200 rounded-lg w-1/2 animate-pulse"></div>
                   </div>
 
-                  {/* Button */}
                   <div className="h-12 bg-blue-200 rounded-lg animate-pulse"></div>
                 </div>
 
-                {/* Right Column */}
                 <div className="space-y-6">
-                  {/* Description */}
                   <div className="space-y-2">
                     <div className="h-7 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
                     <div className="h-4 bg-gray-200 rounded-lg w-full animate-pulse mt-2"></div>
@@ -248,7 +229,6 @@ const PropertyDetails = () => {
                     <div className="h-4 bg-gray-200 rounded-lg w-full animate-pulse"></div>
                   </div>
 
-                  {/* Amenities */}
                   <div className="space-y-2">
                     <div className="h-7 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
                     <div className="grid grid-cols-2 gap-4 mt-2">
@@ -265,7 +245,6 @@ const PropertyDetails = () => {
             </div>
           </div>
 
-          {/* Map Location Skeleton */}
           <div className="mt-8 p-6 bg-blue-50/50 rounded-xl animate-pulse">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-5 h-5 bg-gray-300 rounded-full"></div>
@@ -313,7 +292,6 @@ const PropertyDetails = () => {
       className="min-h-screen bg-gray-50 pt-16"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation */}
         <nav className="flex items-center justify-between mb-8">
           <Link
             to="/properties"
@@ -341,7 +319,6 @@ const PropertyDetails = () => {
         </nav>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Image Gallery */}
           <div className="relative h-[500px] bg-gray-100 rounded-xl overflow-hidden mb-8">
             <AnimatePresence mode="wait">
               <motion.img
@@ -356,7 +333,6 @@ const PropertyDetails = () => {
               />
             </AnimatePresence>
 
-            {/* Image Navigation */}
             {images.length > 1 && (
               <>
                 <button
@@ -384,7 +360,6 @@ const PropertyDetails = () => {
               </>
             )}
 
-            {/* Image Counter */}
             <div
               className="absolute bottom-4 left-1/2 -translate-x-1/2 
               bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm"
@@ -414,7 +389,6 @@ const PropertyDetails = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                {/* Property Type Badge */}
                 <div className="mb-4">
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -509,12 +483,9 @@ const PropertyDetails = () => {
                       </div>
                     </>
                   )}
-                  {/* <p className="text-gray-600 mt-3">
-                   {status}
-                  </p> */}
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                {!["flat", "pg", "rk"].includes(property.type) && <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-50 p-4 rounded-lg text-center">
                     <BedDouble className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">
@@ -533,7 +504,7 @@ const PropertyDetails = () => {
                       {property.sqft} sqft
                     </p>
                   </div>
-                </div>
+                </div>}
 
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-4">
@@ -579,7 +550,6 @@ const PropertyDetails = () => {
                   </div>
                 </div>
 
-                {/* RoomGrid for rental properties */}
                 {["pg", "rk", "flat"].includes(property.type) && (
                   <div className="my-8">
                     <h2 className="text-lg font-semibold mb-2">
@@ -600,7 +570,6 @@ const PropertyDetails = () => {
           </div>
         </div>
 
-        {/* Add Map Location */}
         <div className="mt-8 p-6 bg-blue-50 rounded-xl">
           <div className="flex items-center gap-2 text-blue-600 mb-4">
             <Compass className="w-5 h-5" />
@@ -620,7 +589,6 @@ const PropertyDetails = () => {
           </a>
         </div>
 
-        {/* Viewing Modal */}
         <AnimatePresence>
           {showSchedule && (
             <ScheduleViewing
