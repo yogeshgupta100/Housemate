@@ -145,6 +145,7 @@ const PropertyDetails = () => {
     try {
       const user_id = user?.data?.id;
       if (!user_id) {
+        console.log("user_id", user_id);
         navigate("/login");
         toast.error("Please login to continue");
         window.scrollTo(0, 0 , {

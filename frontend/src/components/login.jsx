@@ -41,7 +41,7 @@ const Login = () => {
       
       if (result.success) {
         toast.success("Login successful!");
-        navigate(from);
+        navigate("/properties");
       } else {
         toast.error(result.message || "Login failed");
       }
