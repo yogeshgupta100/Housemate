@@ -35,14 +35,10 @@ const Login = () => {
     console.log("Login form submitted");
     setLoading(true);
     try {
-      console.log('Attempting login with:', { email: formData.email });
-      
-      toast.dismiss("login-success");
       const result = await login(formData.email, formData.password);
-      console.log('Login result:', result);
       
       if (result.success) {
-        toast.success("Login successful!", { toastId: "login-success" });
+        toast.success("Login successful!");
         navigate("/properties");
       } else {
         toast.error(result.message || "Login failed");

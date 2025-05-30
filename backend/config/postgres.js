@@ -7,7 +7,7 @@ const { Pool } = pkg;
 
 const pool = new Pool({
   user: process.env.DB_USER || 'yogesh',
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || 'www.behousemate.com',
   database: process.env.DB_NAME || 'housemate',
   password: process.env.DB_PASSWORD || 'yogesh@yogesh@123',
   port: process.env.DB_PORT || 5432,

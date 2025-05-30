@@ -50,21 +50,36 @@ const LEASE_PERIODS = [
   "24 months",
 ];
 const AMENITIES = [
+  "Food",
+  "Microwave",
+  "Induction",
+  "Television",
+  "Refrigerator",
+  "Laundry",
+  "Bedsheets",
+  "Kitchen essentials",
+  "Power Backup",
+  "Gyser",
+  "Chimney",
+  "Washing Machine",
+  "Table Tennis",
+  "Play Area",
   "Lake View",
   "Fireplace",
-  "Central heating and air conditioning",
+  "Central Heating and Air Conditioning",
   "Dock",
   "Pool",
   "Garage",
   "Garden",
   "Gym",
-  "Security system",
-  "Master bathroom",
-  "Guest bathroom",
-  "Home theater",
-  "Exercise room/gym",
-  "Covered parking",
-  "High-speed internet ready",
+  "Security System",
+  "Master Bathroom",
+  "Guest Bathroom",
+  "Home Theater",
+  "Exercise Room/Gym",
+  "Four Wheeler Parking",
+  "Two Wheeler Parking",
+  "High-Speed Internet Ready",
 ];
 const PROPERTY_CONDITIONS = ["new", "good", "average", "needs_repair"];
 const PROPERTY_STATUSES = ["ready_to_move", "under_construction", "renovated"];
@@ -1408,7 +1423,7 @@ const PropertyListingForm = () => {
                                   />
                                 </div>
                               )}
-                              <div>
+                              {formData.type !== "rk" && <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                   Currently Occupied
                                 </label>
@@ -1430,7 +1445,7 @@ const PropertyListingForm = () => {
                                 <p className="text-xs text-gray-500 mt-1">
                                   Max: {room.capacity}
                                 </p>
-                              </div>
+                              </div>}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                               <div>
