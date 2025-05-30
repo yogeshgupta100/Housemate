@@ -1,21 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-              
-              
-              
-
-
-
-
-
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";

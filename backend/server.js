@@ -19,6 +19,7 @@ import { dirname } from 'path';
 import favoritesRoutes from "./routes/favoritesRoutes.js";
 import pool from './config/postgres.js';
 import Role from './models/role.js';
+import transactionRoutes from './routes/transactionRoutes.js';
 
 dotenv.config();
 
@@ -93,6 +94,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/pg', pdfRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
