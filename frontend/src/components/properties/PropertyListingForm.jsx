@@ -154,6 +154,7 @@ const PropertyListingForm = () => {
   const [calculatedDeposit, setCalculatedDeposit] = useState(0);
   const [fieldErrors, setFieldErrors] = useState({});
   const [currentType, setCurrentType] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
 
   const locationInputRef = useRef(null);
 
@@ -173,16 +174,16 @@ const PropertyListingForm = () => {
 
   const validateField = (name, value) => {
     switch (name) {
-      case "price" && !["pg", "rk"].includes(currentType):
+      case "price" && !["pg", "rk" , "flat"].includes(currentType):
         return value <= 0 ? "Price must be greater than 0" : "";
-      case "beds" && !["pg", "rk"].includes(currentType):
-      case "baths" && !["pg", "rk"].includes(currentType):
+      case "beds" && !["pg", "rk" , "flat"].includes(currentType):
+      case "baths" && !["pg", "rk" , "flat"].includes(currentType):
         return value < 0 && value !== ""
           ? "Cannot be negative"
           : !Number.isInteger(Number(value))
           ? "Must be a whole number"
           : "";
-      case "sqft" && !["pg", "rk"].includes(currentType):
+      case "sqft" && !["pg", "rk" , "flat"].includes(currentType):
         return value <= 0 ? "Area must be greater than 0" : "";
       case "title":
         return value.length < 5 ? "Title must be at least 5 characters" : "";
@@ -387,6 +388,7 @@ const PropertyListingForm = () => {
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
+    setImageUploading(true);
 
     try {
       const uploadedUrls = [];
@@ -420,6 +422,8 @@ const PropertyListingForm = () => {
     } catch (error) {
       console.error("Error uploading images:", error);
       toast.error("Failed to upload some images");
+    } finally {
+      setImageUploading(false);
     }
   };
 
@@ -626,7 +630,7 @@ const PropertyListingForm = () => {
 
     if (
       formData.listingType === "rent" &&
-      !["pg", "rk"].includes(formData.type)
+      !["pg", "rk" , "flat"].includes(formData.type)
     ) {
       if (!formData.availability || !formData.availability.availableFrom) {
         toast.error("Please select when the property will be available");
@@ -995,7 +999,7 @@ const PropertyListingForm = () => {
                 </div>
 
                 {formData.listingType === "rent" &&
-                  !["pg", "rk"].includes(formData.type) && (
+                  !["pg", "rk" , "flat"].includes(formData.type) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {formData.listingType === "rent"
@@ -1058,7 +1062,7 @@ const PropertyListingForm = () => {
           </div>
 
           {formData.listingType === "rent" &&
-            !["pg", "rk"].includes(formData.type) && (
+            !["pg", "rk" , "flat"].includes(formData.type) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
                   Availability Details
@@ -1235,7 +1239,7 @@ const PropertyListingForm = () => {
               >
                 {/* Area Field */}
                 {formData.listingType === "rent" &&
-                  !["pg", "rk"].includes(formData.type) && (
+                  !["pg", "rk" , "flat"].includes(formData.type) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Area (sq ft) *
@@ -1253,7 +1257,7 @@ const PropertyListingForm = () => {
                   )}
 
                 {!formData.type?.includes("plot") &&
-                  !["pg", "rk"].includes(formData.type) && (
+                  !["pg", "rk" , "flat"].includes(formData.type) && (
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1605,17 +1609,17 @@ const PropertyListingForm = () => {
             <button
               type="button"
               onClick={handleSaveDraft}
-              disabled={loading}
+              disabled={loading || imageUploading}
               className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors disabled:opacity-50"
             >
               Save as Draft
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || imageUploading}
               className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
-              {loading ? "Submitting..." : "List Property"}
+              {loading ? "Submitting..." : imageUploading ? "Uploading Images..." : "List Property"}
             </button>
           </div>
         </form>
