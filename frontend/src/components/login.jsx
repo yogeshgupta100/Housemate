@@ -32,15 +32,17 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Login form submitted");
     setLoading(true);
     try {
       console.log('Attempting login with:', { email: formData.email });
       
+      toast.dismiss("login-success");
       const result = await login(formData.email, formData.password);
       console.log('Login result:', result);
       
       if (result.success) {
-        toast.success("Login successful!");
+        toast.success("Login successful!", { toastId: "login-success" });
         navigate("/properties");
       } else {
         toast.error(result.message || "Login failed");

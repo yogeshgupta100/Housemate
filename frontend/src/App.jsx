@@ -58,8 +58,6 @@ const AppContent = () => {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      {!isCustomerPanel && <Footer />}
-      <ToastContainer />
     </>
   );
 };
@@ -71,6 +69,7 @@ const App = () => {
         <Router>
           <AppContent />
         </Router>
+        <ToastContainer />
       </AuthProvider>
     </HelmetProvider>
   );

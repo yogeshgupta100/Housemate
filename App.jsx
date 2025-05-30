@@ -1,6 +1,5 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
@@ -46,7 +45,6 @@ const App = () => {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Footer />
-      <ToastContainer />
     </Router>
     </AuthProvider>
     </HelmetProvider>
