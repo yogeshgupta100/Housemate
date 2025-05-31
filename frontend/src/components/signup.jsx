@@ -91,27 +91,23 @@ const Signup = () => {
       toast.error('Please fill in all required fields');
       return false;
     }
-    
-    // First name validation
+ 
     if (formData.firstName.length < 2 || formData.firstName.length > 50) {
       toast.error('First name must be between 2 and 50 characters');
       return false;
     }
-    
-    // Last name validation
+
     if (formData.lastName.length < 2 || formData.lastName.length > 50) {
       toast.error('Last name must be between 2 and 50 characters');
       return false;
     }
     
-    // Email validation
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     if (!emailRegex.test(formData.email)) {
       toast.error('Please enter a valid email address');
       return false;
     }
     
-    // Password validation
     if (formData.password.length < 6) {
       toast.error('Password must be at least 6 characters long');
       return false;
@@ -126,14 +122,12 @@ const Signup = () => {
       return false;
     }
     
-    // Phone validation
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(formData.phone)) {
       toast.error('Please enter a valid 10-digit phone number');
       return false;
     }
     
-    // Gender validation
     const validGenders = ['male', 'female', 'other', 'prefer_not_to_say'];
     if (!validGenders.includes(formData.gender)) {
       toast.error('Please select a valid gender');
@@ -179,7 +173,6 @@ const Signup = () => {
     
     setLoading(true);
     try {
-      // Prepare data based on user type
       const userData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -231,7 +224,6 @@ const Signup = () => {
         className="w-full max-w-md"
       >
         <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 mt-14">
-          {}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
               <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -242,7 +234,6 @@ const Signup = () => {
             <p className="mt-2 text-gray-600">Join our community of property enthusiasts</p>
           </div>
 
-          {}
           <div className="flex justify-between mb-8">
             <div className={`step ${step >= 1 ? 'active' : ''}`}>
               <div className="step-circle">1</div>
@@ -259,10 +250,8 @@ const Signup = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {}
             {step === 1 && (
               <div className="space-y-6">
-                {}
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                     First Name *
@@ -282,7 +271,6 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {}
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                     Last Name *
@@ -302,7 +290,6 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                     Email address *
@@ -322,7 +309,6 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {}
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                     Password *
@@ -350,7 +336,6 @@ const Signup = () => {
                   <p className="mt-1 text-xs text-gray-500">Password must be at least 6 characters long</p>
                 </div>
 
-                {}
                 <button
                   type="button"
                   onClick={nextStep}
@@ -361,10 +346,8 @@ const Signup = () => {
               </div>
             )}
 
-            {}
             {step === 2 && (
               <div className="space-y-6">
-                {}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number *
@@ -384,7 +367,6 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {}
                 <div>
                   <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
                     Gender *
@@ -408,7 +390,6 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {}
                 <div className="flex space-x-4">
                   <button
                     type="button"
@@ -428,10 +409,8 @@ const Signup = () => {
               </div>
             )}
 
-            {}
             {step === 3 && (
                 <div className="space-y-6">
-                  {}
                   <div>
                     <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
                       Account Type *
@@ -510,7 +489,6 @@ const Signup = () => {
                   </>
                 )}
 
-                {}
                   {selectedRole && roles.find(role => role.id === selectedRole)?.name === 'dealer' && (
                   <div>
                     <label htmlFor="dealerLicense" className="block text-sm font-medium text-gray-700 mb-1">
@@ -532,7 +510,6 @@ const Signup = () => {
                   </div>
                 )}
 
-                {}
                 <div className="flex space-x-4">
                   <button
                     type="button"
@@ -560,7 +537,6 @@ const Signup = () => {
             )}
           </form>
 
-          {}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200"></div>
@@ -570,7 +546,6 @@ const Signup = () => {
             </div>
           </div>
 
-          {}
           <Link
             to="/login"
             className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
