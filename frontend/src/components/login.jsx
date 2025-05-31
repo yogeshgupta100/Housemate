@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Loader } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from '../context/AuthContext';
+import OTPInput from './OTPInput';
+import PasswordInput from './PasswordInput';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: "",
-    password: ""
+    identifier: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showOTP, setShowOTP] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
-  // Get the redirect path from location state or default to home
   const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e) => {
@@ -28,14 +28,39 @@ const Login = () => {
       [name]: value
     }));
   };
-  
 
-  const handleSubmit = async (e) => {
+  const handleIdentifierSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login form submitted");
     setLoading(true);
     try {
-      const result = await login(formData.email, formData.password);
+      const response = await axios.post('http://localhost:4000/api/otp/generate', {
+        identifier: formData.identifier
+      });
+
+      if (response.data.success) {
+        setShowOTP(true);
+        toast.success(response.data.message);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error(error.response?.data?.message || "Error processing request");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOTPVerificationSuccess = () => {
+    setShowOTP(false);
+    setShowPassword(true);
+    toast.success("Email verified! Please enter your password.");
+  };
+
+  const handlePasswordSubmit = async (password) => {
+    setLoading(true);
+    try {
+      const result = await login(formData.identifier, password);
       
       if (result.success) {
         toast.success("Login successful!");
@@ -51,75 +76,83 @@ const Login = () => {
     }
   };
 
+  if (showOTP) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="w-full max-w-md"
+        >
+          <OTPInput 
+            identifier={formData.identifier}
+            onVerificationSuccess={handleOTPVerificationSuccess}
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (showPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="w-full max-w-md"
+        >
+          <PasswordInput
+            identifier={formData.identifier}
+            onSubmit={handlePasswordSubmit}
+            loading={loading}
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center px-4 py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md bg-white rounded-xl shadow-lg p-8"
       >
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 mt-14">
-            
-          <div className="text-center mb-8">
-            <Link to="/" className="inline-block">
-              <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              HOUSEMATE
-              </h2>
-            </Link>
-            <h2 className="mt-6 text-2xl font-semibold text-gray-800">Welcome back</h2>
-            <p className="mt-2 text-gray-600">Please sign in to your account</p>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+          <p className="text-gray-600 mt-2">Sign in to your account</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {showOTP ? (
+          <OTPInput 
+            identifier={formData.identifier}
+            onVerificationSuccess={handleOTPVerificationSuccess}
+          />
+        ) : showPassword ? (
+          <PasswordInput
+            identifier={formData.identifier}
+            onSubmit={handlePasswordSubmit}
+            loading={loading}
+          />
+        ) : (
+          <form onSubmit={handleIdentifierSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                Email or Phone Number
               </label>
               <input
-                type="email"
-                name="email"
-                id="email"
+                type="text"
+                name="identifier"
+                id="identifier"
                 required
-                value={formData.email}
+                value={formData.identifier}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                placeholder="name@company.com"
+                placeholder="Enter email or phone number"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  id="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end">
-              <Link 
-                to="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             <button
@@ -130,7 +163,7 @@ const Login = () => {
               {loading ? (
                 <Loader className="w-5 h-5 animate-spin" />
               ) : (
-                "Sign in"
+                "Continue"
               )}
             </button>
 
@@ -150,7 +183,7 @@ const Login = () => {
               Create an account
             </Link>
           </form>
-        </div>
+        )}
       </motion.div>
     </div>
   );

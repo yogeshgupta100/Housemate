@@ -7,7 +7,6 @@ class AuthService {
   async register(userData) {
     const client = await pool.connect();
     try {
-      // Check if user exists
       const { rows: existingUser } = await client.query(
         'SELECT * FROM users WHERE email = $1',
         [userData.email]
@@ -17,7 +16,6 @@ class AuthService {
         throw new Error('Email already registered');
       }
 
-      // Get role by ID
       const { rows: role } = await client.query(
         'SELECT * FROM roles WHERE id = $1',
         [userData.role]
@@ -27,10 +25,8 @@ class AuthService {
         throw new Error('Invalid role ID');
       }
 
-      // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-      // Insert user
       const { rows: [user] } = await client.query(
         `INSERT INTO users (
           first_name, last_name, email, password, phone, gender,
@@ -62,24 +58,25 @@ class AuthService {
     }
   }
 
-  async login(email, password) {
+  async login(identifier, password) {
     const client = await pool.connect();
     try {
-      const { rows: [user] } = await client.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
-      );
+      const isEmail = identifier.includes('@');
+      const query = isEmail 
+        ? 'SELECT * FROM users WHERE email = $1'
+        : 'SELECT * FROM users WHERE phone = $1';
+
+      const { rows: [user] } = await client.query(query, [identifier]);
 
       if (!user) {
-        throw new Error('Invalid email or password');
+        throw new Error('Invalid credentials');
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        throw new Error('Invalid email or password');
+        throw new Error('Invalid credentials');
       }
 
-      // Update last login
       await client.query(
         'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
         [user.id]
@@ -196,20 +193,19 @@ class AuthService {
         .createHash('sha256')
         .update(resetToken)
         .digest('hex');
-      user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+      user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
       await client.query(
         'UPDATE users SET reset_password_token = $1, reset_password_expire = $2 WHERE id = $3',
         [user.resetPasswordToken, user.resetPasswordExpire, user.id]
       );
 
-      // Send email with reset token
       const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-      // await sendEmail({
-      //   email: user.email,
-      //   subject: 'Password Reset Request',
-      //   message: `You requested a password reset. Please go to: ${resetUrl}`
-      // });
+      await sendEmail({
+        email: user.email,
+        subject: 'Password Reset Request',
+        message: `You requested a password reset. Please go to: ${resetUrl}`
+      });
     } catch (error) {
       throw error;
     } finally {
