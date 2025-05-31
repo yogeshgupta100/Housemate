@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Function to set token with expiration
   const setTokenWithExpiry = (token) => {
     if (!token) {
       console.error('No token provided to setTokenWithExpiry');
@@ -18,13 +17,12 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const expiresIn = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      const expiresIn = 24 * 60 * 60 * 1000; 
       const expiryTime = new Date().getTime() + expiresIn;
       
       localStorage.setItem("token", token);
       localStorage.setItem("tokenExpiry", expiryTime.toString());
       
-      // Set axios default header
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       console.log('Token set successfully:', token);
     } catch (error) {
@@ -32,7 +30,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Function to check if token is expired
   const isTokenExpired = () => {
     const token = localStorage.getItem("token");
     const expiryTime = localStorage.getItem("tokenExpiry");
@@ -45,7 +42,6 @@ export const AuthProvider = ({ children }) => {
     return isExpired;
   };
 
-  // Function to clear token
   const clearToken = () => {
     console.log('Clearing token');
     localStorage.removeItem("token");
@@ -53,7 +49,6 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common["Authorization"];
   };
 
-  // Initialize auth state on mount
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -61,7 +56,6 @@ export const AuthProvider = ({ children }) => {
         console.log('Initializing auth with token:', token);
         
         if (token && !isTokenExpired()) {
-          // Set axios header before making any requests
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           console.log('Set axios header:', axios.defaults.headers.common["Authorization"]);
           
@@ -107,11 +101,11 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
-      console.log('Login attempt with:', { email });
+      console.log('Login attempt with:', { identifier });
       const response = await axios.post(`${Backendurl}/api/auth/login`, {
-        email,
+        identifier,
         password
       });
 
@@ -121,7 +115,6 @@ export const AuthProvider = ({ children }) => {
         const { token, user } = response.data.data;
         console.log('Login successful, token received:', token);
         
-        // Set token and user data
         setTokenWithExpiry(token);
         setUser(user);
         setIsLoggedIn(true);

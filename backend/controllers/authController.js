@@ -42,7 +42,16 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { user, token } = await authService.login(req.body.email, req.body.password);
+    const { identifier, password } = req.body;
+
+    if (!identifier || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide either email or phone number and password'
+      });
+    }
+
+    const { user, token } = await authService.login(identifier, password);
 
     res.status(200).json({
       success: true,
@@ -60,7 +69,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(401).json({
       success: false,
       message: error.message
     });

@@ -14,11 +14,9 @@ import adminRoutes from './routes/adminRoute.js';
 import favoritesRoutes from './routes/favoritesRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js';
 import pool from './config/postgres.js';
-// Load env vars
-dotenv.config();
+import otpRoutes from './routes/otpRoutes.js';
 
-// Connect to database
-// connectDB();
+dotenv.config();
 
 pool.connect()
   .then(() => console.log('✅ PostgreSQL Connected'))
@@ -27,28 +25,21 @@ pool.connect()
     process.exit(1);
   });
 
-// Create Express app
 const app = express();
 
-// Get directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin: '*',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 
-// Set static folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Routes
-
-// import productRoutes from './routes/productRoute.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -58,17 +49,9 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/pg', pdfRoutes);
+app.use('/api/otp', otpRoutes);
 
-// Error handling
 app.use(errorHandler);
-
-// // Handle 404 routes
-// app.use((req, res) => {
-//   res.status(404).json({
-//     success: false,
-//     message: 'Route not found'
-//   });
-// });
 
 const PORT = process.env.PORT || 4000;
 

@@ -1,3 +1,54 @@
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+console.log('Email Configuration:', {
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_SECURE === 'true',
+  user: process.env.SMTP_USER,
+  from: process.env.SMTP_FROM
+});
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || 'Care.housemate@gmail.com',
+    pass: process.env.SMTP_PASS
+  }
+});
+
+transporter.verify(function(error, success) {
+  if (error) {
+    console.error('SMTP Configuration Error:', error);
+  } else {
+    console.log('SMTP Server is ready to take our messages');
+  }
+});
+
+export const sendEmail = async ({ email, subject, message }) => {
+  try {
+    console.log('Attempting to send email to:', { email, subject });
+    
+    const mailOptions = {
+      from: process.env.SMTP_FROM || 'Care.housemate@gmail.com',
+      to: email,
+      subject: subject,
+      text: message
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
+};
+
 export const getSchedulingEmailTemplate = (appointment, date, time, notes) => `
   <div style="max-width: 600px; margin: 20px auto; font-family: 'Arial', sans-serif; line-height: 1.6;">
     <!-- Header with Background -->
