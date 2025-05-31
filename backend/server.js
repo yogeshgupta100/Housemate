@@ -20,7 +20,7 @@ import { dirname } from 'path';
 import favoritesRoutes from "./routes/favoritesRoutes.js";
 import pool from './config/postgres.js';
 import transactionRoutes from './routes/transactionRoutes.js';
-
+import userRoutes from './routes/userRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -86,6 +86,7 @@ app.use('/api/favorites', favoritesRoutes);
 app.use('/api/pg', pdfRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/users', userRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);

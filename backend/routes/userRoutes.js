@@ -1,14 +1,16 @@
 import express from 'express';
 import * as userController from '../controllers/userController.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { protect, authorize } from '../middleware/auth.js';
+import { forgotPasswordWithOTP } from '../controllers/userController.js';
 
-const propertyRouter = express.Router();
+const router = express.Router();
 
-router.use(authenticate); // Protect all routes
+router.use(protect);
 
 router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUserById);
 router.put('/:id', userController.updateUser);
 router.delete('/:id', authorize(['admin']), userController.deleteUser);
+router.post('/forgot', forgotPasswordWithOTP);
 
-export default propertyRouter;
+export default router;

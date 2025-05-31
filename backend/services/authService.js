@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../config/postgres.js';
+import otpRepository from '../repositories/otpRepository.js';
 
 class AuthService {
   async register(userData) {
@@ -208,6 +209,32 @@ class AuthService {
       });
     } catch (error) {
       throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async resetPasswordWithOTP(identifier, otp, newPassword) {
+    const client = await pool.connect();
+    try {
+      const isVerified = await otpRepository.verifyOTP(identifier, otp);
+      if (!isVerified) {
+        throw new Error('Invalid or expired OTP');
+      }
+
+      const isEmail = identifier.includes('@');
+      const { rows: [user] } = await client.query(
+        `SELECT * FROM users WHERE ${isEmail ? 'email' : 'phone'} = $1`,
+        [identifier]
+      );
+      if (!user) throw new Error('User not found');
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await client.query(
+        `UPDATE users SET password = $1, password_changed_at = CURRENT_TIMESTAMP WHERE id = $2`,
+        [hashedPassword, user.id]
+      );
     } finally {
       client.release();
     }

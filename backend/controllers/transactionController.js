@@ -45,3 +45,16 @@ export const getTransactionById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Get all transactions for a specific user
+export const getTransactionsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const transactions = await TransactionModel.find();
+    // Filter transactions by user_id
+    const userTransactions = transactions.filter(t => t.user_id == userId);
+    res.status(200).json({ success: true, transactions: userTransactions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
