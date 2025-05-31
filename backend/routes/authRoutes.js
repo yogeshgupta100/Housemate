@@ -16,4 +16,6 @@ router.get('/get-roles', roleController.getRoles);
 router.get('/get-all-roles', roleController.getAllRoles);
 router.post('/assign', protect, roleController.assignRole);
 
+router.post('/reset-password', authController.resetPassword);
+
 export default router;
