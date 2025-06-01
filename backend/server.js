@@ -44,6 +44,18 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(trackAPIStats);
 
+// Global cache control middleware for all routes
+app.use((req, res, next) => {
+  // Set cache control headers for all responses
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
+  });
+  next();
+});
+
 app.use(cors({
   origin: '*', 
   credentials: true,
@@ -52,11 +64,24 @@ app.use(cors({
   exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
+// Add CORS headers middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
+app.use('/api', (req, res, next) => {
+  // Force no caching for all API routes
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store',
+    'Last-Modified': new Date().toUTCString()
+  });
   next();
 });
 
