@@ -4,7 +4,13 @@ import { protect } from '../middleware/authmiddleware.js';
 
 const router = express.Router();
 
-// Property routes
+router.use((req, res, next) => {
+  res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.header('Pragma', 'no-cache');
+  res.header('Expires', '0');
+  next();
+});
+
 router.post('/add', protect, createProperty);
 router.get('/', getAllProperties);
 router.get('/search', searchProperties);
