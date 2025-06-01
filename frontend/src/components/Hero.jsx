@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import heroimage from "../assets/images/heroimage.png";
 import { RadialGradient } from "react-text-gradients";
-import {Backendurl} from "@/App.jsx";
+import {Backendurl} from "../App.jsx";
 import axios from "axios";
 import {toast} from "react-toastify";
 

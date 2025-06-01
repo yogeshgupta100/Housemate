@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Loader } from 'lucide-react';
-
+import { Backendurl } from '../App.jsx';
 const OTPInput = ({ identifier, onVerificationSuccess }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,7 @@ const OTPInput = ({ identifier, onVerificationSuccess }) => {
   const handleResendOTP = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:4000/api/otp/generate', {
+      const response = await axios.post(`${Backendurl}/api/otp/generate`, {
         identifier: identifier
       });
 
@@ -64,7 +64,7 @@ const OTPInput = ({ identifier, onVerificationSuccess }) => {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:4000/api/otp/verify', {
+      const response = await axios.post(`${Backendurl}/api/otp/verify`, {
         identifier: identifier,
         otp: otpValue
       });

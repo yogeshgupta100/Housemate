@@ -32,8 +32,6 @@ const Signup = () => {
     const fetchRoles = async () => {
       try {
         const apiUrl = `${Backendurl}/api/auth/get-roles`;
-        console.log('Backend URL:', Backendurl);
-        console.log('Full API URL:', apiUrl);
         
         if (!Backendurl) {
           throw new Error('Backend URL is not configured');
@@ -45,10 +43,6 @@ const Signup = () => {
             'Content-Type': 'application/json'
           }
         });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        console.log('Roles response:', response.data);
         
         if (!response.data) {
           throw new Error('No data received from server');
@@ -423,7 +417,6 @@ const Signup = () => {
                           required
                           value={selectedRole}
                           onChange={(e) => {
-                            console.log('Selected role:', e.target.value);
                             setSelectedRole(e.target.value);
                             setFormData(prev => ({
                               ...prev,
