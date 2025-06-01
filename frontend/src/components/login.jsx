@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import { useAuth } from '../context/AuthContext';
 import OTPInput from './OTPInput';
 import PasswordInput from './PasswordInput';
-
+import { Backendurl } from "../App.jsx";
 const Login = () => {
   const [formData, setFormData] = useState({
     identifier: "",
@@ -33,7 +33,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:4000/api/otp/generate', {
+      const response = await axios.post(`${Backendurl}/api/otp/generate`, {
         identifier: formData.identifier
       });
 

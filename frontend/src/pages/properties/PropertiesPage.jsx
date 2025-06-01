@@ -3,7 +3,7 @@ import axios from 'axios';
 import PropertyCard from '../../components/PropertyCard';
 import PropertyFilters from '../../components/PropertyFilters';
 import LoadingSpinner from '../../components/LoadingSpinner';
-
+import { Backendurl } from '../../App.jsx';
 const PropertiesPage = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ const PropertiesPage = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/properties`, {
+      const response = await axios.get(`${Backendurl}/api/properties`, {
         params: filters
       });
       setProperties(response.data.data || []);

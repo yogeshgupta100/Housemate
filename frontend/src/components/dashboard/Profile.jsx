@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { FaCamera, FaSave, FaTimes, FaCheckCircle } from 'react-icons/fa';
 import './Profile.css';
-import { Backendurl } from '@/App.jsx';
+import { Backendurl } from '../../App.jsx';
 import axios from 'axios';
 
 const Profile = () => {

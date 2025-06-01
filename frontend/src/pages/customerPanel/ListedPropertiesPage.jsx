@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Home, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Backendurl } from '../../config';
+import { Backendurl } from '../../App.jsx';
 import PageHeader from '../../components/customerPanel/common/PageHeader';
 import PropertyListing from '../../components/properties/PropertyListing';
 import { useAuth } from '../../context/AuthContext';

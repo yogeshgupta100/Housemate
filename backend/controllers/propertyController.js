@@ -450,19 +450,37 @@ export const searchProperties = async (req, res) => {
                 paramIndex++;
             }
 
+            if (filters.minArea) {
+                whereClause += ` AND area >= $${paramIndex}`;
+                queryParams.push(filters.minArea);
+                paramIndex++;
+            }
+
+            if (filters.maxArea) {
+                whereClause += ` AND area <= $${paramIndex}`;
+                queryParams.push(filters.maxArea);
+                paramIndex++;
+            }
+
+            if (filters.furnishing) {
+                whereClause += ` AND furnishing = $${paramIndex}`;
+                queryParams.push(filters.furnishing);
+                paramIndex++;
+            }
+
+            if (filters.verified === 'true') {
+                whereClause += ` AND is_verified = true`;
+            }
+
             if (filters.amenities && !Array.isArray(filters.amenities)) {
                 filters.amenities = [filters.amenities];
             }
 
             if (filters.amenities && filters.amenities.length > 0) {
-              whereClause += ` AND amenities && $${paramIndex}::text[]`;
-              queryParams.push(filters.amenities);
-              paramIndex++;
-          }
-
-          whereClause += ` AND status = $${paramIndex}`;
-          queryParams.push('Active');
-          paramIndex++;
+                whereClause += ` AND amenities && $${paramIndex}::text[]`;
+                queryParams.push(filters.amenities);
+                paramIndex++;
+            }
 
             // Get properties
             const { rows: properties } = await client.query(
