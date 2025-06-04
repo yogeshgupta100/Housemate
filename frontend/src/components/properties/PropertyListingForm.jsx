@@ -112,6 +112,7 @@ const PropertyListingForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get("draft");
+  const editId = searchParams.get("edit");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -119,6 +120,7 @@ const PropertyListingForm = () => {
     title: "",
     type: "",
     price: "",
+    deposit: "",
     location: "",
     coordinates: {
       latitude: 0,
@@ -289,10 +291,91 @@ const PropertyListingForm = () => {
       }));
     }
 
-    if (draftId) {
+    if (editId) {
+      loadPropertyForEdit(editId);
+    } else if (draftId) {
       loadDraft(draftId);
     }
-  }, [isLoggedIn, user, navigate, draftId]);
+  }, [isLoggedIn, user, navigate, editId, draftId]);
+
+  const loadPropertyForEdit = async (id) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${Backendurl}/api/properties/${id}`);
+      if (response.data.success) {
+        const propertyData = response.data.property;
+        
+        // Set floor details from the API response
+        if (propertyData.floorDetails) {
+          setFloorDetails(propertyData.floorDetails.map(floor => ({
+            floorNumber: floor.floorNumber,
+            rooms: floor.rooms.map(room => ({
+              roomNumber: room.roomNumber,
+              capacity: room.capacity,
+              occupied: room.occupied,
+              rent_amount: room.rent,
+              availableFrom: room.availableFrom,
+              hasBalcony: room.hasBalcony
+            }))
+          })));
+        }
+
+        setFormData({
+          title: propertyData.title || '',
+          subtitle: propertyData.subtitle || '',
+          description: propertyData.description || '',
+          listingType: propertyData.listing_type || 'rent',
+          type: propertyData.type || '',
+          price: propertyData.price || '',
+          rentType: propertyData.rent_type || 'monthly',
+          deposit: calculatedDeposit || '',
+          propertyAge: propertyData.property_age || '',
+          propertyCondition: propertyData.property_condition || '',
+          propertyStatus: propertyData.property_status || '',
+          availability: propertyData.availability || { status: 'Available', availableFrom: null, minLeasePeriod: '12 months' },
+          location: propertyData.location || '',
+          phone: propertyData.phone || '',
+          region: propertyData.region || '',
+          latitude: propertyData.latitude || '',
+          longitude: propertyData.longitude || '',
+          street: propertyData.street || '',
+          city: propertyData.city || '',
+          state: propertyData.state || '',
+          pincode: propertyData.pincode || '',
+          country: propertyData.country || '',
+          floorArea: propertyData.floor_area || '',
+          sqft: propertyData.sqft || '',
+          floorNo: propertyData.floor_no || '',
+          totalFloors: propertyData.total_floors || '',
+          beds: propertyData.beds || 0,
+          baths: propertyData.baths || 0,
+          furnishing: propertyData.furnishing || 'Unfurnished',
+          amenities: propertyData.amenities || [],
+          balcony: propertyData.balcony || false,
+          centralAc: propertyData.central_ac || false,
+          powerBackup: propertyData.power_backup || false,
+          parking: propertyData.parking || false,
+          security: propertyData.security || false,
+          swimmingPool: propertyData.swimming_pool || false,
+          gym: propertyData.gym || false,
+          garden: propertyData.garden || false,
+          lift: propertyData.lift || false,
+          images: propertyData.images || [],
+          videos: propertyData.videos || [],
+          status: propertyData.status || 'Active',
+          featured: propertyData.featured || false
+        });
+
+        // Set preview URLs for images
+        setPreviewUrls(propertyData.images || []);
+      }
+    } catch (error) {
+      console.error('Error loading property:', error);
+      setError('Failed to load property details');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadDraft = async (id) => {
     try {
@@ -587,162 +670,89 @@ const PropertyListingForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const errors = {};
-    Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key]);
-      if (error) errors[key] = error;
-    });
-
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      toast.error("Please fix the errors before submitting");
-      return;
-    }
-
-    if (!formData.listingType) {
-      toast.error("Please select a listing type (Rent/Sale)");
-      return;
-    }
-
-    if (formData.type === "apartment" && Number(formData.sqft) < 500) {
-      toast.error(
-        "Apartment area seems too small. Please verify the square footage."
-      );
-      return;
-    }
-
-    if (!formData.coordinates.latitude || !formData.coordinates.longitude) {
-      toast.error("Please select a location from the suggestions dropdown");
-      return;
-    }
-
-    if (!isLoggedIn) {
-      toast.info("Please login to list a property");
-      navigate("/login");
-      return;
-    }
-
-    if (!formData.images || formData.images.length === 0) {
-      toast.error("Please upload at least one image of the property");
-      return;
-    }
-
-    if (
-      formData.listingType === "rent" &&
-      !["pg", "rk" , "flat"].includes(formData.type)
-    ) {
-      if (!formData.availability || !formData.availability.availableFrom) {
-        toast.error("Please select when the property will be available");
-        return;
-      }
-      if (!formData.availability.minLeasePeriod) {
-        toast.error("Please select minimum lease period");
-        return;
-      }
-    }
-
-    const allowedConditions = ["new", "good", "average", "needs_repair"];
-    if (!allowedConditions.includes(formData.propertyCondition)) {
-      formData.propertyCondition = null;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Please login to list a property");
-        navigate("/login");
-        return;
+      // Create a plain object instead of FormData
+      const formDataToSubmit = { ...formData };
+
+      // Handle images separately
+      if (formData.images && formData.images.length > 0) {
+        formDataToSubmit.images = formData.images.map(image => {
+          if (typeof image === 'string') {
+            return image; // Keep existing image URLs
+          }
+          return image; // Keep new image files
+        });
       }
 
-      console.log("Preparing form data for submission...");
-
-      const payload = {
-        title: formData.title,
-        type: formData.type.toLowerCase(),
-        price: formData.price,
-        location: formData.location,
-        description: formData.description,
-        beds: formData.beds,
-        baths: formData.baths,
-        sqft: formData.sqft,
-        phone: formData.phone,
-        listingType: formData.listingType.toLowerCase(),
-        property_condition: formData.propertyCondition,
-        amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
-        coordinates: {
-          latitude: formData.coordinates.latitude,
-          longitude: formData.coordinates.longitude,
-        },
-        address: {
-          street: formData.address.street,
-          city: formData.address.city,
-          state: formData.address.state,
-          pincode: formData.address.pincode,
-          country: formData.address.country,
-        },
-        images: formData.images,
-      };
-
-      if (formData.listingType === "rent") {
-        const availableFromISO = new Date(formData.availability.availableFrom)
-          .getTime;
-        console.log("availableFromISO", availableFromISO);
-        payload.availability = {
-          status: "Available",
-          availableFrom: availableFromISO,
-          minLeasePeriod: formData.availability.minLeasePeriod,
-        };
-      }
-
-      if (
-        formData.listingType === "rent" &&
-        ["pg", "rk", "flat"].includes(formData.type)
-      ) {
-        payload.floorDetails = floorDetails;
-      }
-
-      console.log("Sending request to:", `${Backendurl}/api/properties/add`);
-      console.log("Payload being sent:", payload);
-
-      const response = await axios.post(
-        `${Backendurl}/api/properties/add`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+      // Ensure amenities is always an array
+      if (formData.amenities) {
+        console.log('Original amenities:', formData.amenities);
+        if (Array.isArray(formData.amenities)) {
+          console.log('Amenities is already an array');
+          formDataToSubmit.amenities = formData.amenities;
+        } else if (typeof formData.amenities === 'string') {
+          console.log('Amenities is a string, attempting to parse');
+          try {
+            // Try to parse as JSON first
+            const parsed = JSON.parse(formData.amenities);
+            console.log('Successfully parsed amenities as JSON:', parsed);
+            formDataToSubmit.amenities = Array.isArray(parsed) ? parsed : [parsed];
+          } catch (e) {
+            console.log('JSON parse failed, treating as comma-separated string');
+            // If JSON parse fails, treat as comma-separated string
+            formDataToSubmit.amenities = formData.amenities.split(',').map(item => item.trim());
+          }
         }
-      );
+        console.log('Final amenities to submit:', formDataToSubmit.amenities);
+      }
 
-      console.log("Response received:", response.data);
+      // Handle availability object
+      if (formData.availability) {
+        formDataToSubmit.availability = typeof formData.availability === 'string' 
+          ? JSON.parse(formData.availability) 
+          : formData.availability;
+      }
+
+      console.log('Final form data to submit:', formDataToSubmit);
+
+      let response;
+      if (editId) {
+        response = await axios.put(
+          `${Backendurl}/api/properties/${editId}`,
+          formDataToSubmit,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+      } else {
+        response = await axios.post(
+          `${Backendurl}/api/properties`,
+          formDataToSubmit,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+      }
 
       if (response.data.success) {
         setSuccess(true);
-        toast.success("Property listed successfully!");
-        navigate("/properties");
+        toast.success(editId ? "Property updated successfully!" : "Property listed successfully!");
+        navigate('/customer-panel/properties');
       } else {
-        throw new Error(response.data.message || "Failed to list property");
+        setError(response.data.message || "Failed to save property");
       }
-    } catch (error) {
-      console.error("Error listing property:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config,
-      });
-
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to list property";
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (err) {
+      console.error("Error saving property:", err);
+      setError(err.response?.data?.message || "Failed to save property");
     } finally {
       setLoading(false);
     }
@@ -885,11 +895,12 @@ const PropertyListingForm = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            List Your Property
+            {editId ? "Edit Property" : "List Your Property"}
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Fill in the details below to list your property. All fields marked
-            with * are required.
+            {editId
+              ? "Update your property details below"
+              : "Fill in the details below to list your property. All fields marked with * are required."}
           </p>
         </div>
 

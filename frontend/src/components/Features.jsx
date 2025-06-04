@@ -57,7 +57,7 @@ const Features = () => {
           {features.map((feature, index) => (
             <motion.div
               key={index}
-              className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg hover:shadow-xl border border-gray-50 transition-all duration-300"
+              className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg hover:shadow-xl border border-gray-50 transition-all duration-300 relative"
               variants={cardVariants}
               whileHover={{ 
                 y: -10,
@@ -73,12 +73,12 @@ const Features = () => {
               </h3>
               
               <p className="text-gray-600 leading-relaxed mb-6">
-                {feature.description}
+                {feature.shortDescription}
               </p>
               
               <motion.a 
-                href="#" 
-                className="inline-flex items-center text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors"
+                href={`/features#feature-${index}`}
+                className="inline-flex items-center text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors absolute bottom-8"
                 whileHover={{ x: 5 }}
               >
                 Learn more <ArrowRight className="ml-2 h-4 w-4" />
@@ -100,7 +100,7 @@ const Features = () => {
             whileTap={{ scale: 0.95 }}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all shadow-blue-500/30 flex items-center"
           >
-            Browse Our Properties
+            Browse All Properties
             <ArrowRight className="ml-2 h-5 w-5" />
           </motion.a>
         </motion.div>

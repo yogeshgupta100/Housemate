@@ -5,17 +5,19 @@ import { Search, Filter, FileText, Download } from 'lucide-react';
 import PageHeader from '../../components/customerPanel/common/PageHeader';
 import TransactionCard from '../../components/customerPanel/transactions/TransactionCard';
 import { Backendurl } from '../../App.jsx';
-
+import { useAuth } from '../../context/AuthContext';
 const TransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const { user} = useAuth();
 
   useEffect(() => {
     const fetchTransactions = async () => {
+      console.log({user});
       try {
-        const res = await axios.get(`${Backendurl}/api/transactions`);
+        const res = await axios.get(`${Backendurl}/api/transactions/user/${user?.data?.id}`);
         if (res.data.success) {
           setTransactions(res.data.transactions);
         }

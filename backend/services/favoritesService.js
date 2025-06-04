@@ -17,6 +17,20 @@ class FavoritesService {
         }
     }
 
+    async getUserFavorites(userId) {
+        const client = await pool.connect();
+        try {
+            const { rows } = await client.query(
+                'SELECT * FROM favorites WHERE user_id = $1',
+                [userId]
+            );
+            return rows;
+        } finally {
+            client.release();
+        }
+    }
+    
+
     async addFavorite(userId, propertyId) {
         const client = await pool.connect();
         try {

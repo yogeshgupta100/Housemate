@@ -75,21 +75,33 @@ const Hero = () => {
       return;
     }
 
-    autocompleteService.current.getPlacePredictions(
-      {
-        input: searchQuery,
-        sessionToken: sessionToken.current,
-        types: ["geocode"],
-        componentRestrictions: { country: "in" }
-      },
-      (predictions, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          setSuggestions(predictions);
+    const fetchSuggestions = async () => {
+      try {
+        const response = await axios.get(`${Backendurl}/api/properties/location-suggestions`, {
+          params: { query: searchQuery }
+        });
+
+        if (response.data.success && response.data.locations) {
+          // Format the suggestions for display
+          const formattedSuggestions = response.data.locations.map(location => ({
+            place_id: `${location.area}-${location.city}-${location.state}`,
+            description: location.area || location.city || location.state,
+            area: location.area,
+            city: location.city,
+            state: location.state,
+            country: location.country
+          }));
+          setSuggestions(formattedSuggestions);
         } else {
           setSuggestions([]);
         }
+      } catch (error) {
+        console.error('Error fetching location suggestions:', error);
+        setSuggestions([]);
       }
-    );
+    };
+
+    fetchSuggestions();
   }, [searchQuery]);
 
   const handleSubmit = async (location = searchQuery) => {
@@ -267,9 +279,19 @@ const Hero = () => {
                             className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg flex items-center 
                               justify-between text-gray-700 transition-colors"
                           >
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                              <span>{suggestion.description}</span>
+                            <div className="flex flex-col">
+                              <div className="flex items-center">
+                                <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                                <span className="font-medium">{suggestion.description}</span>
+                              </div>
+                              {suggestion.area && (
+                                <span className="text-sm text-gray-500 ml-6">
+                                  {suggestion.area}
+                                  {suggestion.city && `, ${suggestion.city}`}
+                                  {suggestion.state && `, ${suggestion.state}`}
+                                  {suggestion.country && `, ${suggestion.country}`}
+                                </span>
+                              )}
                             </div>
                             <ArrowRight className="w-4 h-4 text-gray-400" />
                           </button>

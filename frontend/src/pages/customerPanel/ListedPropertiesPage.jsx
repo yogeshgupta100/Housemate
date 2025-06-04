@@ -56,6 +56,9 @@ const ListedPropertiesPage = () => {
           }
         });
         
+        console.log('API Response:', response.data);
+        console.log('Properties:', response.data.data.properties);
+
         if (response.data.success) {
           setProperties(response.data.data.properties || []);
         } else {

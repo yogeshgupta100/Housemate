@@ -17,59 +17,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Backendurl } from '../App';
 import PropTypes from "prop-types";
 import {toast} from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 
-
-const PropertyCard = ({ property }) => {
+const PropertyCard = ({ property, favorites }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  const {user} = useAuth();
+
+  useEffect(() => {
+    // Check if the current property is in favorites
+    const isPropertyFavorited = favorites?.some(fav => fav.property_id === property.id);
+    setIsFavorite(isPropertyFavorited);
+  }, [favorites, property.id]);
+
   const handleNavigate = () => {
     navigate(`/properties/single/${property.id}`);
   };
-
-  // useEffect(() => {
-  //   const checkFavoriteStatus = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //           `${Backendurl}/api/favorites/${property.id}/check`,
-  //           {
-  //             headers: {
-  //               "Content-Type": "application/json",
-  //               "Authorization": `Bearer ${localStorage.getItem('token')}`
-  //             },
-  //           }
-  //       );
-  //       if (response.data.success) {
-  //         setIsFavorite(response.data.isFavorited);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error checking favorite status:", error);
-  //     }
-  //   };
-  //   checkFavoriteStatus();
-  // }, [property.id]);
-
-  useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      try {
-        const response = await axios.get(
-          `${Backendurl}/api/favorites/${property.id}/check`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${localStorage.getItem('token')}`
-            },
-          }
-        );
-        setIsFavorite(!!response.data.isFavorited);
-      } catch (error) {
-        console.error("Error checking favorite status:", error);
-      }
-    };
-    checkFavoriteStatus();
-  }, [property.id]);
 
   const toggleFavorite = async (e) => {
     e.preventDefault();
@@ -232,6 +198,28 @@ const PropertiesShow = () => {
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const navigate = useNavigate();
+  const [favorites, setFavorites] = useState([]);
+  const {user} = useAuth();
+
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      try {
+        const response = await axios.get(
+          `${Backendurl}/api/favorites/check/${user?.data?.id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem('token')}`
+            },
+          }
+        );
+        setFavorites(response.data.favorites);
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+      }
+    };
+    checkFavoriteStatus();
+  }, []);
 
   const categories = [
     { id: 'all', label: 'All Properties' },
@@ -353,7 +341,6 @@ const PropertiesShow = () => {
           </p>
         </motion.div>
 
-        {}
         <motion.div 
           className="flex flex-wrap justify-center gap-4 mb-12"
           initial={{ opacity: 0, y: 20 }}
@@ -394,7 +381,7 @@ const PropertiesShow = () => {
           >
             {filteredProperties.map((property) => (
               <motion.div key={property._id} variants={itemVariants}>
-                <PropertyCard property={property} />
+                <PropertyCard property={property} favorites={favorites} />
               </motion.div>
             ))}
           </motion.div>

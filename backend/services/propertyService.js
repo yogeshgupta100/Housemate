@@ -155,7 +155,7 @@ class PropertyService {
       // First, insert the property
       const { rows: [property] } = await client.query(
         `INSERT INTO properties (
-          title, type, price, location, description, beds, baths,
+          title, type, price, deposit, location, description, beds, baths,
           sqft, phone, listing_type, amenities, images, latitude,
           longitude, street, city, state, pincode, country,
           floor_area, property_age, property_condition, property_status,
@@ -169,6 +169,7 @@ class PropertyService {
           propertyData.title,
           propertyData.type,
           propertyData.price,
+          propertyData.deposit,
           propertyData.location,
           propertyData.description,
           propertyData.beds,
@@ -208,14 +209,185 @@ class PropertyService {
   }
 
   async updateProperty(id, updateData) {
-    // Prevent user_id changes for ownership protection
-    delete updateData.user_id;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    if (updateData.created_by && !isValidUUID(updateData.created_by)) {
-      updateData.created_by = '00000000-0000-0000-0000-000000000000';
+      // First, check if the property exists
+      const { rows: [existingProperty] } = await client.query(
+        'SELECT * FROM properties WHERE id = $1',
+        [id]
+      );
+
+      if (!existingProperty) {
+        throw new Error('Property not found');
+      }
+
+      // Prepare the update fields and values
+      const updateFields = [];
+      const values = [];
+      let paramIndex = 1;
+
+      // Helper function to safely parse JSON
+      const safeJsonParse = (value) => {
+        if (!value) return null;
+        if (typeof value === 'string') {
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            console.log('JSON parse failed, trying comma-separated string');
+            // If parsing fails, try to handle as comma-separated string
+            if (value.includes(',')) {
+              const items = value.split(',').map(item => item.trim());
+              console.log('Parsed comma-separated items:', items);
+              return items;
+            }
+            return [value]; // Return as single-item array if no commas
+          }
+        }
+        return value;
+      };
+
+      // Helper function to safely stringify JSON
+      const safeJsonStringify = (value) => {
+        if (!value) return null;
+        if (typeof value === 'object') {
+          try {
+            return JSON.stringify(value);
+          } catch (e) {
+            console.error('JSON stringify failed:', e);
+            return null;
+          }
+        }
+        return value;
+      };
+
+      // Transform the data before updating
+      const transformedData = {};
+
+      // Helper function to handle numeric fields
+      const handleNumericField = (value) => {
+        if (value === '' || value === undefined || value === null) return null;
+        const num = Number(value);
+        return isNaN(num) ? null : num;
+      };
+
+      // Handle each field explicitly
+      if (updateData.title !== undefined) transformedData.title = updateData.title;
+      if (updateData.subtitle !== undefined) transformedData.subtitle = updateData.subtitle;
+      if (updateData.description !== undefined) transformedData.description = updateData.description;
+      if (updateData.listingType !== undefined) transformedData.listing_type = updateData.listingType;
+      if (updateData.type !== undefined) transformedData.type = updateData.type;
+      if (updateData.price !== undefined) transformedData.price = handleNumericField(updateData.price);
+      if (updateData.deposit !== undefined) transformedData.deposit = handleNumericField(updateData.deposit);
+      if (updateData.rentType !== undefined) transformedData.rent_type = updateData.rentType;
+      if (updateData.propertyAge !== undefined) transformedData.property_age = handleNumericField(updateData.propertyAge);
+      if (updateData.propertyCondition !== undefined) transformedData.property_condition = updateData.propertyCondition || null;
+      if (updateData.propertyStatus !== undefined) transformedData.property_status = updateData.propertyStatus || null;
+      if (updateData.availability !== undefined) transformedData.availability = safeJsonStringify(updateData.availability);
+      if (updateData.location !== undefined) transformedData.location = updateData.location;
+      if (updateData.phone !== undefined) transformedData.phone = updateData.phone;
+      if (updateData.region !== undefined) transformedData.region = updateData.region;
+      if (updateData.latitude !== undefined) transformedData.latitude = handleNumericField(updateData.latitude);
+      if (updateData.longitude !== undefined) transformedData.longitude = handleNumericField(updateData.longitude);
+      if (updateData.street !== undefined) transformedData.street = updateData.street;
+      if (updateData.city !== undefined) transformedData.city = updateData.city;
+      if (updateData.state !== undefined) transformedData.state = updateData.state;
+      if (updateData.pincode !== undefined) transformedData.pincode = updateData.pincode;
+      if (updateData.country !== undefined) transformedData.country = updateData.country;
+      if (updateData.floorArea !== undefined) transformedData.floor_area = handleNumericField(updateData.floorArea);
+      if (updateData.sqft !== undefined) transformedData.sqft = handleNumericField(updateData.sqft);
+      if (updateData.floorNo !== undefined) transformedData.floor_no = handleNumericField(updateData.floorNo);
+      if (updateData.totalFloors !== undefined) transformedData.total_floors = handleNumericField(updateData.totalFloors);
+      if (updateData.beds !== undefined) transformedData.beds = handleNumericField(updateData.beds);
+      if (updateData.baths !== undefined) transformedData.baths = handleNumericField(updateData.baths);
+      if (updateData.furnishing !== undefined) transformedData.furnishing = updateData.furnishing;
+      
+      // Handle amenities with detailed logging
+      if (updateData.amenities !== undefined) {
+        console.log('Processing amenities:', updateData.amenities);
+        if (Array.isArray(updateData.amenities)) {
+          console.log('Amenities is already an array');
+          transformedData.amenities = updateData.amenities;
+        } else if (typeof updateData.amenities === 'string') {
+          console.log('Amenities is a string, attempting to parse');
+          if (updateData.amenities.includes(',')) {
+            console.log('Splitting comma-separated string');
+            transformedData.amenities = updateData.amenities.split(',').map(item => item.trim());
+          } else {
+            console.log('Single amenity string');
+            transformedData.amenities = [updateData.amenities];
+          }
+        } else {
+          console.log('Attempting to parse amenities as JSON');
+          transformedData.amenities = safeJsonParse(updateData.amenities);
+        }
+        console.log('Final transformed amenities:', transformedData.amenities);
+      }
+
+      if (updateData.balcony !== undefined) transformedData.balcony = updateData.balcony;
+      if (updateData.centralAc !== undefined) transformedData.central_ac = updateData.centralAc;
+      if (updateData.powerBackup !== undefined) transformedData.power_backup = updateData.powerBackup;
+      if (updateData.parking !== undefined) transformedData.parking = updateData.parking;
+      if (updateData.security !== undefined) transformedData.security = updateData.security;
+      if (updateData.swimmingPool !== undefined) transformedData.swimming_pool = updateData.swimmingPool;
+      if (updateData.gym !== undefined) transformedData.gym = updateData.gym;
+      if (updateData.garden !== undefined) transformedData.garden = updateData.garden;
+      if (updateData.lift !== undefined) transformedData.lift = updateData.lift;
+      if (updateData.images !== undefined) transformedData.images = Array.isArray(updateData.images) ? updateData.images : [updateData.images];
+      if (updateData.videos !== undefined) transformedData.videos = Array.isArray(updateData.videos) ? updateData.videos : safeJsonParse(updateData.videos);
+      if (updateData.status !== undefined) transformedData.status = updateData.status;
+      if (updateData.featured !== undefined) transformedData.featured = updateData.featured;
+
+      console.log('Transformed data:', transformedData);
+
+      // Build the update query dynamically
+      Object.entries(transformedData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'amenities') {
+            // Handle amenities array specifically
+            updateFields.push(`${key} = ARRAY[${value.map(v => `'${v}'`).join(',')}]::text[]`);
+          } else {
+            updateFields.push(`${key} = $${paramIndex}`);
+            values.push(value);
+            paramIndex++;
+          }
+        }
+      });
+
+      if (updateFields.length === 0) {
+        console.log('No fields to update. Update data:', updateData);
+        console.log('Transformed data:', transformedData);
+        throw new Error('No valid fields to update');
+      }
+
+      // Add the property ID to the values array
+      values.push(id);
+
+      const updateQuery = `
+        UPDATE properties 
+        SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $${paramIndex}
+        RETURNING *
+      `;
+
+      console.log('Update query:', updateQuery);
+      console.log('Update values:', values);
+
+      // Update the property
+      const { rows: [updatedProperty] } = await client.query(updateQuery, values);
+
+      console.log('Updated property:', updatedProperty);
+
+      await client.query('COMMIT');
+      return updatedProperty;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error updating property:', error);
+      throw error;
+    } finally {
+      client.release();
     }
-
-    return await propertyRepository.findByIdAndUpdate(id, updateData);
   }
 }
 

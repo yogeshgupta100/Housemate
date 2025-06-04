@@ -12,6 +12,7 @@ router.use((req, res, next) => {
 });
 
 router.post('/add', protect, createProperty);
+router.post('/', protect, createProperty);
 router.get('/', getAllProperties);
 router.get('/search', searchProperties);
 router.get('/search/coordinates', searchPropertiesByCoordinates);

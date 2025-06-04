@@ -21,6 +21,7 @@ import StructuredData from './components/SEO/StructuredData';
 import AdminDashboard from './components/admin/Dashboard';
 import Users from './components/admin/Users';
 import CustomerPanel from './components/customerPanel/CustomerPanel';
+import FeaturesDetail from './pages/FeaturesDetail';
 
 export const Backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
@@ -46,6 +47,7 @@ const AppContent = () => {
         <Route path="/about" element={<Aboutus />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/ai-property-hub" element={<AIPropertyHub />} />
+        <Route path="/features" element={<FeaturesDetail />} />
         
         <Route path="/customer-panel/*" element={<CustomerPanel />} />
         
@@ -58,6 +60,7 @@ const AppContent = () => {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <Footer />
     </>
   );
 };
