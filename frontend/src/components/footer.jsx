@@ -367,13 +367,13 @@ const Footer = () => {
             whileTap={{ scale: 0.97 }}
             className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
           >
-            Browse Our Properties
+            Browse All Properties
             <ArrowRight className="ml-2 h-4 w-4" />
           </motion.a>
         </div>
       </div>
 
-      <ToastContainer
+      {/* <ToastContainer
         position="bottom-right"
         autoClose={5000}
         hideProgressBar={false}
@@ -384,7 +384,7 @@ const Footer = () => {
         draggable
         pauseOnHover
         theme="light"
-      />
+      /> */}
     </footer>
   );
 };

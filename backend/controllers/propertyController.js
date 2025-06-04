@@ -333,11 +333,16 @@ export const updateProperty = async (req, res) => {
     const updateData = { ...req.body };
 
     // Handle JSON stringified fields
-    if (updateData.amenities) {
-      updateData.amenities = JSON.parse(updateData.amenities);
-    }
     if (updateData.availability) {
-      updateData.availability = JSON.parse(updateData.availability);
+      try {
+        updateData.availability = typeof updateData.availability === 'string' 
+          ? JSON.parse(updateData.availability)
+          : updateData.availability;
+      } catch (error) {
+        console.error('Error parsing availability:', error);
+        // If parsing fails, keep the original value
+        updateData.availability = updateData.availability;
+      }
     }
 
     // Handle file uploads
@@ -350,7 +355,8 @@ export const updateProperty = async (req, res) => {
     const numericFields = ['price', 'beds', 'baths', 'sqft', 'floor_area', 'property_age'];
     numericFields.forEach(field => {
       if (updateData[field] !== undefined) {
-        updateData[field] = Number(updateData[field]);
+        // Convert empty strings to null, otherwise convert to number
+        updateData[field] = updateData[field] === '' ? null : Number(updateData[field]);
       }
     });
 
@@ -521,17 +527,48 @@ export const getLocationSuggestions = async (req, res) => {
     if (!query) {
       return res.json({ locations: [] });
     }
-    // Example: search cities that match the query (case-insensitive)
+
     const client = await pool.connect();
-    const { rows } = await client.query(
-      `SELECT DISTINCT city FROM properties WHERE city ILIKE $1 LIMIT 10`,
-      [`%${query}%`]
-    );
-    client.release();
-    const locations = rows.map(row => row.city).filter(Boolean);
-    res.json({ locations });
+    try {
+      // Search for locations with more detailed information
+      const { rows } = await client.query(
+        `SELECT DISTINCT 
+          location as area,
+          city,
+          state,
+          country
+        FROM properties 
+        WHERE 
+          LOWER(location) ILIKE $1 OR
+          LOWER(city) ILIKE $1 OR
+          LOWER(state) ILIKE $1 OR
+          LOWER(country) ILIKE $1
+        LIMIT 10`,
+        [`%${query.toLowerCase()}%`]
+      );
+
+      // Format the results
+      const locations = rows.map(row => ({
+        area: row.area || '',
+        city: row.city || '',
+        state: row.state || '',
+        country: row.country || 'India'
+      }));
+
+      res.json({ 
+        success: true,
+        locations 
+      });
+    } finally {
+      client.release();
+    }
   } catch (error) {
-    res.status(500).json({ locations: [], error: error.message });
+    console.error('Error in getLocationSuggestions:', error);
+    res.status(500).json({ 
+      success: false,
+      locations: [], 
+      error: error.message 
+    });
   }
 };
 

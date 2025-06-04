@@ -12,7 +12,7 @@ import {
   Users,
   MessageCircle,
 } from "lucide-react";
-import logo from "../assets/housemate_logo.png";
+import logo from "../assets/Housemate_Logo_01.png";
 import { useAuth } from "../context/AuthContext";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";

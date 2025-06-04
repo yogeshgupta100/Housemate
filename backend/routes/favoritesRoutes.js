@@ -8,5 +8,6 @@ router.get('/', protect, favoritesController.getFavorites);
 router.post('/:propertyId',protect, favoritesController.addFavorite);
 router.delete('/:propertyId', protect, favoritesController.removeFavorite);
 router.get('/:propertyId/check', protect, favoritesController.isPropertyFavorited);
+router.get('/check/:userId', protect, favoritesController.getUserFavorites);
 
 export default router;

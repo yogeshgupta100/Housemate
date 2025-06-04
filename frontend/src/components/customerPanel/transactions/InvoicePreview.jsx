@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, Printer } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 const InvoicePreview = ({ invoice, transaction }) => {
   const formatDate = (dateString) => {
@@ -12,12 +13,33 @@ const InvoicePreview = ({ invoice, transaction }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      currency: 'INR',
+      maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handlePrint = () => {
+    const printContent = document.getElementById('invoice-content');
+    const originalContent = document.body.innerHTML;
+    document.body.innerHTML = printContent.innerHTML;
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload();
+  };
+
+  const handleDownload = () => {
+    const element = document.getElementById('invoice-content');
+    const opt = {
+      margin: 1,
+      filename: `invoice-${invoice.invoiceNumber}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
   };
 
   return (
@@ -25,18 +47,24 @@ const InvoicePreview = ({ invoice, transaction }) => {
       <div className="flex justify-between items-center p-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold">Invoice #{invoice.invoiceNumber}</h3>
         <div className="flex space-x-2">
-          <button className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors">
+          <button 
+            onClick={handlePrint}
+            className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors"
+          >
             <Printer className="w-4 h-4 mr-1.5" />
             Print
           </button>
-          <button className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors">
+          <button 
+            onClick={handleDownload}
+            className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+          >
             <Download className="w-4 h-4 mr-1.5" />
             Download
           </button>
         </div>
       </div>
 
-      <div className="p-6">
+      <div id="invoice-content" className="p-6">
         <div className="flex justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-blue-600 mb-1">HOUSEMATE</h2>
@@ -62,11 +90,11 @@ const InvoicePreview = ({ invoice, transaction }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <p className="font-medium text-gray-700 mb-2">Bill To:</p>
-            <p className="font-semibold">{transaction.buyer.name}</p>
-            <p className="text-sm text-gray-500">{transaction.buyer.email}</p>
-            <p className="text-sm text-gray-500">{transaction.buyer.phone}</p>
+            <p className="font-semibold">{transaction?.buyer?.name}</p>
+            <p className="text-sm text-gray-500">{transaction?.buyer?.email}</p>
+            <p className="text-sm text-gray-500">{transaction?.buyer?.phone}</p>
             <p className="text-sm text-gray-500">
-              {transaction.buyer.address}, {transaction.buyer.city}, {transaction.buyer.state} {transaction.buyer.zip}
+              {transaction?.buyer?.address}, {transaction?.buyer?.city}, {transaction?.buyer?.state} {transaction?.buyer?.zip}
             </p>
           </div>
           <div>

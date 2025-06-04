@@ -7,19 +7,19 @@ const contactInfo = [
   {
     icon: Phone,
     title: 'Phone',
-    content: '+1 (234) 567-890',
+    content: '+91 9518212905',
     link: 'tel:+1234567890',
   },
   {
     icon: Mail,
     title: 'Email',
-    content: 'support@housemate.com',
-    link: 'mailto:support@housemate.com',
+    content: 'Be.housemate@gmail.com',
+    link: 'mailto:Be.housemate@gmail.com',
   },
   {
     icon: MapPin,
     title: 'Address',
-    content: '123 Main Street, City, Country',
+    content: 'Sec 28 Gurugram, Haryana, India',
     link: '#map',
   },
   {

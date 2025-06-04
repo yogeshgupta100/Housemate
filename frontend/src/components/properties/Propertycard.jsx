@@ -10,15 +10,22 @@ import {
   Share2,
   ChevronLeft,
   ChevronRight,
-  Eye
+  Eye,
+  Edit
 } from 'lucide-react';
 import PropTypes from 'prop-types';
+import { useAuth } from '../../context/AuthContext';
 
 const PropertyCard = ({ property, viewType }) => {
   const isGrid = viewType === 'grid';
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const { user } = useAuth();
+
+  console.log('User data:', user);
+  console.log('Property data:', property);
+  console.log('Is owner check:', user?.data?.id === property.user_id);
 
   const propertyImages = property.images || property.image || [];
 
@@ -39,6 +46,11 @@ const PropertyCard = ({ property, viewType }) => {
     navigate(`/properties/single/${property.id}`);
   };
 
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    navigate(`/list-property?edit=${property.id}`);
+  };
+
   const handleShare = async (e) => {
     e.stopPropagation();
     try {
@@ -56,6 +68,8 @@ const PropertyCard = ({ property, viewType }) => {
       console.error('Error sharing:', error);
     }
   };
+
+  const isOwner = user?.data?.id === property.user_id;
 
   const getListingStatus = () => {
     if (typeof property.availability === 'object' && property.availability?.status) {
@@ -158,6 +172,16 @@ const PropertyCard = ({ property, viewType }) => {
 
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex flex-col gap-2">
+          {isOwner && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              onClick={handleEdit}
+              className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-blue-50 
+                transition-colors shadow-lg"
+            >
+              <Edit className="w-4 h-4 text-gray-700" />
+            </motion.button>
+          )}
           <motion.button
             whileHover={{ scale: 1.1 }}
             onClick={handleShare}

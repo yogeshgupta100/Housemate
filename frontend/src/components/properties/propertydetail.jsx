@@ -19,6 +19,7 @@ import {
   Compass,
   AlertTriangle,
   Home,
+  Edit
 } from "lucide-react";
 import { Backendurl } from "../../App.jsx";
 import ScheduleViewing from "./ScheduleViewing";
@@ -40,6 +41,10 @@ const PropertyDetails = () => {
   const [openTermsAndConditions, setOpenTermsAndConditions] = useState(false);
   const navigate = useNavigate();
   const {user} = useAuth();
+
+  console.log('PropertyDetail - User data:', user);
+  console.log('PropertyDetail - Property data:', property);
+  console.log('PropertyDetail - Is owner check:', user?.data?.id === property?.userId);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -95,7 +100,7 @@ const PropertyDetails = () => {
     ) {
       return property.availability.status;
     }
-    return property.availability || property.listingType || "N/A";
+    return property.availability || property.listing_type || "N/A";
   };
 
   const handleKeyNavigation = useCallback(
@@ -173,6 +178,12 @@ const PropertyDetails = () => {
       toast.error('Error creating transaction: ' + (error.response?.data?.message || error.message));
     }
   };
+
+  const handleEdit = () => {
+    navigate(`/list-property?edit=${id}`);
+  };
+
+  const isOwner = user?.data?.id === property?.userId;
 
   if (loading) {
     return (
@@ -299,23 +310,33 @@ const PropertyDetails = () => {
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Properties
           </Link>
-          <button
-            onClick={handleShare}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg
-              hover:bg-gray-100 transition-colors relative"
-          >
-            {copySuccess ? (
-              <span className="text-green-600">
-                <Copy className="w-5 h-5" />
-                Copied!
-              </span>
-            ) : (
-              <>
-                <Share2 className="w-5 h-5" />
-                Share
-              </>
+          <div className="flex gap-2">
+            {isOwner && (
+              <button
+                onClick={handleEdit}
+                className="p-2 rounded-full hover:bg-gray-100"
+              >
+                <Edit className="w-5 h-5" />
+              </button>
             )}
-          </button>
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                hover:bg-gray-100 transition-colors relative"
+            >
+              {copySuccess ? (
+                <span className="text-green-600">
+                  <Copy className="w-5 h-5" />
+                  Copied!
+                </span>
+              ) : (
+                <>
+                  <Share2 className="w-5 h-5" />
+                  Share
+                </>
+              )}
+            </button>
+          </div>
         </nav>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -379,12 +400,22 @@ const PropertyDetails = () => {
                   {property.location}
                 </div>
               </div>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                {isOwner && (
+                  <button
+                    onClick={handleEdit}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={handleShare}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -392,26 +423,26 @@ const PropertyDetails = () => {
                 <div className="mb-4">
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      property.listingType === "rent"
+                      property.listing_type === "rent"
                         ? "bg-blue-100 text-blue-800"
                         : "bg-purple-100 text-purple-800"
                     }`}
                   >
                     <Home className="w-4 h-4 mr-1" />
-                    {property.listingType === "rent"
+                    {property.listing_type === "rent"
                       ? "Rental Property"
                       : "Sale Property"}
                   </span>
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-6 mb-6">
-                  {property.listingType === "rent" ? (
+                  {property.listing_type === "rent" ? (
                     <>
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-3xl font-bold text-blue-600">
                           ₹{Number(property.price).toLocaleString("en-IN")}
                           <span className="text-sm text-gray-600 font-normal">
-                            /{property.rentType}
+                            /{property.rent_type}
                           </span>
                         </p>
                       </div>
@@ -506,7 +537,7 @@ const PropertyDetails = () => {
                   </div>
                 </div>}
 
-                <div className="mb-6">
+                {property?.listing_type !== "rent" && <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-4">
                     Contact Details
                   </h2>
@@ -514,7 +545,7 @@ const PropertyDetails = () => {
                     <Phone className="w-5 h-5 mr-2" />
                     {property.phone}
                   </div>
-                </div>
+                </div>}
 
                 <button
                   onClick={() => setShowSchedule(true)}

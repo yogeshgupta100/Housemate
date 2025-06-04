@@ -25,13 +25,86 @@ const TransactionDetailPage = () => {
         const data = await res.json();
         if (data.success && data.transaction) {
           setTransaction(data.transaction);
-          // In a real app, you would fetch these based on the transaction ID
-          if (data.transaction?.documents?.invoice) {
-            setInvoice(data.invoice);
-          }
-          if (data.transaction?.documents?.agreement) {
-            setAgreement(data.agreement);
-          }
+          
+          // Mock invoice data
+          const mockInvoice = {
+            invoiceNumber: `INV-${data.transaction.id}-${Date.now().toString().slice(-4)}`,
+            date: new Date().toISOString(),
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            items: [
+              {
+                description: `${data.transaction.type} of ${data.transaction.property?.title || 'Property'}`,
+                amount: data.transaction.amount || data.transaction.property_price || 0
+              }
+            ],
+            taxes: [
+              {
+                description: 'GST',
+                percentage: 18,
+                amount: (data.transaction.amount || data.transaction.property_price || 0) * 0.18
+              },
+              {
+                description: 'Registration Fee',
+                percentage: 1,
+                amount: (data.transaction.amount || data.transaction.property_price || 0) * 0.01
+              }
+            ],
+            amount: data.transaction.amount || data.transaction.property_price || 0,
+            totalAmount: (data.transaction.amount || data.transaction.property_price || 0) * 1.19,
+            paidAmount: data.transaction.amount || data.transaction.property_price || 0,
+            dueAmount: (data.transaction.amount || data.transaction.property_price || 0) * 0.19
+          };
+          setInvoice(mockInvoice);
+
+          // Mock agreement data
+          const mockAgreement = {
+            agreementNumber: `AGR-${data.transaction.id}-${Date.now().toString().slice(-4)}`,
+            date: new Date().toISOString(),
+            parties: {
+              seller: {
+                name: data.transaction.seller?.name || 'Property Owner',
+                address: data.transaction.seller?.address || '123 Seller Street',
+                city: data.transaction.seller?.city || 'Mumbai',
+                state: data.transaction.seller?.state || 'Maharashtra',
+                zip: data.transaction.seller?.zip || '400001',
+                email: data.transaction.seller?.email || 'seller@example.com',
+                phone: data.transaction.seller?.phone || '+91 98765 43210'
+              },
+              buyer: {
+                name: `${user?.data?.first_name || 'John'} ${user?.data?.last_name || 'Doe'}`,
+                address: user?.data?.address || '456 Buyer Avenue',
+                city: user?.data?.city || 'Mumbai',
+                state: user?.data?.state || 'Maharashtra',
+                zip: user?.data?.zip || '400002',
+                email: user?.data?.email || 'buyer@example.com',
+                phone: user?.data?.phone || '+91 98765 43211'
+              }
+            },
+            property: {
+              title: data.transaction.property?.title || 'Luxury Apartment',
+              description: data.transaction.property?.description || 'A beautiful property in a prime location',
+              location: data.transaction.property?.location || 'Downtown',
+              city: data.transaction.property?.city || 'Mumbai',
+              state: data.transaction.property?.state || 'Maharashtra',
+              type: data.transaction.property?.type || 'Apartment',
+              area: data.transaction.property?.area || '1200',
+              bedrooms: data.transaction.property?.bedrooms || 3,
+              bathrooms: data.transaction.property?.bathrooms || 2,
+              price: data.transaction.amount || data.transaction.property_price || 0
+            },
+            terms: [
+              'The property will be delivered in the same condition as shown during the inspection.',
+              'All necessary documents and clearances will be provided by the seller.',
+              'The buyer agrees to complete all payments as per the agreed schedule.',
+              'The seller warrants that the property is free from any legal encumbrances.',
+              'Both parties agree to complete the registration process within 30 days of this agreement.'
+            ],
+            signatures: {
+              seller: '_________________',
+              buyer: '_________________'
+            }
+          };
+          setAgreement(mockAgreement);
         } else {
           toast.error("Transaction not found");
           setTransaction(null);
@@ -44,7 +117,7 @@ const TransactionDetailPage = () => {
       }
     };
     fetchTransaction();
-  }, [id]);
+  }, [id, user]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-full">Loading transaction details...</div>;

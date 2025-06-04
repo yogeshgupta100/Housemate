@@ -10,6 +10,16 @@ export const getFavorites = async (req, res) => {
     }
 };
 
+export const getUserFavorites = async (req, res) => {
+    try {
+        const userId = Number(req.params.userId);
+        const favorites = await FavoritesService.getUserFavorites(userId);
+        res.json({ favorites });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 export const addFavorite = async (req, res) => {
     try {
         const userId = Number(req.user.id);
