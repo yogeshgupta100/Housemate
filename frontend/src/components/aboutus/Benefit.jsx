@@ -15,8 +15,8 @@ const benefits = [
   },
   {
     icon: Headphones,
-    title: '24/7 Support',
-    description: 'Round-the-clock assistance for all your queries.',
+    title: '3D Mapping',
+    description: '3D Mapping of the property to help you visualize the property before you make a decision.',
   },
   {
     icon: List,

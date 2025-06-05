@@ -22,6 +22,7 @@ import AdminDashboard from './components/admin/Dashboard';
 import Users from './components/admin/Users';
 import CustomerPanel from './components/customerPanel/CustomerPanel';
 import FeaturesDetail from './pages/FeaturesDetail';
+import ScrollToTop from './components/ScrollToTop';
 
 export const Backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
@@ -70,6 +71,7 @@ const App = () => {
     <HelmetProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <AppContent />
         </Router>
         <ToastContainer />

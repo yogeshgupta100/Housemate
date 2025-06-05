@@ -5,16 +5,20 @@ import s3Service from '../services/s3Service.js';
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 50 * 1024 * 1024, // 50MB limit for videos, images, and PDFs (will check type below)
     },
     fileFilter: (req, file, cb) => {
         console.log('File received:', file);
-        // Accept PDFs and images
-        if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
+        // Accept PDFs, images, and videos
+        if (
+            file.mimetype === 'application/pdf' ||
+            file.mimetype.startsWith('image/') ||
+            file.mimetype.startsWith('video/')
+        ) {
             cb(null, true);
         } else {
             console.log('Invalid file type:', file.mimetype);
-            cb(new Error('Only PDF and image files are allowed'), false);
+            cb(new Error('Only PDF, image, and video files are allowed'), false);
         }
     },
 });
@@ -48,7 +52,12 @@ export const uploadPDF = async (req, res) => {
         }
 
         // Determine the prefix based on file type
-        const prefix = req.file.mimetype === 'application/pdf' ? 'pg' : 'images';
+        let prefix = 'images';
+        if (req.file.mimetype === 'application/pdf') {
+            prefix = 'pg';
+        } else if (req.file.mimetype.startsWith('video/')) {
+            prefix = 'videos';
+        }
         const key = s3Service.generateKey(req.file.originalname, prefix);
         console.log('Generated S3 key:', key);
         

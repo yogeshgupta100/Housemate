@@ -5,12 +5,11 @@ import ProfilePage from '../../pages/customerPanel/ProfilePage';
 import TransactionsPage from '../../pages/customerPanel/TransactionsPage';
 import ListedPropertiesPage from '../../pages/customerPanel/ListedPropertiesPage';
 import TransactionDetailPage from '../../pages/customerPanel/TransactionDetailPage';
-import PropertyDetailPage from '../../pages/customerPanel/PropertyDetailPage';
 import Favorites from '../../pages/customerPanel/favorites/Favorites';
 import FavoriteDetails from '../../pages/customerPanel/favorites/FavoriteDetails';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import NotFoundPage from '../Notfound';
+import PropertyDetails from '../properties/propertydetail';
 const CustomerPanel = () => {
   const {isLoggedIn} = useAuth();
 
@@ -20,7 +19,7 @@ const CustomerPanel = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 mt-16">
-      <Sidebar />
+        <Sidebar />
       <div className="flex-1 p-4 md:p-8">
         <Routes>
           <Route path="/" element={<Navigate to="/profile" replace />} />
@@ -30,7 +29,7 @@ const CustomerPanel = () => {
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/transactions/:id" element={<TransactionDetailPage />} />
           <Route path="/properties" element={<ListedPropertiesPage />} />
-          <Route path="/properties/:id" element={<PropertyDetailPage />} />
+          <Route path="/properties/:id" element={<PropertyDetails />} />
         </Routes>
       </div>
     </div>

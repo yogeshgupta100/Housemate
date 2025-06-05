@@ -4,12 +4,13 @@ import { FaHeart, FaBed, FaBath, FaRulerCombined, FaMapMarkerAlt } from 'react-i
 import './Favorites.css';
 import {Backendurl} from "../../../App.jsx";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 const Favorites = () => {
     const [favorites, setFavorites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
+    const navigate = useNavigate();
     const fetchFavoriteProperties = async () => {
         try {
             setLoading(true);
@@ -98,7 +99,7 @@ const Favorites = () => {
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {favorites?.map(property => (
-                  <div key={property._id || property.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  <div key={property._id || property.id} className="bg-white rounded-lg shadow-lg overflow-hidden" onClick={() => navigate(`/customer-panel/favorites/${property?._id || property?.id}`)}>
                     <div className="relative h-48">
                       {property.images?.[0] && property.images.length > 0 ? (
                           <img
@@ -142,20 +143,19 @@ const Favorites = () => {
                   </span>
                       </div>
 
-                      <div className="flex justify-between items-center">
+                      <div className="flex items-center">
                         <div className="text-xl font-bold text-blue-600">
                           ₹{property.price?.toLocaleString() || 0}
-                          {property.listingType === 'rent' ? '/month' : ''}
                         </div>
-                        <Link
+                          {property.listing_type === 'rent' ? '/month' : ''}
+                        {/* <Link
                             to={`/customer-panel/favorites/${property?._id || property?.id}`}
-                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
                         >
-                          View Details
-                        </Link>
+                          <ArrowRight className="w-4 h-4" />
+                        </Link> */}
                       </div>
 
-                      <div className="mt-4">
+                      {/* <div className="mt-4">
                         <p className="text-sm text-gray-500">
                           {property.propertyStatus === 'ready_to_move' ? 'Ready to Move' : 'Under Construction'}
                         </p>
@@ -164,7 +164,7 @@ const Favorites = () => {
                               {property.furnishing}
                             </p>
                         )}
-                      </div>
+                      </div> */}
                     </div>
                   </div>
               ))}
