@@ -25,7 +25,19 @@ const ProfilePage = () => {
       state: ''
     },
     bio: '',
-    identityProof: null
+    identityProof: null,
+    maritalStatus: '',
+    govtIdNumber: '',
+    idCardImages: [],
+    verificationStatus: 'pending',
+    profession: '',
+    nationality: '',
+    bankDetails: {
+      accountNumber: '',
+      bankName: '',
+      ifscCode: '',
+      accountHolderName: ''
+    }
   });
 
   useEffect(() => {
@@ -51,7 +63,19 @@ const ProfilePage = () => {
             state: userData.state || ''
           },
           bio: userData.bio || '',
-          identityProof: userData.identity_proof || null
+          identityProof: userData.identity_proof || null,
+          maritalStatus: userData.marital_status || '',
+          govtIdNumber: userData.govt_id_number || '',
+          idCardImages: userData.id_card_images || [],
+          verificationStatus: userData.verification_status || 'pending',
+          profession: userData.profession || '',
+          nationality: userData.nationality || '',
+          bankDetails: {
+            accountNumber: userData.bank_details?.account_number || '',
+            bankName: userData.bank_details?.bank_name || '',
+            ifscCode: userData.bank_details?.ifsc_code || '',
+            accountHolderName: userData.bank_details?.account_holder_name || ''
+          }
         });
         setPreviewImage(userData.profile_image || null);
       } else {
@@ -136,7 +160,19 @@ const ProfilePage = () => {
         city: formData.address.city,
         state: formData.address.state,
         bio: formData.bio,
-        profile_image: profileImageUrl
+        profile_image: profileImageUrl,
+        marital_status: formData.maritalStatus,
+        govt_id_number: formData.govtIdNumber,
+        id_card_images: formData.idCardImages,
+        verification_status: formData.verificationStatus,
+        profession: formData.profession,
+        nationality: formData.nationality,
+        bank_details: {
+          account_number: formData.bankDetails.accountNumber,
+          bank_name: formData.bankDetails.bankName,
+          ifsc_code: formData.bankDetails.ifscCode,
+          account_holder_name: formData.bankDetails.accountHolderName
+        }
       };
 
       console.log('Sending update data:', updateData);
@@ -403,6 +439,104 @@ const ProfilePage = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Marital Status</label>
+                  <select
+                    name="maritalStatus"
+                    value={formData.maritalStatus}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Status</option>
+                    <option value="single">Single</option>
+                    <option value="married">Married</option>
+                    <option value="divorced">Divorced</option>
+                    <option value="widowed">Widowed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Government ID Number</label>
+                  <input
+                    type="text"
+                    name="govtIdNumber"
+                    value={formData.govtIdNumber}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Aadhaar/PAN/Passport number"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Profession</label>
+                  <input
+                    type="text"
+                    name="profession"
+                    value={formData.profession}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nationality</label>
+                  <input
+                    type="text"
+                    name="nationality"
+                    value={formData.nationality}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bank Details</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600">Account Number</label>
+                    <input
+                      type="text"
+                      name="bankDetails.accountNumber"
+                      value={formData.bankDetails.accountNumber}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600">Bank Name</label>
+                    <input
+                      type="text"
+                      name="bankDetails.bankName"
+                      value={formData.bankDetails.bankName}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600">IFSC Code</label>
+                    <input
+                      type="text"
+                      name="bankDetails.ifscCode"
+                      value={formData.bankDetails.ifscCode}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600">Account Holder Name</label>
+                    <input
+                      type="text"
+                      name="bankDetails.accountHolderName"
+                      value={formData.bankDetails.accountHolderName}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 className="w-full md:w-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
@@ -443,6 +577,53 @@ const ProfilePage = () => {
                     <p className="font-medium">
                       {formData.address.city ? `${formData.address.city}, ${formData.address.state}` : 'Not provided'}
                     </p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Marital Status</p>
+                    <p className="font-medium">{formData.maritalStatus || 'Not provided'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Government ID Number</p>
+                    <p className="font-medium">{formData.govtIdNumber || 'Not provided'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Verification Status</p>
+                    <p className="font-medium capitalize">{formData.verificationStatus || 'Not verified'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Profession</p>
+                    <p className="font-medium">{formData.profession || 'Not provided'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Nationality</p>
+                    <p className="font-medium">{formData.nationality || 'Not provided'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Bank Details</p>
+                    <div className="mt-1">
+                      <p className="font-medium">Account Number: {formData.bankDetails.accountNumber || 'Not provided'}</p>
+                      <p className="font-medium">Bank Name: {formData.bankDetails.bankName || 'Not provided'}</p>
+                      <p className="font-medium">IFSC Code: {formData.bankDetails.ifscCode || 'Not provided'}</p>
+                      <p className="font-medium">Account Holder: {formData.bankDetails.accountHolderName || 'Not provided'}</p>
+                    </div>
                   </div>
                 </div>
                 {formData.bio && (

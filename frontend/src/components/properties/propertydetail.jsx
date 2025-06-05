@@ -19,7 +19,9 @@ import {
   Compass,
   AlertTriangle,
   Home,
-  Edit
+  Edit,
+  Save,
+  X
 } from "lucide-react";
 import { Backendurl } from "../../App.jsx";
 import ScheduleViewing from "./ScheduleViewing";
@@ -39,6 +41,10 @@ const PropertyDetails = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [openTermsAndConditions, setOpenTermsAndConditions] = useState(false);
+  const [roomStatus, setRoomStatus] = useState([]);
+  const [roomStatusLoading, setRoomStatusLoading] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [roomDescription, setRoomDescription] = useState('');
   const navigate = useNavigate();
   const {user} = useAuth();
 
@@ -158,22 +164,39 @@ const PropertyDetails = () => {
         toast.error('Please select a room.');
         return;
       }
+
+      if (selectedRoom.occupied >= selectedRoom.capacity) {
+        toast.error('This room has reached its maximum capacity.');
+        return;
+      }
+
       const transactionData = {
         property_id: property.id,
         floor_id: selectedRoom.floor_id,
         room_id: selectedRoom.id,
         user_id,
         move_in_date: new Date().toISOString().split('T')[0],
-        status: 'pending',
+        status: 'NO',
+        description: '',
       };
+
+      // Create transaction
       const response = await axios.post(`${Backendurl}/api/transactions`, transactionData);
+      
       if (response.data.success) {
+        // Update room occupancy
+        await axios.put(`${Backendurl}/api/properties/rooms/${selectedRoom.id}/occupy`, {
+          increment: true
+        });
+
         setOpenTermsAndConditions(false);
+        toast.success('Room booking request submitted successfully');
         navigate('/customer-panel/transactions');
       } else {
         toast.error('Failed to create transaction: ' + response.data.message);
       }
     } catch (error) {
+      console.error('Error in handleAccept:', error);
       toast.error('Error creating transaction: ' + (error.response?.data?.message || error.message));
     }
   };
@@ -184,6 +207,52 @@ const PropertyDetails = () => {
 
   const isOwner = user?.data?.id === property?.user_id;
   const isShow = location.pathname.includes('customer-panel');
+
+  useEffect(() => {
+    if (isOwner && property?.id) {
+      setRoomStatusLoading(true);
+      axios.get(`${Backendurl}/api/properties/${property.id}/room-status`)
+        .then(res => {
+          if (res.data.success) setRoomStatus(res.data.data);
+        })
+        .catch(() => setRoomStatus([]))
+        .finally(() => setRoomStatusLoading(false));
+    }
+  }, [isOwner, property?.id]);
+
+  const handleEditDescription = (room) => {
+    setEditingRoom(room);
+    setRoomDescription(room.description);
+  };
+
+  const handleSaveDescription = async () => {
+    if (!editingRoom?.roomId) {
+      toast.error('Invalid room selected');
+      return;
+    }
+
+    try {
+      const response = await axios.put(`${Backendurl}/api/properties/rooms/${editingRoom.roomId}/description`, {
+        description: roomDescription
+      });
+      
+      if (response.data.success) {
+        // Refresh room status
+        const res = await axios.get(`${Backendurl}/api/properties/${property.id}/room-status`);
+        if (res.data.success) {
+          setRoomStatus(res.data.data);
+          toast.success('Room description updated successfully');
+        }
+        setEditingRoom(null);
+        setRoomDescription('');
+      } else {
+        toast.error('Failed to update room description');
+      }
+    } catch (error) {
+      console.error('Error updating room description:', error);
+      toast.error('Failed to update room description: ' + (error.response?.data?.message || error.message));
+    }
+  };
 
   if (loading) {
     return (
@@ -394,203 +463,314 @@ const PropertyDetails = () => {
           </div>
 
           <div>
-
-          <div className="p-8">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {property.title}
-                </h1>
-                <div className="flex items-center text-gray-600">
-                  <MapPin className="w-5 h-5 mr-2" />
-                  {property.location}
+            <div className="p-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {property.title}
+                  </h1>
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    {property.location}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <div className="mb-4">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      property.listing_type === "rent"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-purple-100 text-purple-800"
-                    }`}
-                  >
-                    <Home className="w-4 h-4 mr-1" />
-                    {property.listing_type === "rent"
-                      ? "Rental Property"
-                      : "Sale Property"}
-                  </span>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <div className="mb-4">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        property.listing_type === "rent"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-purple-100 text-purple-800"
+                      }`}
+                    >
+                      <Home className="w-4 h-4 mr-1" />
+                      {property.listing_type === "rent"
+                        ? "Rental Property"
+                        : "Sale Property"}
+                    </span>
+                  </div>
 
-                <div className="bg-blue-50 rounded-lg p-6 mb-6">
-                  {property.listing_type === "rent" ? (
-                    <>
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-3xl font-bold text-blue-600">
-                          ₹{Number(property.price).toLocaleString("en-IN")}
-                          <span className="text-sm text-gray-600 font-normal">
-                            /{property.rent_type}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="border-t border-blue-100 pt-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-gray-600">
-                            Security Deposit
-                          </span>
-                          <span className="font-semibold text-gray-800">
-                            ₹{Number(property.deposit).toLocaleString("en-IN")}
-                          </span>
+                  <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                    {property.listing_type === "rent" ? (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-3xl font-bold text-blue-600">
+                            ₹{Number(property.price).toLocaleString("en-IN")}
+                            <span className="text-sm text-gray-600 font-normal">
+                              /{property.rent_type}
+                            </span>
+                          </p>
                         </div>
-                        {property.availability?.availableFrom && (
+                        <div className="border-t border-blue-100 pt-3">
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">
-                              Available From
+                              Security Deposit
                             </span>
                             <span className="font-semibold text-gray-800">
-                              {new Date(
-                                property.availability.availableFrom
-                              ).toLocaleDateString("en-IN", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })}
+                              ₹{Number(property.deposit).toLocaleString("en-IN")}
                             </span>
                           </div>
-                        )}
-                        {property.availability?.minLeasePeriod && (
+                          {property.availability?.availableFrom && (
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-gray-600">
+                                Available From
+                              </span>
+                              <span className="font-semibold text-gray-800">
+                                {new Date(
+                                  property.availability.availableFrom
+                                ).toLocaleDateString("en-IN", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </div>
+                          )}
+                          {property.availability?.minLeasePeriod && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Minimum Lease</span>
+                              <span className="font-semibold text-gray-800">
+                                {property.availability.minLeasePeriod}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-3xl font-bold text-blue-600">
+                            ₹{Number(property.price).toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="border-t border-blue-100 pt-3 space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-600">Minimum Lease</span>
+                            <span className="text-gray-600">Property Age</span>
                             <span className="font-semibold text-gray-800">
-                              {property.availability.minLeasePeriod}
+                              {property.propertyAge} years
                             </span>
                           </div>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-3xl font-bold text-blue-600">
-                          ₹{Number(property.price).toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                      <div className="border-t border-blue-100 pt-3 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Property Age</span>
-                          <span className="font-semibold text-gray-800">
-                            {property.propertyAge} years
-                          </span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Condition</span>
+                            <span className="font-semibold text-gray-800 capitalize">
+                              {property.propertyCondition
+                                ? property.propertyCondition.replace(/_/g, " ")
+                                : "N/A"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Status</span>
+                            <span className="font-semibold text-gray-800 capitalize">
+                              {property.propertyStatus
+                                ? property.propertyStatus.replace(/_/g, " ")
+                                : "N/A"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Condition</span>
-                          <span className="font-semibold text-gray-800 capitalize">
-                            {property.propertyCondition
-                              ? property.propertyCondition.replace(/_/g, " ")
-                              : "N/A"}
-                          </span>
+                      </>
+                    )}
+                  </div>
+
+                  {!["flat", "pg", "rk"].includes(property.type) && <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                      <BedDouble className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">
+                        {property.beds} {property.beds > 1 ? "Beds" : "Bed"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                      <Bath className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">
+                        {property.baths} {property.baths > 1 ? "Baths" : "Bath"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                      <Maximize className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">
+                        {property.sqft} sqft
+                      </p>
+                    </div>
+                  </div>}
+
+                  {property?.listing_type !== "rent" && <div className="mb-6">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Contact Details
+                    </h2>
+                    <div className="flex items-center text-gray-600">
+                      <Phone className="w-5 h-5 mr-2" />
+                      {property.phone}
+                    </div>
+                  </div>}
+
+                  <button
+                    onClick={() => setShowSchedule(true)}
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg 
+                      hover:bg-blue-700 transition-colors flex items-center 
+                      justify-center gap-2"
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Schedule Viewing
+                  </button>
+                </div>
+
+                <div>
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold mb-4">Description</h2>
+                    <p className="text-gray-600 leading-relaxed">
+                      {property.description}
+                    </p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold mb-4">Amenities</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {amenities.map((amenity, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center text-gray-600"
+                        >
+                          <Building className="w-4 h-4 mr-2 text-blue-600" />
+                          {amenity}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Status</span>
-                          <span className="font-semibold text-gray-800 capitalize">
-                            {property.propertyStatus
-                              ? property.propertyStatus.replace(/_/g, " ")
-                              : "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    </>
+                      ))}
+                    </div>
+                  </div>
+
+                  {["pg", "rk", "flat"].includes(property.type) && (
+                    <div className="my-8">
+                      <h2 className="text-lg font-semibold mb-2">
+                        Available Rooms
+                      </h2>
+                      <RoomGrid
+                        floorDetails={property?.floorDetails}
+                        selectedRoom={selectedRoom?.id}
+                        onReserve={(room, floorId) => {
+                          setSelectedRoom({ ...room, floor_id: floorId });
+                          setOpenTermsAndConditions(true);
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
-
-                {!["flat", "pg", "rk"].includes(property.type) && <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <BedDouble className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">
-                      {property.beds} {property.beds > 1 ? "Beds" : "Bed"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <Bath className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">
-                      {property.baths} {property.baths > 1 ? "Baths" : "Bath"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <Maximize className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">
-                      {property.sqft} sqft
-                    </p>
-                  </div>
-                </div>}
-
-                {property?.listing_type !== "rent" && <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Contact Details
-                  </h2>
-                  <div className="flex items-center text-gray-600">
-                    <Phone className="w-5 h-5 mr-2" />
-                    {property.phone}
-                  </div>
-                </div>}
-
-                <button
-                  onClick={() => setShowSchedule(true)}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg 
-                    hover:bg-blue-700 transition-colors flex items-center 
-                    justify-center gap-2"
-                >
-                  <Calendar className="w-5 h-5" />
-                  Schedule Viewing
-                </button>
-              </div>
-
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Description</h2>
-                  <p className="text-gray-600 leading-relaxed">
-                    {property.description}
-                  </p>
-                </div>
-
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Amenities</h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    {amenities.map((amenity, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center text-gray-600"
-                      >
-                        <Building className="w-4 h-4 mr-2 text-blue-600" />
-                        {amenity}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {["pg", "rk", "flat"].includes(property.type) && (
-                  <div className="my-8">
-                    <h2 className="text-lg font-semibold mb-2">
-                      Available Rooms
-                    </h2>
-                    <RoomGrid
-                      floorDetails={property?.floorDetails}
-                      selectedRoom={selectedRoom?.id}
-                      onReserve={(room, floorId) => {
-                        setSelectedRoom({ ...room, floor_id: floorId });
-                        setOpenTermsAndConditions(true);
-                      }}
-                    />
-                  </div>
-                )}
               </div>
             </div>
+            {/* Room Status Table for Owner */}
+            {isOwner && (
+              <div className="px-8 pb-8">
+                <h2 className="text-xl font-semibold mb-4 mt-2">Room & Rent Status</h2>
+                {roomStatusLoading ? (
+                  <div className="text-gray-500">Loading room status...</div>
+                ) : roomStatus.length === 0 ? (
+                  <div className="text-gray-500">No room data available.</div>
+                ) : (
+                  roomStatus.map(floor => (
+                    <div key={floor.floor} className="mb-4">
+                      <div className="font-semibold text-blue-700 mb-2">Floor {floor.floor}</div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white border rounded-lg">
+                          <thead>
+                            <tr className="bg-blue-50">
+                              <th className="px-4 py-2 border">Room</th>
+                              <th className="px-4 py-2 border">Tenants</th>
+                              <th className="px-4 py-2 border">Rent Collection Status</th>
+                              <th className="px-4 py-2 border">Description</th>
+                              <th className="px-4 py-2 border">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {floor.rooms.map((room, idx) => (
+                              <tr key={idx} className="text-center hover:bg-gray-50">
+                                <td className="px-4 py-2 border">{room.roomNumber}</td>
+                                <td className="px-4 py-2 border">{room.status}</td>
+                                <td className="px-4 py-2 border">
+                                  <span className={`px-2 py-1 rounded-full text-sm ${
+                                    room.rentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                                    room.rentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    room.rentStatus === 'No Bill' ? 'bg-gray-100 text-gray-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {room.rentStatus === "pending" ? "NO" : "YES"}
+                                  </span>
+                                </td>
+                                <td 
+                                  className="px-4 py-2 border cursor-pointer"
+                                  onClick={() => {
+                                    if (!editingRoom) {
+                                      setEditingRoom({ roomId: room.roomId });
+                                      setRoomDescription(room.description || '');
+                                    }
+                                  }}
+                                >
+                                  {editingRoom?.roomId === room.roomId ? (
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={roomDescription}
+                                        onChange={(e) => setRoomDescription(e.target.value)}
+                                        className="flex-1 px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Enter room description"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <span className="block text-gray-700">
+                                      {room.description || 'No description'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2 border">
+                                  {editingRoom?.roomId === room.roomId ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSaveDescription();
+                                        }}
+                                        className="p-1 text-green-600 hover:text-green-700 transition-colors"
+                                        title="Save"
+                                      >
+                                        <Save className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingRoom(null);
+                                          setRoomDescription('');
+                                        }}
+                                        className="p-1 text-red-600 hover:text-red-700 transition-colors"
+                                        title="Cancel"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingRoom({ roomId: room.roomId });
+                                        setRoomDescription(room.description || '');
+                                      }}
+                                      className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
+                                      title="Edit Description"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-          </div>
-
         </div>
 
         <div className="mt-8 p-6 bg-blue-50 rounded-xl">

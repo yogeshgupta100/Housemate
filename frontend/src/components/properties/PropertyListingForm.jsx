@@ -178,16 +178,16 @@ const PropertyListingForm = () => {
 
   const validateField = (name, value) => {
     switch (name) {
-      case "price" && !["pg", "rk" , "flat"].includes(currentType):
+      case "price" && !["pg", "rk", "flat"].includes(currentType):
         return value <= 0 ? "Price must be greater than 0" : "";
-      case "beds" && !["pg", "rk" , "flat"].includes(currentType):
-      case "baths" && !["pg", "rk" , "flat"].includes(currentType):
+      case "beds" && !["pg", "rk", "flat"].includes(currentType):
+      case "baths" && !["pg", "rk", "flat"].includes(currentType):
         return value < 0 && value !== ""
           ? "Cannot be negative"
           : !Number.isInteger(Number(value))
           ? "Must be a whole number"
           : "";
-      case "sqft" && !["pg", "rk" , "flat"].includes(currentType):
+      case "sqft" && !["pg", "rk", "flat"].includes(currentType):
         return value <= 0 ? "Area must be greater than 0" : "";
       case "title":
         return value.length < 5 ? "Title must be at least 5 characters" : "";
@@ -219,44 +219,56 @@ const PropertyListingForm = () => {
         return;
       }
 
-      const addressComponents = {
-        street: "",
-        city: "",
-        state: "",
-        pincode: "",
-        country: "India",
-      };
+      let street = "";
+      let city = "";
+      let state = "";
+      let pincode = "";
+      let country = "";
+      let region = "";
 
       place.address_components.forEach((component) => {
         const types = component.types;
 
-        if (types.includes("street_number") || types.includes("route")) {
-          addressComponents.street += component.long_name + " ";
+        if (types.includes("street_number")) {
+          street = component.long_name + " " + street;
+        }
+        if (types.includes("route")) {
+          street += component.long_name;
         }
         if (types.includes("locality")) {
-          addressComponents.city = component.long_name;
+          city = component.long_name;
         }
         if (types.includes("administrative_area_level_1")) {
-          addressComponents.state = component.long_name;
+          state = component.long_name;
         }
         if (types.includes("postal_code")) {
-          addressComponents.pincode = component.long_name;
+          pincode = component.long_name;
+        }
+        if (types.includes("country")) {
+          country = component.long_name;
+        }
+        if (types.includes("sublocality_level_1")) {
+          region = component.long_name;
+        }
+        if (types.includes("administrative_area_level_2") && !region) {
+          region = component.long_name;
         }
       });
 
       setFormData((prev) => ({
         ...prev,
         location: place.formatted_address,
+        region,
         coordinates: {
           latitude: place.geometry.location.lat(),
           longitude: place.geometry.location.lng(),
         },
         address: {
-          street: addressComponents.street.trim(),
-          city: addressComponents.city,
-          state: addressComponents.state,
-          pincode: addressComponents.pincode,
-          country: "India",
+          street: street.trim(),
+          city,
+          state,
+          pincode,
+          country,
         },
       }));
     });
@@ -306,52 +318,58 @@ const PropertyListingForm = () => {
       const response = await axios.get(`${Backendurl}/api/properties/${id}`);
       if (response.data.success) {
         const propertyData = response.data.property;
-        
+
         // Set floor details from the API response
         if (propertyData.floorDetails) {
-          setFloorDetails(propertyData.floorDetails.map(floor => ({
-            floorNumber: floor.floorNumber,
-            rooms: floor.rooms.map(room => ({
-              roomNumber: room.roomNumber,
-              capacity: room.capacity,
-              occupied: room.occupied,
-              rent_amount: room.rent,
-              availableFrom: room.availableFrom,
-              hasBalcony: room.hasBalcony
+          setFloorDetails(
+            propertyData.floorDetails.map((floor) => ({
+              floorNumber: floor.floorNumber,
+              rooms: floor.rooms.map((room) => ({
+                roomNumber: room.roomNumber,
+                capacity: room.capacity,
+                occupied: room.occupied,
+                rent_amount: room.rent,
+                availableFrom: room.availableFrom,
+                hasBalcony: room.hasBalcony,
+              })),
             }))
-          })));
+          );
         }
 
         setFormData({
-          title: propertyData.title || '',
-          subtitle: propertyData.subtitle || '',
-          description: propertyData.description || '',
-          listingType: propertyData.listing_type || 'rent',
-          type: propertyData.type || '',
-          price: propertyData.price || '',
-          rentType: propertyData.rent_type || 'monthly',
-          deposit: calculatedDeposit || '',
-          propertyAge: propertyData.property_age || '',
-          propertyCondition: propertyData.property_condition || '',
-          propertyStatus: propertyData.property_status || '',
-          availability: propertyData.availability || { status: 'Available', availableFrom: null, minLeasePeriod: '12 months' },
-          location: propertyData.location || '',
-          phone: propertyData.phone || '',
-          region: propertyData.region || '',
-          latitude: propertyData.latitude || '',
-          longitude: propertyData.longitude || '',
-          street: propertyData.street || '',
-          city: propertyData.city || '',
-          state: propertyData.state || '',
-          pincode: propertyData.pincode || '',
-          country: propertyData.country || '',
-          floorArea: propertyData.floor_area || '',
-          sqft: propertyData.sqft || '',
-          floorNo: propertyData.floor_no || '',
-          totalFloors: propertyData.total_floors || '',
+          title: propertyData.title || "",
+          subtitle: propertyData.subtitle || "",
+          description: propertyData.description || "",
+          listingType: propertyData.listing_type || "rent",
+          type: propertyData.type || "",
+          price: propertyData.price || "",
+          rentType: propertyData.rent_type || "monthly",
+          deposit: calculatedDeposit || "",
+          propertyAge: propertyData.property_age || "",
+          propertyCondition: propertyData.property_condition || "",
+          propertyStatus: propertyData.property_status || "",
+          availability: propertyData.availability || {
+            status: "Available",
+            availableFrom: null,
+            minLeasePeriod: "12 months",
+          },
+          location: propertyData.location || "",
+          phone: propertyData.phone || "",
+          region: propertyData.region || "",
+          latitude: propertyData.latitude || "",
+          longitude: propertyData.longitude || "",
+          street: propertyData.street || "",
+          city: propertyData.city || "",
+          state: propertyData.state || "",
+          pincode: propertyData.pincode || "",
+          country: propertyData.country || "",
+          floorArea: propertyData.floor_area || "",
+          sqft: propertyData.sqft || "",
+          floorNo: propertyData.floor_no || "",
+          totalFloors: propertyData.total_floors || "",
           beds: propertyData.beds || 0,
           baths: propertyData.baths || 0,
-          furnishing: propertyData.furnishing || 'Unfurnished',
+          furnishing: propertyData.furnishing || "Unfurnished",
           amenities: propertyData.amenities || [],
           balcony: propertyData.balcony || false,
           centralAc: propertyData.central_ac || false,
@@ -364,16 +382,16 @@ const PropertyListingForm = () => {
           lift: propertyData.lift || false,
           images: propertyData.images || [],
           videos: propertyData.videos || [],
-          status: propertyData.status || 'Active',
-          featured: propertyData.featured || false
+          status: propertyData.status || "Active",
+          featured: propertyData.featured || false,
         });
 
         // Set preview URLs for images
         setPreviewUrls(propertyData.images || []);
       }
     } catch (error) {
-      console.error('Error loading property:', error);
-      setError('Failed to load property details');
+      console.error("Error loading property:", error);
+      setError("Failed to load property details");
     } finally {
       setLoading(false);
     }
@@ -438,7 +456,7 @@ const PropertyListingForm = () => {
       if (type === "number") {
         const numValue = Number(value);
         if (numValue < 0) {
-          return; 
+          return;
         }
         if (name === "beds" || name === "baths") {
           if (!Number.isInteger(numValue)) {
@@ -523,7 +541,7 @@ const PropertyListingForm = () => {
   const handleVideoUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length + (formData.videos?.length || 0) > 3) {
-      toast.error('You can upload up to 3 videos.');
+      toast.error("You can upload up to 3 videos.");
       return;
     }
     setVideoUploading(true);
@@ -534,19 +552,19 @@ const PropertyListingForm = () => {
           toast.error(`${file.name} is larger than 50MB.`);
           continue;
         }
-        if (!file.type.startsWith('video/')) {
+        if (!file.type.startsWith("video/")) {
           toast.error(`${file.name} is not a video file.`);
           continue;
         }
         const formData = new FormData();
-        formData.append('pdf', file); // same as images
+        formData.append("pdf", file); // same as images
         const response = await axios.post(
           `${Backendurl}/api/pg/upload`,
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         );
@@ -560,8 +578,8 @@ const PropertyListingForm = () => {
       }));
       setVideoPreviewUrls((prev) => [...prev, ...uploadedUrls]);
     } catch (error) {
-      console.error('Error uploading videos:', error);
-      toast.error('Failed to upload some videos');
+      console.error("Error uploading videos:", error);
+      toast.error("Failed to upload some videos");
     } finally {
       setVideoUploading(false);
     }
@@ -733,9 +751,20 @@ const PropertyListingForm = () => {
     try {
       const formDataToSubmit = { ...formData };
 
+      // Format data based on listing type
+      if (formDataToSubmit.listingType === 'sale') {
+        formDataToSubmit.rent_type = null;
+        formDataToSubmit.deposit = null;
+        formDataToSubmit.availability = {
+          status: 'Available',
+          availableFrom: null,
+          minLeasePeriod: null
+        };
+      }
+
       if (formData.images && formData.images.length > 0) {
-        formDataToSubmit.images = formData.images.map(image => {
-          if (typeof image === 'string') {
+        formDataToSubmit.images = formData.images.map((image) => {
+          if (typeof image === "string") {
             return image;
           }
           return image;
@@ -745,23 +774,23 @@ const PropertyListingForm = () => {
       if (formData.amenities) {
         if (Array.isArray(formData.amenities)) {
           formDataToSubmit.amenities = formData.amenities;
-        } else if (typeof formData.amenities === 'string') {
+        } else if (typeof formData.amenities === "string") {
           try {
             const parsed = JSON.parse(formData.amenities);
-            formDataToSubmit.amenities = Array.isArray(parsed) ? parsed : [parsed];
+            formDataToSubmit.amenities = Array.isArray(parsed)
+              ? parsed
+              : [parsed];
           } catch (e) {
-            formDataToSubmit.amenities = formData.amenities.split(',').map(item => item.trim());
+            formDataToSubmit.amenities = formData.amenities
+              .split(",")
+              .map((item) => item.trim());
           }
         }
       }
 
-      if (formData.availability) {
-        formDataToSubmit.availability = typeof formData.availability === 'string' 
-          ? JSON.parse(formData.availability) 
-          : formData.availability;
-      }
+      // Ensure property status is set
+      formDataToSubmit.propertyStatus = formDataToSubmit.propertyStatus || "Unverified";
 
-      console.log({formDataToSubmit});
       let response;
       if (editId) {
         response = await axios.put(
@@ -769,30 +798,41 @@ const PropertyListingForm = () => {
           formDataToSubmit,
           {
             headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           }
         );
       } else {
-        response = await axios.post(
-          `${Backendurl}/api/properties`,
-          formDataToSubmit,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`
+        try {
+          response = await axios.post(
+            `${Backendurl}/api/properties`,
+            formDataToSubmit,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
             }
-          }
-        );
-      }
+          );
 
-      if (response.data.success) {
-        setSuccess(true);
-        toast.success(editId ? "Property updated successfully!" : "Property listed successfully!");
-        navigate('/customer-panel/properties');
-      } else {
-        setError(response.data.message || "Failed to save property");
+          if (response.data.success) {
+            setSuccess(true);
+            toast.success(
+              editId
+                ? "Property updated successfully!"
+                : "Property listed successfully!"
+            );
+            navigate("/customer-panel/properties");
+          } else {
+            setError(response.data.message || "Failed to save property");
+            toast.error(response.data.message || "Failed to save property");
+          }
+        } catch (error) {
+          toast.error(
+            error.response?.data?.message || "Failed to save property"
+          );
+        }
       }
     } catch (err) {
       console.error("Error saving property:", err);
@@ -1054,7 +1094,7 @@ const PropertyListingForm = () => {
                 </div>
 
                 {formData.listingType === "rent" &&
-                  !["pg", "rk" , "flat"].includes(formData.type) && (
+                  !["pg", "rk", "flat"].includes(formData.type) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {formData.listingType === "rent"
@@ -1117,7 +1157,7 @@ const PropertyListingForm = () => {
           </div>
 
           {formData.listingType === "rent" &&
-            !["pg", "rk" , "flat"].includes(formData.type) && (
+            !["pg", "rk", "flat"].includes(formData.type) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
                   Availability Details
@@ -1190,6 +1230,7 @@ const PropertyListingForm = () => {
                     name="propertyAge"
                     value={formData.propertyAge}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     min="0"
                     style={inputStyles}
                     className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1294,7 +1335,7 @@ const PropertyListingForm = () => {
               >
                 {/* Area Field */}
                 {formData.listingType === "rent" &&
-                  !["pg", "rk" , "flat"].includes(formData.type) && (
+                  !["pg", "rk", "flat"].includes(formData.type) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Area (sq ft) *
@@ -1312,7 +1353,7 @@ const PropertyListingForm = () => {
                   )}
 
                 {!formData.type?.includes("plot") &&
-                  !["pg", "rk" , "flat"].includes(formData.type) && (
+                  !["pg", "rk", "flat"].includes(formData.type) && (
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1323,6 +1364,7 @@ const PropertyListingForm = () => {
                           name="beds"
                           value={formData.beds}
                           onChange={handleChange}
+                          onWheel={(e) => e.target.blur()}
                           min="0"
                           style={inputStyles}
                           className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1338,6 +1380,7 @@ const PropertyListingForm = () => {
                           name="baths"
                           value={formData.baths}
                           onChange={handleChange}
+                          onWheel={(e) => e.target.blur()}
                           min="0"
                           style={inputStyles}
                           className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1482,29 +1525,31 @@ const PropertyListingForm = () => {
                                   />
                                 </div>
                               )}
-                              {formData.type !== "rk" && <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Currently Occupied
-                                </label>
-                                <input
-                                  type="number"
-                                  value={room.occupied}
-                                  onChange={(e) =>
-                                    handleRoomDetailsChange(
-                                      floorIndex,
-                                      roomIndex,
-                                      "occupied",
-                                      parseInt(e.target.value)
-                                    )
-                                  }
-                                  min="0"
-                                  max={room.capacity}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Max: {room.capacity}
-                                </p>
-                              </div>}
+                              {formData.type !== "rk" && (
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Currently Occupied
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={room.occupied}
+                                    onChange={(e) =>
+                                      handleRoomDetailsChange(
+                                        floorIndex,
+                                        roomIndex,
+                                        "occupied",
+                                        parseInt(e.target.value)
+                                      )
+                                    }
+                                    min="0"
+                                    max={room.capacity}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Max: {room.capacity}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                               <div>
@@ -1522,6 +1567,7 @@ const PropertyListingForm = () => {
                                       parseInt(e.target.value)
                                     )
                                   }
+                                  onWheel={(e) => e.target.blur()}
                                   min="0"
                                   className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   placeholder="Enter rent amount"
@@ -1667,8 +1713,15 @@ const PropertyListingForm = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videoPreviewUrls.map((url, index) => (
-                  <div key={index} className="relative group aspect-video rounded-lg overflow-hidden">
-                    <video src={url} controls className="w-full h-full object-cover" />
+                  <div
+                    key={index}
+                    className="relative group aspect-video rounded-lg overflow-hidden"
+                  >
+                    <video
+                      src={url}
+                      controls
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       type="button"
                       onClick={() => handleRemoveVideo(index)}
@@ -1687,14 +1740,19 @@ const PropertyListingForm = () => {
                     accept="video/*"
                     onChange={handleVideoUpload}
                     className="hidden"
-                    disabled={videoUploading || (formData.videos?.length || 0) >= 3}
+                    disabled={
+                      videoUploading || (formData.videos?.length || 0) >= 3
+                    }
                   />
                 </label>
               </div>
               <p className="text-sm text-gray-500">
-                You can upload up to 3 videos. Each video should be less than 50MB.
+                You can upload up to 3 videos. Each video should be less than
+                50MB.
               </p>
-              {videoUploading && <p className="text-blue-600">Uploading videos...</p>}
+              {videoUploading && (
+                <p className="text-blue-600">Uploading videos...</p>
+              )}
             </div>
           </div>
 
@@ -1712,7 +1770,13 @@ const PropertyListingForm = () => {
               disabled={loading || imageUploading || videoUploading}
               className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
-              {loading ? "Submitting..." : imageUploading ? "Uploading Images..." : videoUploading ? "Uploading Videos..." : "List Property"}
+              {loading
+                ? "Submitting..."
+                : imageUploading
+                ? "Uploading Images..."
+                : videoUploading
+                ? "Uploading Videos..."
+                : "List Property"}
             </button>
           </div>
         </form>
