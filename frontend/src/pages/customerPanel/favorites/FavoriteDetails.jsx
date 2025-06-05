@@ -1,8 +1,9 @@
-import PropertyDetailPage from '../PropertyDetailPage';
+import PropertyDetail from '../../../components/properties/propertydetail';
+
 
 const FavoriteDetails = () => {
     return (
-        <PropertyDetailPage page="Favorites" href="/customer-panel/favorites" className="pt-0"/>
+        <PropertyDetail page="Favorites" href="/customer-panel/favorites" className="pt-0"/>
     )
 }
 

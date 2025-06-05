@@ -7,7 +7,6 @@ class PropertyService {
     try {
       const pgFilters = {};
   
-      // Text search conversion
       if (filters.$or) {
         const searchTerms = filters.$or.map(term => {
           const field = Object.keys(term)[0];
@@ -17,14 +16,12 @@ class PropertyService {
         pgFilters.search = searchTerms.join(' OR ');
       }
   
-      // Exact matches with validation for UUID fields
       ['type', 'listing_type', 'beds', 'baths', 'verified'].forEach(field => {
         if (filters[field] !== undefined) {
           pgFilters[field] = filters[field];
         }
       });
   
-      // Validate UUID filters strictly
       if (filters.user_id) {
         if (typeof filters.user_id === 'string' && isValidUUID(filters.user_id)) {
           pgFilters.user_id = filters.user_id;
@@ -41,21 +38,18 @@ class PropertyService {
         }
       }
   
-      // Range filters for price
       if (filters.price) {
         pgFilters.price = {};
         if (filters.price.$gte !== undefined) pgFilters.price.min = filters.price.$gte;
         if (filters.price.$lte !== undefined) pgFilters.price.max = filters.price.$lte;
       }
   
-      // Range filters for sqft
       if (filters.sqft) {
         pgFilters.sqft = {};
         if (filters.sqft.$gte !== undefined) pgFilters.sqft.min = filters.sqft.$gte;
         if (filters.sqft.$lte !== undefined) pgFilters.sqft.max = filters.sqft.$lte;
       }
   
-      // Amenities array filter
       if (filters.amenities) {
         pgFilters.amenities = filters.amenities;
       }
@@ -72,7 +66,6 @@ class PropertyService {
     try {
       const client = await pool.connect();
       try {
-        // Get property details
         const { rows: [property] } = await client.query(
           'SELECT * FROM properties WHERE id = $1',
           [id]
@@ -82,7 +75,6 @@ class PropertyService {
           throw new Error('Property not found');
         }
 
-        // Get floors and rooms for this property
         const { rows: floors } = await client.query(
           `SELECT f.*, 
            json_agg(
@@ -104,7 +96,6 @@ class PropertyService {
           [id]
         );
 
-        // Format the response
         return {
           ...property,
           floorDetails: floors.map(floor => ({
@@ -126,7 +117,6 @@ class PropertyService {
     try {
       await client.query('BEGIN');
 
-      // Generate slug if not provided
       if (!propertyData.slug) {
         propertyData.slug = `${propertyData.title}-${Date.now()}`
           .toLowerCase()
@@ -134,8 +124,7 @@ class PropertyService {
           .replace(/\s+/g, '-');
       }
 
-      // Calculate deposit if not provided for rent
-      if (propertyData.listingType === 'rent' && !propertyData.deposit) {
+      if (propertyData.listing_type === 'rent' && !propertyData.deposit) {
         const multipliers = {
           house: 2,
           apartment: 3,
@@ -149,53 +138,66 @@ class PropertyService {
         propertyData.deposit = propertyData.price * (multipliers[propertyData.type] || 2);
       }
 
-      // Ensure images is an array of strings (S3 URLs)
       const images = Array.isArray(propertyData.images) ? propertyData.images : [];
+      const videos = Array.isArray(propertyData.videos) ? propertyData.videos : [];
 
       // First, insert the property
+      const valuesArray = [
+        propertyData.title,
+        propertyData.subtitle,
+        propertyData.description,
+        propertyData.slug,
+        propertyData.listing_type,
+        propertyData.type,
+        propertyData.price,
+        propertyData.rent_type,
+        propertyData.deposit,
+        propertyData.property_age,
+        propertyData.property_condition,
+        propertyData.property_status,
+        propertyData.location,
+        propertyData.region,
+        propertyData.latitude,
+        propertyData.longitude,
+        propertyData.street,
+        propertyData.city,
+        propertyData.state,
+        propertyData.pincode,
+        propertyData.country,
+        propertyData.floor_area,
+        propertyData.sqft,
+        propertyData.floor_no,
+        propertyData.total_floors,
+        propertyData.beds,
+        propertyData.baths,
+        propertyData.furnishing,
+        propertyData.amenities,
+        propertyData.balcony,
+        propertyData.central_ac,
+        propertyData.power_backup,
+        propertyData.parking,
+        propertyData.security,
+        propertyData.swimming_pool,
+        propertyData.gym,
+        propertyData.garden,
+        propertyData.lift,
+        propertyData.phone,
+        propertyData.availability,
+        images,
+        videos,
+        propertyData.status,
+        propertyData.featured,
+        propertyData.user_id,
+        propertyData.created_by
+      ];
+
       const { rows: [property] } = await client.query(
         `INSERT INTO properties (
-          title, type, price, deposit, location, description, beds, baths,
-          sqft, phone, listing_type, amenities, images, latitude,
-          longitude, street, city, state, pincode, country,
-          floor_area, property_age, property_condition, property_status,
-          availability, status, slug, user_id, created_by
+          title, subtitle, description, slug, listing_type, type, price, rent_type, deposit, property_age, property_condition, property_status, location, region, latitude, longitude, street, city, state, pincode, country, floor_area, sqft, floor_no, total_floors, beds, baths, furnishing, amenities, balcony, central_ac, power_backup, parking, security, swimming_pool, gym, garden, lift, images, videos, status, featured, user_id, created_by
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-          $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
-          $25, $26, $27, $28
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44
         ) RETURNING *`,
-        [
-          propertyData.title,
-          propertyData.type,
-          propertyData.price,
-          propertyData.deposit,
-          propertyData.location,
-          propertyData.description,
-          propertyData.beds,
-          propertyData.baths,
-          propertyData.sqft,
-          propertyData.phone,
-          propertyData.listingType,
-          propertyData.amenities,
-          images,
-          propertyData.coordinates?.latitude || 0,
-          propertyData.coordinates?.longitude || 0,
-          propertyData.address?.street || '',
-          propertyData.address?.city || '',
-          propertyData.address?.state || '',
-          propertyData.address?.pincode || '',
-          propertyData.address?.country || 'India',
-          propertyData.floorArea,
-          propertyData.propertyAge,
-          propertyData.propertyCondition,
-          propertyData.propertyStatus,
-          propertyData.availability ? JSON.stringify(propertyData.availability) : null,
-          propertyData.status || 'Active',
-          propertyData.slug,
-          propertyData.userId,
-          propertyData.createdBy
-        ]
+        valuesArray
       );
 
       await client.query('COMMIT');
@@ -213,7 +215,6 @@ class PropertyService {
     try {
       await client.query('BEGIN');
 
-      // First, check if the property exists
       const { rows: [existingProperty] } = await client.query(
         'SELECT * FROM properties WHERE id = $1',
         [id]
@@ -223,12 +224,10 @@ class PropertyService {
         throw new Error('Property not found');
       }
 
-      // Prepare the update fields and values
       const updateFields = [];
       const values = [];
       let paramIndex = 1;
 
-      // Helper function to safely parse JSON
       const safeJsonParse = (value) => {
         if (!value) return null;
         if (typeof value === 'string') {
@@ -236,19 +235,17 @@ class PropertyService {
             return JSON.parse(value);
           } catch (e) {
             console.log('JSON parse failed, trying comma-separated string');
-            // If parsing fails, try to handle as comma-separated string
             if (value.includes(',')) {
               const items = value.split(',').map(item => item.trim());
               console.log('Parsed comma-separated items:', items);
               return items;
             }
-            return [value]; // Return as single-item array if no commas
+            return [value];
           }
         }
         return value;
       };
 
-      // Helper function to safely stringify JSON
       const safeJsonStringify = (value) => {
         if (!value) return null;
         if (typeof value === 'object') {
@@ -262,31 +259,29 @@ class PropertyService {
         return value;
       };
 
-      // Transform the data before updating
       const transformedData = {};
 
-      // Helper function to handle numeric fields
       const handleNumericField = (value) => {
         if (value === '' || value === undefined || value === null) return null;
         const num = Number(value);
         return isNaN(num) ? null : num;
       };
 
-      // Handle each field explicitly
       if (updateData.title !== undefined) transformedData.title = updateData.title;
       if (updateData.subtitle !== undefined) transformedData.subtitle = updateData.subtitle;
+      if (updateData.slug !== undefined) transformedData.slug = updateData.slug;
+      if(updateData.phone !== undefined) transformedData.phone = updateData.phone;
+      if(updateData.availability !== undefined) transformedData.availability = updateData.availability;
       if (updateData.description !== undefined) transformedData.description = updateData.description;
-      if (updateData.listingType !== undefined) transformedData.listing_type = updateData.listingType;
+      if (updateData.listing_type !== undefined) transformedData.listing_type = updateData.listing_type;
       if (updateData.type !== undefined) transformedData.type = updateData.type;
       if (updateData.price !== undefined) transformedData.price = handleNumericField(updateData.price);
+      if (updateData.rent_type !== undefined) transformedData.rent_type = updateData.rent_type;
       if (updateData.deposit !== undefined) transformedData.deposit = handleNumericField(updateData.deposit);
-      if (updateData.rentType !== undefined) transformedData.rent_type = updateData.rentType;
-      if (updateData.propertyAge !== undefined) transformedData.property_age = handleNumericField(updateData.propertyAge);
-      if (updateData.propertyCondition !== undefined) transformedData.property_condition = updateData.propertyCondition || null;
-      if (updateData.propertyStatus !== undefined) transformedData.property_status = updateData.propertyStatus || null;
-      if (updateData.availability !== undefined) transformedData.availability = safeJsonStringify(updateData.availability);
+      if (updateData.property_age !== undefined) transformedData.property_age = handleNumericField(updateData.property_age);
+      if (updateData.property_condition !== undefined) transformedData.property_condition = updateData.property_condition || null;
+      if (updateData.property_status !== undefined) transformedData.property_status = updateData.property_status || null;
       if (updateData.location !== undefined) transformedData.location = updateData.location;
-      if (updateData.phone !== undefined) transformedData.phone = updateData.phone;
       if (updateData.region !== undefined) transformedData.region = updateData.region;
       if (updateData.latitude !== undefined) transformedData.latitude = handleNumericField(updateData.latitude);
       if (updateData.longitude !== undefined) transformedData.longitude = handleNumericField(updateData.longitude);
@@ -295,15 +290,14 @@ class PropertyService {
       if (updateData.state !== undefined) transformedData.state = updateData.state;
       if (updateData.pincode !== undefined) transformedData.pincode = updateData.pincode;
       if (updateData.country !== undefined) transformedData.country = updateData.country;
-      if (updateData.floorArea !== undefined) transformedData.floor_area = handleNumericField(updateData.floorArea);
+      if (updateData.floor_area !== undefined) transformedData.floor_area = handleNumericField(updateData.floor_area);
       if (updateData.sqft !== undefined) transformedData.sqft = handleNumericField(updateData.sqft);
-      if (updateData.floorNo !== undefined) transformedData.floor_no = handleNumericField(updateData.floorNo);
-      if (updateData.totalFloors !== undefined) transformedData.total_floors = handleNumericField(updateData.totalFloors);
+      if (updateData.floor_no !== undefined) transformedData.floor_no = handleNumericField(updateData.floor_no);
+      if (updateData.total_floors !== undefined) transformedData.total_floors = handleNumericField(updateData.total_floors);
       if (updateData.beds !== undefined) transformedData.beds = handleNumericField(updateData.beds);
       if (updateData.baths !== undefined) transformedData.baths = handleNumericField(updateData.baths);
       if (updateData.furnishing !== undefined) transformedData.furnishing = updateData.furnishing;
       
-      // Handle amenities with detailed logging
       if (updateData.amenities !== undefined) {
         console.log('Processing amenities:', updateData.amenities);
         if (Array.isArray(updateData.amenities)) {
@@ -326,11 +320,11 @@ class PropertyService {
       }
 
       if (updateData.balcony !== undefined) transformedData.balcony = updateData.balcony;
-      if (updateData.centralAc !== undefined) transformedData.central_ac = updateData.centralAc;
-      if (updateData.powerBackup !== undefined) transformedData.power_backup = updateData.powerBackup;
+      if (updateData.central_ac !== undefined) transformedData.central_ac = updateData.central_ac;
+      if (updateData.power_backup !== undefined) transformedData.power_backup = updateData.power_backup;
       if (updateData.parking !== undefined) transformedData.parking = updateData.parking;
       if (updateData.security !== undefined) transformedData.security = updateData.security;
-      if (updateData.swimmingPool !== undefined) transformedData.swimming_pool = updateData.swimmingPool;
+      if (updateData.swimming_pool !== undefined) transformedData.swimming_pool = updateData.swimming_pool;
       if (updateData.gym !== undefined) transformedData.gym = updateData.gym;
       if (updateData.garden !== undefined) transformedData.garden = updateData.garden;
       if (updateData.lift !== undefined) transformedData.lift = updateData.lift;
@@ -341,11 +335,9 @@ class PropertyService {
 
       console.log('Transformed data:', transformedData);
 
-      // Build the update query dynamically
       Object.entries(transformedData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (key === 'amenities') {
-            // Handle amenities array specifically
             updateFields.push(`${key} = ARRAY[${value.map(v => `'${v}'`).join(',')}]::text[]`);
           } else {
             updateFields.push(`${key} = $${paramIndex}`);
@@ -361,7 +353,6 @@ class PropertyService {
         throw new Error('No valid fields to update');
       }
 
-      // Add the property ID to the values array
       values.push(id);
 
       const updateQuery = `
@@ -374,7 +365,6 @@ class PropertyService {
       console.log('Update query:', updateQuery);
       console.log('Update values:', values);
 
-      // Update the property
       const { rows: [updatedProperty] } = await client.query(updateQuery, values);
 
       console.log('Updated property:', updatedProperty);

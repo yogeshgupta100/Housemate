@@ -213,56 +213,7 @@ export const createProperty = async (req, res) => {
     // Get user ID from the authenticated request
     const userId = req.user.id; // This comes from the auth middleware
 
-    const propertyData = {
-      title: req.body.title?.toString(),
-      type: req.body.type?.toString()?.toLowerCase(),
-      price: Number(req.body.price),
-      location: req.body.location?.toString(),
-      description: req.body.description?.toString(),
-      beds: Number(req.body.beds),
-      baths: Number(req.body.baths),
-      sqft: Number(req.body.sqft),
-      phone: req.body.phone?.toString(),
-      listingType: req.body.listingType?.toString()?.toLowerCase(),
-      amenities: amenities,
-      images: images,
-      userId: userId, // Use the authenticated user's ID
-      createdBy: userId, // Use the same ID for created_by
-      coordinates: coordinates || {
-        latitude: 0,
-        longitude: 0
-      },
-      address: {
-        street: address?.street || '',
-        city: address?.city || req.body.location?.toString() || '',
-        state: address?.state || '',
-        pincode: address?.pincode || '',
-        country: address?.country || 'India'
-      },
-      floorArea: Number(req.body.sqft) || 0,
-      floorDetails: floorDetails
-    };
-
-    // Adding sale-specific fields only if listingType is 'sale'
-    if (req.body.listingType?.toString()?.toLowerCase() === 'sale') {
-      propertyData.propertyAge = Number(req.body.propertyAge);
-      propertyData.propertyCondition = req.body.propertyCondition?.toString();
-      propertyData.propertyStatus = req.body.propertyStatus?.toString();
-    }
-
-    // Adding rental-specific fields only if listingType is 'rent'
-    if (req.body.listingType?.toString()?.toLowerCase() === 'rent') {
-      propertyData.availability = {
-        status: 'Available',
-        availableFrom: new Date(availability?.availableFrom),
-        minLeasePeriod: availability?.minLeasePeriod || '12 months'
-      };
-    }
-
-    if (!propertyData.title || !propertyData.type) {
-      throw new Error('Title and type are required fields');
-    }
-
+    const propertyData = normalizePropertyData(req.body, req.user.id);
     const property = await propertyService.createProperty(propertyData);
 
     if (floorDetails && Array.isArray(floorDetails)) {
@@ -846,3 +797,57 @@ export const getFilterOptions = async (req, res) => {
     });
   }
 };
+
+function normalizePropertyData(input, userId) {
+  let coordinates = input.coordinates;
+  if (typeof coordinates === 'string') coordinates = JSON.parse(coordinates);
+  let address = input.address;
+  if (typeof address === 'string') address = JSON.parse(address);
+
+  return {
+    title: input.title || '',
+    subtitle: input.subtitle || '',
+    description: input.description || '',
+    slug: input.slug || '',
+    listing_type: input.listingType || 'rent',
+    type: input.type || '',
+    price: Number(input.price) || 0,
+    rent_type: input.rentType || 'monthly',
+    deposit: input.deposit ? Number(input.deposit) : 0,
+    property_age: input.propertyAge ? Number(input.propertyAge) : null,
+    property_condition: input.propertyCondition || null,
+    property_status: input.propertyStatus || null,
+    location: input.location || '',
+    region: input.region || null,
+    latitude: coordinates?.latitude || 0,
+    longitude: coordinates?.longitude || 0,
+    street: address?.street || '',
+    city: address?.city || '',
+    state: address?.state || '',
+    pincode: address?.pincode || '',
+    country: address?.country || 'India',
+    floor_area: input.floorArea ? Number(input.floorArea) : 0,
+    sqft: input.sqft ? Number(input.sqft) : 0,
+    floor_no: input.floorNo ? Number(input.floorNo) : null,
+    total_floors: input.totalFloors ? Number(input.totalFloors) : null,
+    beds: input.beds ? Number(input.beds) : 0,
+    baths: input.baths ? Number(input.baths) : 0,
+    furnishing: input.furnishing || 'Unfurnished',
+    amenities: Array.isArray(input.amenities) ? input.amenities : [],
+    balcony: input.balcony === true,
+    central_ac: input.centralAc === true,
+    power_backup: input.powerBackup === true,
+    parking: input.parking === true,
+    security: input.security === true,
+    swimming_pool: input.swimmingPool === true,
+    gym: input.gym === true,
+    garden: input.garden === true,
+    lift: input.lift === true,
+    images: Array.isArray(input.images) ? input.images : [],
+    videos: Array.isArray(input.videos) ? input.videos : [],
+    status: input.status || 'Active',
+    featured: input.featured === true,
+    user_id: userId,
+    created_by: userId
+  };
+}

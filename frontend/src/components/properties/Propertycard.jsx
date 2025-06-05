@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const PropertyCard = ({ property, viewType }) => {
   const isGrid = viewType === 'grid';
@@ -23,13 +24,9 @@ const PropertyCard = ({ property, viewType }) => {
   const [showControls, setShowControls] = useState(false);
   const { user } = useAuth();
 
-  console.log('User data:', user);
-  console.log('Property data:', property);
-  console.log('Is owner check:', user?.data?.id === property.user_id);
-
   const propertyImages = property.images || property.image || [];
 
-  // Handle image navigation - todo:
+  const location = useLocation();
   const handleImageNavigation = (e, direction) => {
     e.stopPropagation();
     const imagesCount = propertyImages.length;
@@ -43,7 +40,11 @@ const PropertyCard = ({ property, viewType }) => {
   };
 
   const handleNavigateToDetails = () => {
-    navigate(`/properties/single/${property.id}`);
+    if(location.pathname === '/customer-panel/properties'){
+      navigate(`/customer-panel/properties/${property.id}`);
+    }else{
+      navigate(`/properties/single/${property.id}`);
+    }
   };
 
   const handleEdit = (e) => {
@@ -172,7 +173,7 @@ const PropertyCard = ({ property, viewType }) => {
 
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex flex-col gap-2">
-          {isOwner && (
+          {location.pathname === '/customer-panel/properties' && isOwner && (
             <motion.button
               whileHover={{ scale: 1.1 }}
               onClick={handleEdit}

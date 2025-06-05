@@ -14,8 +14,8 @@ export const RoomGrid = ({ floorDetails, selectedRoom, onReserve }) => {
               </td>
               {floor.rooms.map((room, colIdx) => {
                 const availability = room?.capacity - room?.occupied;
-                const occupiedWidth = (room.occupied / room.capacity) * 100;
-                const roomNumberWidth = room.roomNumber.toString().length * 10;
+                const occupiedWidth = (room?.occupied / room?.capacity) * 100;
+                const roomNumberWidth = room?.roomNumber?.toString().length * 10;
                 return (
                   <td key={colIdx}>
                     <div

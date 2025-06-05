@@ -129,27 +129,20 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
     return (
       <div className={`min-h-screen bg-gray-50 ${className}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {}
           <div className="flex items-center justify-between mb-8">
             <div className="w-32 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
             <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
           
-          {}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            {}
             <div className="relative h-[500px] bg-gray-200 rounded-xl mb-8 animate-pulse">
-              {}
               <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 rounded-full"></div>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 rounded-full"></div>
               
-              {}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-20 h-8 bg-black/20 rounded-full"></div>
             </div>
   
-            {}
             <div className="p-8">
-              {}
               <div className="flex justify-between items-start mb-6">
                 <div className="space-y-3 w-full max-w-md">
                   <div className="h-10 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
@@ -158,33 +151,25 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                 <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
               </div>
   
-              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {}
                 <div className="space-y-6">
-                  {}
                   <div className="h-28 bg-blue-50/50 rounded-lg animate-pulse"></div>
                   
-                  {}
                   <div className="grid grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => (
                       <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse"></div>
                     ))}
                   </div>
                   
-                  {}
                   <div className="space-y-2">
                     <div className="h-7 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
                     <div className="h-6 bg-gray-200 rounded-lg w-1/2 animate-pulse"></div>
                   </div>
                   
-                  {}
                   <div className="h-12 bg-blue-200 rounded-lg animate-pulse"></div>
                 </div>
                 
-                {}
                 <div className="space-y-6">
-                  {}
                   <div className="space-y-2">
                     <div className="h-7 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
                     <div className="h-4 bg-gray-200 rounded-lg w-full animate-pulse mt-2"></div>
@@ -193,7 +178,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                     <div className="h-4 bg-gray-200 rounded-lg w-full animate-pulse"></div>
                   </div>
                   
-                  {}
                   <div className="space-y-2">
                     <div className="h-7 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
                     <div className="grid grid-cols-2 gap-4 mt-2">
@@ -207,7 +191,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
             </div>
           </div>
           
-          {}
           <div className="mt-8 p-6 bg-blue-50/50 rounded-xl animate-pulse">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-5 h-5 bg-gray-300 rounded-full"></div>
@@ -255,7 +238,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
       className={`min-h-screen bg-gray-50 ${className}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {}
         <nav className="flex items-center justify-between mb-8">
           <Link
             to={href}
@@ -283,7 +265,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
         </nav>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {}
           <div className="relative h-[500px] bg-gray-100 rounded-xl overflow-hidden mb-8">
             <AnimatePresence mode="wait">
               <motion.img
@@ -298,7 +279,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
               />
             </AnimatePresence>
 
-            {}
             {images.length > 1 && (
               <>
                 <button
@@ -322,7 +302,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
               </>
             )}
 
-            {}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 
               bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm">
               {activeImage + 1} / {images.length}
@@ -350,7 +329,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                {}
                 <div className="mb-4">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                     property.listingType === 'rent' 
@@ -495,7 +473,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                   </div>
                 </div>
 
-                {}
                 {property.type === 'pg' && (
                   <div className="my-8">
                     <h2 className="text-lg font-semibold mb-2">Available Rooms</h2>
@@ -513,7 +490,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
           </div>
         </div>
 
-        {}
         <div className="mt-8 p-6 bg-blue-50 rounded-xl">
           <div className="flex items-center gap-2 text-blue-600 mb-4">
             <Compass className="w-5 h-5" />
@@ -533,7 +509,6 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
           </a>
         </div>
 
-        {}
         <AnimatePresence>
           {showSchedule && (
             <ScheduleViewing

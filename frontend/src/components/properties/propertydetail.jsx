@@ -35,23 +35,20 @@ const PropertyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [openTermsAndConditions, setOpenTermsAndConditions] = useState(false);
   const navigate = useNavigate();
   const {user} = useAuth();
 
-  console.log('PropertyDetail - User data:', user);
-  console.log('PropertyDetail - Property data:', property);
-  console.log('PropertyDetail - Is owner check:', user?.data?.id === property?.userId);
-
+  
   useEffect(() => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`${Backendurl}/api/properties/${id}`);
-
+        
         if (response.data.success) {
           setProperty(response.data.property);
         } else {
@@ -64,23 +61,26 @@ const PropertyDetails = () => {
         setLoading(false);
       }
     };
-
+    
     if (id) {
       fetchProperty();
     }
   }, [id]);
-
+  
   useEffect(() => {
     window.scrollTo(0, 0);
-    setActiveImage(0);
+    setActiveMediaIndex(0);
   }, [id]);
-
-  const getPropertyImages = (property) => {
+  
+  const getMediaGallery = (property) => {
     if (!property) return [];
-    const images = property.images || property.image || [];
-    return images;
+    const images = (property.images || []).map((url) => ({ type: "image", url }));
+    const videos = (property.videos || []).map((url) => ({ type: "video", url }));
+    return [...images, ...videos];
   };
-
+  
+  const mediaGallery = getMediaGallery(property);
+  
   const parseAmenities = (amenities) => {
     if (!amenities) return [];
     if (Array.isArray(amenities)) return amenities;
@@ -106,11 +106,11 @@ const PropertyDetails = () => {
   const handleKeyNavigation = useCallback(
     (e) => {
       if (e.key === "ArrowLeft") {
-        setActiveImage((prev) =>
+        setActiveMediaIndex((prev) =>
           prev === 0 ? property.image.length - 1 : prev - 1
         );
       } else if (e.key === "ArrowRight") {
-        setActiveImage((prev) =>
+        setActiveMediaIndex((prev) =>
           prev === property.image.length - 1 ? 0 : prev + 1
         );
       } else if (e.key === "Escape" && showSchedule) {
@@ -147,7 +147,6 @@ const PropertyDetails = () => {
     try {
       const user_id = user?.data?.id;
       if (!user_id) {
-        console.log("user_id", user_id);
         navigate("/login");
         toast.error("Please login to continue");
         window.scrollTo(0, 0 , {
@@ -183,15 +182,19 @@ const PropertyDetails = () => {
     navigate(`/list-property?edit=${id}`);
   };
 
-  const isOwner = user?.data?.id === property?.userId;
+  const isOwner = user?.data?.id === property?.user_id;
+  const isShow = location.pathname.includes('customer-panel');
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className={`min-h-screen bg-gray-50 ${isShow ? 'pt-0' : 'pt-16'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-8">
             <div className="w-32 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="flex items-center gap-2">
+              {isShow && <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>}
+              <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -281,18 +284,18 @@ const PropertyDetails = () => {
             We couldn't find the property you're looking for.
           </p>
           <Link
-            to="/properties"
+            to={isShow ? '/customer-panel/properties' : '/properties'}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Properties
+            Back to {isShow ? 'My Properties' : 'Properties'}
           </Link>
         </div>
       </div>
     );
   }
 
-  const images = getPropertyImages(property);
+  const images = getMediaGallery(property);
   const amenities = parseAmenities(property.amenities);
   const status = getPropertyStatus(property);
 
@@ -300,23 +303,24 @@ const PropertyDetails = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gray-50 pt-16"
+      className={`min-h-screen bg-gray-50 ${isShow ? 'pt-0' : 'pt-16'}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <nav className="flex items-center justify-between mb-8">
           <Link
-            to="/properties"
+            to={isShow ? '/customer-panel/properties' : '/properties'}
             className="inline-flex items-center text-blue-600 hover:text-blue-700"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Properties
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to {isShow ? 'My Properties' : 'Properties'}
           </Link>
           <div className="flex gap-2">
-            {isOwner && (
+            {isOwner && isShow && (
               <button
                 onClick={handleEdit}
-                className="p-2 rounded-full hover:bg-gray-100"
+                className="py-2 px-4 rounded-lg hover:bg-blue-400 flex items-center gap-2 bg-blue-600 text-white"
               >
                 <Edit className="w-5 h-5" />
+                Edit
               </button>
             )}
             <button
@@ -339,55 +343,57 @@ const PropertyDetails = () => {
           </div>
         </nav>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="relative h-[500px] bg-gray-100 rounded-xl overflow-hidden mb-8">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={activeImage}
-                src={images[activeImage]}
-                alt={`${property.title} - View ${activeImage + 1}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full h-full"
-              />
-            </AnimatePresence>
-
-            {images.length > 1 && (
-              <>
-                <button
-                  onClick={() =>
-                    setActiveImage((prev) =>
-                      prev === 0 ? images.length - 1 : prev - 1
-                    )
-                  }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full
-                    bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveImage((prev) =>
-                      prev === images.length - 1 ? 0 : prev + 1
-                    )
-                  }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full
-                    bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              </>
-            )}
-
-            <div
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 
-              bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm"
-            >
-              {activeImage + 1} / {images.length}
+        <div className={`${isShow ? 'bg-gray-50' : 'bg-white shadow-lg'} rounded-xl overflow-hidden`}>
+          <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-8 flex" style={{ height: '400px', minHeight: '225px' }}>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-full max-w-full aspect-video flex items-center justify-center bg-black rounded-xl overflow-hidden">
+                {mediaGallery[activeMediaIndex]?.type === "image" ? (
+                  <img
+                    src={mediaGallery[activeMediaIndex].url}
+                    alt={`Media ${activeMediaIndex + 1}`}
+                    className="w-full h-full object-contain"
+                    style={{ aspectRatio: '16/9' }}
+                  />
+                ) : (
+                  <video
+                    src={mediaGallery[activeMediaIndex].url}
+                    controls
+                    className="w-full h-full object-contain"
+                    style={{ aspectRatio: '16/9' }}
+                  />
+                )}
+              </div>
             </div>
+            {/* Sidebar Thumbnails */}
+            {mediaGallery.length > 1 && (
+              <div
+                className={`w-40 flex flex-col gap-2 mx-4 overflow-y-auto`}
+                style={{ maxHeight: '400px', height: '400px' }}
+              >
+                {mediaGallery.map((media, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveMediaIndex(idx)}
+                    className={`border-2 rounded-lg overflow-hidden ${activeMediaIndex === idx ? "border-blue-600" : "border-transparent"}`}
+                    style={{
+                      aspectRatio: '16/9',
+                      height: '133.33px',
+                      minHeight: '133.33px',
+                      maxHeight: '133.33px',
+                    }}
+                  >
+                    {media.type === "image" ? (
+                      <img src={media.url} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" style={{ aspectRatio: '16/9' }} />
+                    ) : (
+                      <video src={media.url} className="w-full h-full object-cover" style={{ aspectRatio: '16/9' }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          <div>
 
           <div className="p-8">
             <div className="flex justify-between items-start mb-6">
@@ -399,22 +405,6 @@ const PropertyDetails = () => {
                   <MapPin className="w-5 h-5 mr-2" />
                   {property.location}
                 </div>
-              </div>
-              <div className="flex gap-2">
-                {isOwner && (
-                  <button
-                    onClick={handleEdit}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </button>
-                )}
-                <button
-                  onClick={handleShare}
-                  className="p-2 rounded-full hover:bg-gray-100"
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
               </div>
             </div>
 
@@ -599,6 +589,8 @@ const PropertyDetails = () => {
               </div>
             </div>
           </div>
+          </div>
+
         </div>
 
         <div className="mt-8 p-6 bg-blue-50 rounded-xl">

@@ -157,6 +157,8 @@ const PropertyListingForm = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [currentType, setCurrentType] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoPreviewUrls, setVideoPreviewUrls] = useState([]);
 
   const locationInputRef = useRef(null);
 
@@ -518,6 +520,61 @@ const PropertyListingForm = () => {
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + (formData.videos?.length || 0) > 3) {
+      toast.error('You can upload up to 3 videos.');
+      return;
+    }
+    setVideoUploading(true);
+    try {
+      const uploadedUrls = [];
+      for (const file of files) {
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error(`${file.name} is larger than 50MB.`);
+          continue;
+        }
+        if (!file.type.startsWith('video/')) {
+          toast.error(`${file.name} is not a video file.`);
+          continue;
+        }
+        const formData = new FormData();
+        formData.append('pdf', file); // same as images
+        const response = await axios.post(
+          `${Backendurl}/api/pg/upload`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+        if (response.data.success) {
+          uploadedUrls.push(response.data.data.url);
+        }
+      }
+      setFormData((prev) => ({
+        ...prev,
+        videos: [...(prev.videos || []), ...uploadedUrls],
+      }));
+      setVideoPreviewUrls((prev) => [...prev, ...uploadedUrls]);
+    } catch (error) {
+      console.error('Error uploading videos:', error);
+      toast.error('Failed to upload some videos');
+    } finally {
+      setVideoUploading(false);
+    }
+  };
+
+  const handleRemoveVideo = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      videos: prev.videos.filter((_, i) => i !== index),
+    }));
+    setVideoPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSaveDraft = async () => {
     if (!isLoggedIn) {
       toast.info("Please login to save a draft");
@@ -674,50 +731,37 @@ const PropertyListingForm = () => {
     setError(null);
 
     try {
-      // Create a plain object instead of FormData
       const formDataToSubmit = { ...formData };
 
-      // Handle images separately
       if (formData.images && formData.images.length > 0) {
         formDataToSubmit.images = formData.images.map(image => {
           if (typeof image === 'string') {
-            return image; // Keep existing image URLs
+            return image;
           }
-          return image; // Keep new image files
+          return image;
         });
       }
 
-      // Ensure amenities is always an array
       if (formData.amenities) {
-        console.log('Original amenities:', formData.amenities);
         if (Array.isArray(formData.amenities)) {
-          console.log('Amenities is already an array');
           formDataToSubmit.amenities = formData.amenities;
         } else if (typeof formData.amenities === 'string') {
-          console.log('Amenities is a string, attempting to parse');
           try {
-            // Try to parse as JSON first
             const parsed = JSON.parse(formData.amenities);
-            console.log('Successfully parsed amenities as JSON:', parsed);
             formDataToSubmit.amenities = Array.isArray(parsed) ? parsed : [parsed];
           } catch (e) {
-            console.log('JSON parse failed, treating as comma-separated string');
-            // If JSON parse fails, treat as comma-separated string
             formDataToSubmit.amenities = formData.amenities.split(',').map(item => item.trim());
           }
         }
-        console.log('Final amenities to submit:', formDataToSubmit.amenities);
       }
 
-      // Handle availability object
       if (formData.availability) {
         formDataToSubmit.availability = typeof formData.availability === 'string' 
           ? JSON.parse(formData.availability) 
           : formData.availability;
       }
 
-      console.log('Final form data to submit:', formDataToSubmit);
-
+      console.log({formDataToSubmit});
       let response;
       if (editId) {
         response = await axios.put(
@@ -1616,21 +1660,59 @@ const PropertyListingForm = () => {
             </div>
           </div>
 
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+              Property Videos
+            </h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {videoPreviewUrls.map((url, index) => (
+                  <div key={index} className="relative group aspect-video rounded-lg overflow-hidden">
+                    <video src={url} controls className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveVideo(index)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                <label className="aspect-video flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">Upload Videos</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                    disabled={videoUploading || (formData.videos?.length || 0) >= 3}
+                  />
+                </label>
+              </div>
+              <p className="text-sm text-gray-500">
+                You can upload up to 3 videos. Each video should be less than 50MB.
+              </p>
+              {videoUploading && <p className="text-blue-600">Uploading videos...</p>}
+            </div>
+          </div>
+
           <div className="flex gap-4 pt-6">
             <button
               type="button"
               onClick={handleSaveDraft}
-              disabled={loading || imageUploading}
+              disabled={loading || imageUploading || videoUploading}
               className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors disabled:opacity-50"
             >
               Save as Draft
             </button>
             <button
               type="submit"
-              disabled={loading || imageUploading}
+              disabled={loading || imageUploading || videoUploading}
               className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
-              {loading ? "Submitting..." : imageUploading ? "Uploading Images..." : "List Property"}
+              {loading ? "Submitting..." : imageUploading ? "Uploading Images..." : videoUploading ? "Uploading Videos..." : "List Property"}
             </button>
           </div>
         </form>
