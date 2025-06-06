@@ -3,13 +3,13 @@ import bcrypt from 'bcrypt';
 
 class UserRepository {
   async findAll() {
-    const { rows } = await pool.query('SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, created_at, updated_at FROM users');
+    const { rows } = await pool.query('SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at FROM users');
     return rows;
   }
 
   async findById(id) {
     const { rows } = await pool.query(
-      'SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
     return rows[0];
@@ -35,9 +35,11 @@ class UserRepository {
         `INSERT INTO users (
           first_name, last_name, email, password, phone, gender,
           role_id, user_type, company_name, registration_number,
-          dealer_license, city, state, bio
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, created_at, updated_at`,
+          dealer_license, city, state, bio, marital_status,
+          govt_id_number, id_card_images, verification_status,
+          profession, nationality, bank_details
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at`,
         [
           userData.firstName,
           userData.lastName,
@@ -52,7 +54,14 @@ class UserRepository {
           userData.dealerLicense,
           userData.address?.city,
           userData.address?.state,
-          userData.bio
+          userData.bio,
+          userData.maritalStatus,
+          userData.govtIdNumber,
+          userData.idCardImages || [],
+          userData.verificationStatus || 'pending',
+          userData.profession,
+          userData.nationality,
+          userData.bankDetails ? JSON.stringify(userData.bankDetails) : null
         ]
       );
       
@@ -75,6 +84,11 @@ class UserRepository {
       const values = [];
       let paramCount = 1;
 
+      // Handle bank_details separately since it's JSONB
+      if (updateData.bank_details) {
+        updateData.bank_details = JSON.stringify(updateData.bank_details);
+      }
+
       for (const [key, value] of Object.entries(updateData)) {
         if (value !== undefined) {
           setClause.push(`${key} = $${paramCount}`);
@@ -90,7 +104,7 @@ class UserRepository {
         `UPDATE users 
          SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
          WHERE id = $${paramCount}
-         RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, created_at, updated_at`,
+         RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at`,
         values
       );
       

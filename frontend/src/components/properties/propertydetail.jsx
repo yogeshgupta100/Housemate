@@ -176,7 +176,7 @@ const PropertyDetails = () => {
         room_id: selectedRoom.id,
         user_id,
         move_in_date: new Date().toISOString().split('T')[0],
-        status: 'NO',
+        status: 'pending',
         description: '',
       };
 

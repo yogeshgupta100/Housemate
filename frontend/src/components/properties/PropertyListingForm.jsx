@@ -42,6 +42,8 @@ const PROPERTY_TYPES = {
 
 const LISTING_TYPES = ["rent", "sale"];
 const AVAILABILITY_TYPES = ["rent", "sale", "buy"];
+const PG_TYPES = ["boys", "girls", "co-living"];
+const SHARING_TYPES = ["single", "double", "triple", "quad"];
 const LEASE_PERIODS = [
   "3 months",
   "6 months",
@@ -150,6 +152,9 @@ const PropertyListingForm = () => {
     propertyAge: "",
     propertyCondition: "",
     propertyStatus: "",
+    pgType: "",
+    sharingType: "",
+    hasBalcony: false,
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -384,6 +389,9 @@ const PropertyListingForm = () => {
           videos: propertyData.videos || [],
           status: propertyData.status || "Active",
           featured: propertyData.featured || false,
+          pgType: propertyData.pg_type || "",
+          sharingType: propertyData.sharing_type || "",
+          hasBalcony: propertyData.has_balcony || false,
         });
 
         // Set preview URLs for images
@@ -762,6 +770,36 @@ const PropertyListingForm = () => {
         };
       }
 
+      // Ensure property status is set to a valid value
+      if (formDataToSubmit.type === 'pg') {
+        formDataToSubmit.propertyStatus = 'ready_to_move';
+      } else if (!formDataToSubmit.propertyStatus) {
+        formDataToSubmit.propertyStatus = 'ready_to_move';
+      }
+
+      // Add floor details and PG specific fields for PG properties
+      if (formDataToSubmit.type === 'pg') {
+        // Map floor details
+        formDataToSubmit.floorDetails = floorDetails.map(floor => ({
+          floorNumber: floor.floorNumber,
+          rooms: floor.rooms.map(room => ({
+            roomNumber: room.roomNumber,
+            capacity: room.capacity,
+            occupied: room.occupied,
+            rent: room.rent_amount,
+            availableFrom: room.availableFrom,
+            hasBalcony: room.hasBalcony
+          }))
+        }));
+
+        // Add PG specific fields
+        formDataToSubmit.pg_type = formDataToSubmit.pgType;
+      }
+
+      // Ensure phone and dial code are included
+      formDataToSubmit.phone = formDataToSubmit.phone;
+      formDataToSubmit.dial_code = formDataToSubmit.dialCode;
+
       if (formData.images && formData.images.length > 0) {
         formDataToSubmit.images = formData.images.map((image) => {
           if (typeof image === "string") {
@@ -788,9 +826,6 @@ const PropertyListingForm = () => {
         }
       }
 
-      // Ensure property status is set
-      formDataToSubmit.propertyStatus = formDataToSubmit.propertyStatus || "Unverified";
-
       let response;
       if (editId) {
         response = await axios.put(
@@ -815,24 +850,20 @@ const PropertyListingForm = () => {
               },
             }
           );
-
-          if (response.data.success) {
-            setSuccess(true);
-            toast.success(
-              editId
-                ? "Property updated successfully!"
-                : "Property listed successfully!"
-            );
-            navigate("/customer-panel/properties");
-          } else {
-            setError(response.data.message || "Failed to save property");
-            toast.error(response.data.message || "Failed to save property");
-          }
         } catch (error) {
           toast.error(
             error.response?.data?.message || "Failed to save property"
           );
         }
+      }
+
+      if (response.data.success) {
+        setSuccess(true);
+        toast.success(response.data.message);
+        navigate("/customer-panel/properties");
+      } else {
+        setError(response.data.message || "Failed to save property");
+        toast.error(response.data.message || "Failed to save property");
       }
     } catch (err) {
       console.error("Error saving property:", err);
@@ -1446,77 +1477,89 @@ const PropertyListingForm = () => {
 
           {formData.listingType === "rent" &&
             ["pg", "rk", "flat"].includes(formData.type) && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                  Floor & Room Details
-                </h2>
+              <>
+                {formData.type === "pg" && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                      PG Specific Details
+                    </h2>
 
-                <div className="space-y-6">
-                  {floorDetails.map((floor, floorIndex) => (
-                    <div key={floorIndex} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium">
-                          Floor {floor.floorNumber}
-                        </h3>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => addRoom(floorIndex)}
-                            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                          >
-                            Add Room
-                          </button>
-                          {floorDetails.length > 1 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          PG Type *
+                        </label>
+                        <select
+                          name="pgType"
+                          value={formData.pgType}
+                          onChange={handleChange}
+                          style={inputStyles}
+                          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select PG Type</option>
+                          {PG_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                    Floor & Room Details
+                  </h2>
+
+                  <div className="space-y-6">
+                    {floorDetails.map((floor, floorIndex) => (
+                      <div key={floorIndex} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-medium">
+                            Floor {floor.floorNumber}
+                          </h3>
+                          <div className="flex gap-2">
                             <button
                               type="button"
-                              onClick={() => removeFloor(floorIndex)}
-                              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              onClick={() => addRoom(floorIndex)}
+                              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                             >
-                              Remove Floor
+                              Add Room
                             </button>
-                          )}
+                            {floorDetails.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeFloor(floorIndex)}
+                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Remove Floor
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="space-y-4">
-                        {floor.rooms.map((room, roomIndex) => (
-                          <div
-                            key={roomIndex}
-                            className="p-3 bg-gray-50 rounded mb-4"
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Room Number
-                                </label>
-                                <input
-                                  type="number"
-                                  value={room.roomNumber}
-                                  onChange={(e) =>
-                                    handleRoomDetailsChange(
-                                      floorIndex,
-                                      roomIndex,
-                                      "roomNumber",
-                                      parseInt(e.target.value)
-                                    )
-                                  }
-                                  min="1"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                              </div>
-                              {formData.type !== "rk" && (
+                        <div className="space-y-4">
+                          {floor.rooms.map((room, roomIndex) => (
+                            <div
+                              key={roomIndex}
+                              className="p-3 bg-gray-50 rounded mb-4"
+                            >
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Capacity
+                                    Room Number
                                   </label>
                                   <input
                                     type="number"
-                                    value={room.capacity}
+                                    value={room.roomNumber}
                                     onChange={(e) =>
                                       handleRoomDetailsChange(
                                         floorIndex,
                                         roomIndex,
-                                        "capacity",
+                                        "roomNumber",
                                         parseInt(e.target.value)
                                       )
                                     }
@@ -1524,112 +1567,133 @@ const PropertyListingForm = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   />
                                 </div>
-                              )}
-                              {formData.type !== "rk" && (
+                                {formData.type !== "rk" && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Capacity
+                                    </label>
+                                    <input
+                                      type="number"
+                                      value={room.capacity}
+                                      onChange={(e) =>
+                                        handleRoomDetailsChange(
+                                          floorIndex,
+                                          roomIndex,
+                                          "capacity",
+                                          parseInt(e.target.value)
+                                        )
+                                      }
+                                      min="1"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                )}
+                                {formData.type !== "rk" && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Currently Occupied
+                                    </label>
+                                    <input
+                                      type="number"
+                                      value={room.occupied}
+                                      onChange={(e) =>
+                                        handleRoomDetailsChange(
+                                          floorIndex,
+                                          roomIndex,
+                                          "occupied",
+                                          parseInt(e.target.value)
+                                        )
+                                      }
+                                      min="0"
+                                      max={room.capacity}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Max: {room.capacity}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Currently Occupied
+                                    Rent Amount (₹)
                                   </label>
                                   <input
                                     type="number"
-                                    value={room.occupied}
+                                    value={room.rent_amount || ""}
                                     onChange={(e) =>
                                       handleRoomDetailsChange(
                                         floorIndex,
                                         roomIndex,
-                                        "occupied",
+                                        "rent_amount",
                                         parseInt(e.target.value)
                                       )
                                     }
+                                    onWheel={(e) => e.target.blur()}
                                     min="0"
-                                    max={room.capacity}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Enter rent amount"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Available From
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={room.availableFrom || ""}
+                                    onChange={(e) =>
+                                      handleRoomDetailsChange(
+                                        floorIndex,
+                                        roomIndex,
+                                        "availableFrom",
+                                        e.target.value
+                                      )
+                                    }
+                                    min={new Date().toISOString().split("T")[0]}
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   />
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Max: {room.capacity}
-                                  </p>
                                 </div>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Rent Amount (₹)
-                                </label>
+                              </div>
+                              <div className="flex items-center mt-4">
                                 <input
-                                  type="number"
-                                  value={room.rent_amount || ""}
+                                  type="checkbox"
+                                  id={`balcony-${floorIndex}-${roomIndex}`}
+                                  checked={room.hasBalcony || false}
                                   onChange={(e) =>
                                     handleRoomDetailsChange(
                                       floorIndex,
                                       roomIndex,
-                                      "rent_amount",
-                                      parseInt(e.target.value)
+                                      "hasBalcony",
+                                      e.target.checked
                                     )
                                   }
-                                  onWheel={(e) => e.target.blur()}
-                                  min="0"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder="Enter rent amount"
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Available From
+                                <label
+                                  htmlFor={`balcony-${floorIndex}-${roomIndex}`}
+                                  className="ml-2 block text-sm text-gray-700"
+                                >
+                                  Has Balcony
                                 </label>
-                                <input
-                                  type="date"
-                                  value={room.availableFrom || ""}
-                                  onChange={(e) =>
-                                    handleRoomDetailsChange(
-                                      floorIndex,
-                                      roomIndex,
-                                      "availableFrom",
-                                      e.target.value
-                                    )
-                                  }
-                                  min={new Date().toISOString().split("T")[0]}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
                               </div>
                             </div>
-                            <div className="flex items-center mt-4">
-                              <input
-                                type="checkbox"
-                                id={`balcony-${floorIndex}-${roomIndex}`}
-                                checked={room.hasBalcony || false}
-                                onChange={(e) =>
-                                  handleRoomDetailsChange(
-                                    floorIndex,
-                                    roomIndex,
-                                    "hasBalcony",
-                                    e.target.checked
-                                  )
-                                }
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                              <label
-                                htmlFor={`balcony-${floorIndex}-${roomIndex}`}
-                                className="ml-2 block text-sm text-gray-700"
-                              >
-                                Has Balcony
-                              </label>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <button
-                    type="button"
-                    onClick={addFloor}
-                    className="w-full py-2 px-4 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                  >
-                    Add Floor
-                  </button>
+                    <button
+                      type="button"
+                      onClick={addFloor}
+                      className="w-full py-2 px-4 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    >
+                      Add Floor
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
           <div className="bg-white rounded-xl shadow-sm p-8">

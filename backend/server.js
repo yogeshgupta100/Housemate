@@ -21,6 +21,7 @@ import favoritesRoutes from "./routes/favoritesRoutes.js";
 import pool from './config/postgres.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -121,7 +122,7 @@ app.use('/api/pg', pdfRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/users', userRoutes);
-
+app.use('/api/upload', uploadRoutes);
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   const statusCode = err.statusCode || 500;

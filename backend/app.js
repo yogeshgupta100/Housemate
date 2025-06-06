@@ -15,6 +15,7 @@ import favoritesRoutes from './routes/favoritesRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js';
 import pool from './config/postgres.js';
 import otpRoutes from './routes/otpRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/pg', pdfRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(errorHandler);
 
