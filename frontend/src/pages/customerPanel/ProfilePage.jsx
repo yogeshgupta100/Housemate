@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Edit, Camera, Save, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit, Camera, Save, X, CreditCard, FileText } from 'lucide-react';
 import PageHeader from '../../components/customerPanel/common/PageHeader';
 import axios from 'axios';
 import { Backendurl } from '../../App';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+
 const ProfilePage = () => {
   const { user: authUser, updateUser } = useAuth();
   const [user, setUser] = useState(null);
@@ -13,6 +14,8 @@ const ProfilePage = () => {
   const [error, setError] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [govtIdImage, setGovtIdImage] = useState(null);
+  const [govtIdPreview, setGovtIdPreview] = useState(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -91,13 +94,15 @@ const ProfilePage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('address.')) {
-      const addressField = name.split('.')[1];
+    
+    // Handle nested objects like bankDetails and address
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
-        address: {
-          ...prev.address,
-          [addressField]: value
+        [parent]: {
+          ...prev[parent],
+          [child]: value
         }
       }));
     } else {
@@ -127,6 +132,44 @@ const ProfilePage = () => {
     }
   };
 
+  const handleGovtIdImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setGovtIdImage(file);
+      setGovtIdPreview(URL.createObjectURL(file));
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await axios.post(
+          `${Backendurl}/api/upload/govt-id`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+
+        if (response.data.success) {
+          setFormData(prev => ({
+            ...prev,
+            idCardImages: [...prev.idCardImages, response.data.url]
+          }));
+          toast.success('Government ID uploaded successfully');
+        }
+      } catch (error) {
+        console.error('Error uploading government ID:', error);
+        toast.error(error.response?.data?.message || 'Failed to upload government ID');
+        // Reset the preview and image state on error
+        setGovtIdPreview(null);
+        setGovtIdImage(null);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -134,10 +177,10 @@ const ProfilePage = () => {
       let profileImageUrl = user.profile_image;
       if (profileImage) {
         const formData = new FormData();
-        formData.append('pdf', profileImage); // We'll use the same endpoint but for images
+        formData.append('file', profileImage);
 
         const uploadResponse = await axios.post(
-          `${Backendurl}/api/pg/upload`,
+          `${Backendurl}/api/upload/profile`,
           formData,
           {
             headers: {
@@ -148,7 +191,7 @@ const ProfilePage = () => {
         );
 
         if (uploadResponse.data.success) {
-          profileImageUrl = uploadResponse.data.data.url;
+          profileImageUrl = uploadResponse.data.url;
         }
       }
 
@@ -175,8 +218,6 @@ const ProfilePage = () => {
         }
       };
 
-      console.log('Sending update data:', updateData);
-
       const response = await axios.put(
         `${Backendurl}/api/auth/profile`,
         updateData,
@@ -188,34 +229,18 @@ const ProfilePage = () => {
         }
       );
 
-      console.log('API Response:', response);
-
-      if (response && response.data) {
-        if (response.data.success) {
-          setUser(response.data.data);
-          updateUser(response.data.data);
-          toast.success('Profile updated successfully');
-          fetchUserDetails();
-          setIsEditing(false);
-        } else {
-          toast.error(response.data.message || 'Failed to update profile');
-        }
+      if (response.data.success) {
+        setUser(response.data.data);
+        updateUser(response.data.data);
+        toast.success('Profile updated successfully');
+        fetchUserDetails();
+        setIsEditing(false);
       } else {
-        toast.error('Unexpected response from server');
+        toast.error(response.data.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      
-      if (error.response) {
-        console.error('Error response:', error.response);
-        toast.error(error.response.data?.message || 'Server error occurred');
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-        toast.error('No response from server');
-      } else {
-        console.error('Error message:', error.message);
-        toast.error('Error updating profile');
-      }
+      toast.error(error.response?.data?.message || 'Error updating profile');
     }
   };
 
@@ -240,7 +265,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <PageHeader 
         title="My Profile" 
         description="Manage your personal information and preferences"
@@ -304,234 +329,240 @@ const ProfilePage = () => {
 
         <div className="lg:col-span-2">
           {isEditing ? (
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  disabled
-                  className="mt-1 w-full p-2 border rounded-lg bg-gray-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Gender</label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">City</label>
-                  <input
-                    type="text"
-                    name="address.city"
-                    value={formData.address.city}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">State</label>
-                  <input
-                    type="text"
-                    name="address.state"
-                    value={formData.address.state}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Bio</label>
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Identity Proof</label>
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  {formData.identityProof ? (
-                    <div className="relative w-full max-w-xs mx-auto">
-                      <img
-                        src={formData.identityProof}
-                        alt="Identity Proof"
-                        className="w-full h-auto rounded-lg border shadow-sm"
-                      />
-                      <button
-                        type="button"
-                        className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
-                        onClick={() => setFormData(prev => ({ ...prev, identityProof: null }))}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-gray-500">
-                      <Camera className="mx-auto w-8 h-8 mb-2" />
-                      <p>No identity proof uploaded</p>
-                    </div>
-                  )}
-                  <div className="mt-4 text-center">
-                    <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
-                      <Camera className="w-4 h-4 mr-2" />
-                      <span>Upload Identity Proof</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleIdentityProofChange}
-                        className="hidden"
-                      />
-                    </label>
-                    <p className="text-sm text-gray-500 mt-2">Accepted: Aadhaar, PAN, Driver's License</p>
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-6">
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Gender</label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Marital Status</label>
+                    <select
+                      name="maritalStatus"
+                      value={formData.maritalStatus}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="single">Single</option>
+                      <option value="married">Married</option>
+                      <option value="divorced">Divorced</option>
+                      <option value="widowed">Widowed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Profession</label>
+                    <input
+                      type="text"
+                      name="profession"
+                      value={formData.profession}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nationality</label>
+                    <input
+                      type="text"
+                      name="nationality"
+                      value={formData.nationality}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Marital Status</label>
-                  <select
-                    name="maritalStatus"
-                    value={formData.maritalStatus}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Status</option>
-                    <option value="single">Single</option>
-                    <option value="married">Married</option>
-                    <option value="divorced">Divorced</option>
-                    <option value="widowed">Widowed</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Government ID Number</label>
-                  <input
-                    type="text"
-                    name="govtIdNumber"
-                    value={formData.govtIdNumber}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter Aadhaar/PAN/Passport number"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Profession</label>
-                  <input
-                    type="text"
-                    name="profession"
-                    value={formData.profession}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nationality</label>
-                  <input
-                    type="text"
-                    name="nationality"
-                    value={formData.nationality}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bank Details</label>
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-600">Account Number</label>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className="mt-1 w-full p-2 border rounded-lg bg-gray-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">City</label>
+                    <input
+                      type="text"
+                      name="address.city"
+                      value={formData.address.city}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">State</label>
+                    <input
+                      type="text"
+                      name="address.state"
+                      value={formData.address.state}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Bio</h3>
+                <div>
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleInputChange}
+                    rows="4"
+                    className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Tell us about yourself..."
+                  />
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Government ID</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">ID Number</label>
+                    <input
+                      type="text"
+                      name="govtIdNumber"
+                      value={formData.govtIdNumber}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter Aadhaar/PAN/Passport number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">ID Image</label>
+                    <div className="mt-1">
+                      {govtIdPreview ? (
+                        <div className="relative w-full max-w-xs">
+                          <img
+                            src={govtIdPreview}
+                            alt="Government ID"
+                            className="w-full h-auto rounded-lg border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGovtIdPreview(null);
+                              setGovtIdImage(null);
+                            }}
+                            className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500">
+                          <div className="text-center">
+                            <Camera className="mx-auto w-8 h-8 text-gray-400" />
+                            <p className="mt-2 text-sm text-gray-500">Upload ID Image</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleGovtIdImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Bank Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Account Number</label>
                     <input
                       type="text"
                       name="bankDetails.accountNumber"
                       value={formData.bankDetails.accountNumber}
                       onChange={handleInputChange}
                       className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter account number"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600">Bank Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Bank Name</label>
                     <input
                       type="text"
                       name="bankDetails.bankName"
                       value={formData.bankDetails.bankName}
                       onChange={handleInputChange}
                       className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter bank name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600">IFSC Code</label>
+                    <label className="block text-sm font-medium text-gray-700">IFSC Code</label>
                     <input
                       type="text"
                       name="bankDetails.ifscCode"
                       value={formData.bankDetails.ifscCode}
                       onChange={handleInputChange}
                       className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter IFSC code"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600">Account Holder Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Account Holder Name</label>
                     <input
                       type="text"
                       name="bankDetails.accountHolderName"
                       value={formData.bankDetails.accountHolderName}
                       onChange={handleInputChange}
                       className="mt-1 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter account holder name"
                     />
                   </div>
                 </div>
@@ -546,95 +577,148 @@ const ProfilePage = () => {
               </button>
             </form>
           ) : (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Full Name</p>
-                    <p className="font-medium">{formData.firstName} {formData.lastName}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <Mail className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{formData.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <Phone className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-medium">{formData.phone || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <MapPin className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium">
-                      {formData.address.city ? `${formData.address.city}, ${formData.address.state}` : 'Not provided'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Marital Status</p>
-                    <p className="font-medium">{formData.maritalStatus || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Government ID Number</p>
-                    <p className="font-medium">{formData.govtIdNumber || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Verification Status</p>
-                    <p className="font-medium capitalize">{formData.verificationStatus || 'Not verified'}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Profession</p>
-                    <p className="font-medium">{formData.profession || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Nationality</p>
-                    <p className="font-medium">{formData.nationality || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">Bank Details</p>
-                    <div className="mt-1">
-                      <p className="font-medium">Account Number: {formData.bankDetails.accountNumber || 'Not provided'}</p>
-                      <p className="font-medium">Bank Name: {formData.bankDetails.bankName || 'Not provided'}</p>
-                      <p className="font-medium">IFSC Code: {formData.bankDetails.ifscCode || 'Not provided'}</p>
-                      <p className="font-medium">Account Holder: {formData.bankDetails.accountHolderName || 'Not provided'}</p>
-                    </div>
-                  </div>
-                </div>
-                {formData.bio && (
+            <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-start">
                     <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
                     <div>
-                      <p className="text-sm text-gray-500">Bio</p>
-                      <p className="font-medium">{formData.bio}</p>
+                      <p className="text-sm text-gray-500">Full Name</p>
+                      <p className="font-medium">{formData.firstName} {formData.lastName}</p>
                     </div>
                   </div>
-                )}
+                  <div className="flex items-start">
+                    <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Gender</p>
+                      <p className="font-medium capitalize">{formData.gender || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Marital Status</p>
+                      <p className="font-medium capitalize">{formData.maritalStatus || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Profession</p>
+                      <p className="font-medium">{formData.profession || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Nationality</p>
+                      <p className="font-medium">{formData.nationality || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start">
+                    <Mail className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium">{formData.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <Phone className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="font-medium">{formData.phone || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <MapPin className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Location</p>
+                      <p className="font-medium">
+                        {formData.address.city ? `${formData.address.city}, ${formData.address.state}` : 'Not provided'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Bio</h3>
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">About</p>
+                    <p className="font-medium">{formData.bio || 'Not provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Government ID</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start">
+                    <FileText className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">ID Number</p>
+                      <p className="font-medium">{formData.govtIdNumber || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  {formData.idCardImages.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-500 mb-2">ID Images</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {formData.idCardImages.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`ID Card ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-b pb-6">
+                <h3 className="text-lg font-semibold mb-4">Bank Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start">
+                    <CreditCard className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Account Number</p>
+                      <p className="font-medium">{formData.bankDetails.accountNumber || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <CreditCard className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Bank Name</p>
+                      <p className="font-medium">{formData.bankDetails.bankName || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <CreditCard className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">IFSC Code</p>
+                      <p className="font-medium">{formData.bankDetails.ifscCode || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <CreditCard className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500">Account Holder</p>
+                      <p className="font-medium">{formData.bankDetails.accountHolderName || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -7,6 +7,8 @@ const availabilityTypes = ["Rent", "Buy", "Lease"];
 const furnishingTypes = ["Furnished", "Semi-Furnished", "Unfurnished"];
 const propertyConditions = ["New", "Good", "Average", "Needs Repair"];
 const propertyStatuses = ["Ready to Move", "Under Construction", "Renovated"];
+const pgTypes = ["Boys", "Girls", "Co-living"];
+const sharingTypes = ["Single", "Double", "Triple", "Quad"];
 
 const MIN_PRICE = 0;
 const MAX_PRICE = 50000000;
@@ -140,6 +142,69 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             ))}
           </div>
         </div>
+
+        {filters.propertyType === "pg" && (
+          <>
+            <div className="filter-group">
+              <label className="filter-label">
+                <Home className="w-4 h-4 mr-2" />
+                PG Type
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {pgTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleChange({
+                      target: { name: "pgType", value: type.toLowerCase() }
+                    })}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      ${filters.pgType === type.toLowerCase()
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">
+                <Home className="w-4 h-4 mr-2" />
+                Room Capacity
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {sharingTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleChange({
+                      target: { name: "sharingType", value: type.toLowerCase() }
+                    })}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      ${filters.sharingType === type.toLowerCase()
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="hasBalcony"
+                  checked={filters.hasBalcony}
+                  onChange={handleChange}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Room Has Balcony</span>
+              </label>
+            </div>
+          </>
+        )}
 
         {}
         <div className="filter-group">

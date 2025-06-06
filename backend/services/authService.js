@@ -8,13 +8,24 @@ class AuthService {
   async register(userData) {
     const client = await pool.connect();
     try {
-      const { rows: existingUser } = await client.query(
+      // Check for duplicate email
+      const { rows: existingEmail } = await client.query(
         'SELECT * FROM users WHERE email = $1',
         [userData.email]
       );
 
-      if (existingUser.length > 0) {
+      if (existingEmail.length > 0) {
         throw new Error('Email already registered');
+      }
+
+      // Check for duplicate phone
+      const { rows: existingPhone } = await client.query(
+        'SELECT * FROM users WHERE phone = $1',
+        [userData.phone]
+      );
+
+      if (existingPhone.length > 0) {
+        throw new Error('Phone number already registered');
       }
 
       const { rows: role } = await client.query(
@@ -119,6 +130,43 @@ class AuthService {
       const values = [];
       let paramCount = 1;
 
+      // Handle bank_details separately since it's JSONB
+      if (updateData.bank_details) {
+        // Check if bank_details is already a string
+        if (typeof updateData.bank_details === 'string') {
+          try {
+            // Try to parse it to validate it's proper JSON
+            JSON.parse(updateData.bank_details);
+          } catch (e) {
+            // If parsing fails, stringify it
+            updateData.bank_details = JSON.stringify(updateData.bank_details);
+          }
+        } else {
+          // If it's an object, stringify it
+          updateData.bank_details = JSON.stringify(updateData.bank_details);
+        }
+      }
+
+      // Handle id_card_images separately since it's an array
+      if (updateData.id_card_images) {
+        // If it's already a string, try to parse it
+        if (typeof updateData.id_card_images === 'string') {
+          try {
+            const parsed = JSON.parse(updateData.id_card_images);
+            updateData.id_card_images = `{${parsed.map(url => `"${url}"`).join(',')}}`;
+          } catch (e) {
+            // If parsing fails, assume it's already in PostgreSQL array format
+            // Just ensure it's properly formatted
+            if (!updateData.id_card_images.startsWith('{')) {
+              updateData.id_card_images = `{${updateData.id_card_images}}`;
+            }
+          }
+        } else {
+          // If it's an array, convert to PostgreSQL array format
+          updateData.id_card_images = `{${updateData.id_card_images.map(url => `"${url}"`).join(',')}}`;
+        }
+      }
+
       for (const [key, value] of Object.entries(updateData)) {
         if (value !== undefined) {
           setClause.push(`${key} = $${paramCount}`);
@@ -134,9 +182,19 @@ class AuthService {
         `UPDATE users 
          SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
          WHERE id = $${paramCount}
-         RETURNING *`,
+         RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at`,
         values
       );
+
+      // Parse JSON fields back to objects
+      if (user.bank_details) {
+        try {
+          user.bank_details = JSON.parse(user.bank_details);
+        } catch (e) {
+          // If parsing fails, keep it as is
+          console.warn('Failed to parse bank_details:', e);
+        }
+      }
 
       return user;
     } catch (error) {

@@ -95,6 +95,13 @@ const initializeDatabase = async () => {
                 is_active BOOLEAN DEFAULT true,
                 bio TEXT,
                 profile_image VARCHAR(255),
+                marital_status VARCHAR(20) CHECK (marital_status IN ('single', 'married', 'divorced', 'widowed')),
+                govt_id_number VARCHAR(50),
+                id_card_images TEXT[],
+                verification_status VARCHAR(20) DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+                profession VARCHAR(100),
+                nationality VARCHAR(100),
+                bank_details JSONB,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );

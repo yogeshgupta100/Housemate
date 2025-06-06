@@ -199,7 +199,7 @@ const Signup = () => {
       if (response.data.success) {
         localStorage.setItem('token', response.data.data.token);
         toast.success('Account created successfully!');
-        navigate('/');
+        navigate('/login');
       }
     } catch (error) {
       console.error('Error signing up:', error);

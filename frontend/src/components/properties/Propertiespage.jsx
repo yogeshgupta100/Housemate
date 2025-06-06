@@ -38,6 +38,9 @@ const PropertiesPage = () => {
     floorNo: "",
     totalFloors: "",
     verifiedOnly: false,
+    pgType: "",
+    sharingType: "",
+    hasBalcony: false,
   });
 
   const [locationSuggestions, setLocationSuggestions] = useState([]);
@@ -152,6 +155,18 @@ const PropertiesPage = () => {
 
         if (appliedFilters.verifiedOnly) {
           queryParams.append("verified", true);
+        }
+
+        if (appliedFilters.pgType) {
+          queryParams.append("pg_type", appliedFilters.pgType);
+        }
+
+        if (appliedFilters.sharingType) {
+          queryParams.append("room_capacity", appliedFilters.sharingType);
+        }
+
+        if (appliedFilters.hasBalcony) {
+          queryParams.append("room_has_balcony", appliedFilters.hasBalcony);
         }
 
         console.log("Final query:", queryParams.toString());

@@ -117,6 +117,20 @@ class PropertyService {
     try {
       await client.query('BEGIN');
 
+      // Check for duplicate property
+      const { rows: existingProperty } = await client.query(
+        `SELECT id FROM properties 
+         WHERE title = $1 
+         AND location = $2 
+         AND user_id = $3 
+         AND status = 'Active'`,
+        [propertyData.title, propertyData.location, propertyData.user_id]
+      );
+
+      if (existingProperty.length > 0) {
+        throw new Error('A property with the same title and location already exists');
+      }
+
       if (!propertyData.slug) {
         propertyData.slug = `${propertyData.title}-${Date.now()}`
           .toLowerCase()
@@ -181,8 +195,6 @@ class PropertyService {
         propertyData.gym,
         propertyData.garden,
         propertyData.lift,
-        propertyData.phone,
-        propertyData.availability,
         images,
         videos,
         propertyData.status,
