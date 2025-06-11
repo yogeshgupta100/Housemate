@@ -19,7 +19,8 @@ import {
   getPropertyAnalytics,
   getUserAnalytics,
   getRevenueAnalytics,
-  getSystemHealth
+  getSystemHealth,
+  verifyUser
 } from '../controllers/adminController.js';
 import * as userController from '../controllers/userController.js';
 import { protect } from '../middleware/authmiddleware.js';
@@ -35,5 +36,6 @@ router.get('/users', userController.getAllUsers);
 router.get('/users/:id', userController.getUserById);
 router.put('/users/:id', userController.updateUser);
 router.delete('/users/:id', userController.deleteUser);
+router.put('/users/:id/verify', verifyUser);
 
 export default router;

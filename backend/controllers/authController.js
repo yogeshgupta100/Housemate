@@ -172,7 +172,7 @@ export const adminLogin = async (req, res) => {
     
     // Find user with admin role
     const { rows: [user] } = await pool.query(
-      'SELECT * FROM users WHERE email = $1 AND role_id = 5',
+      'SELECT * FROM users WHERE email = $1 AND role_id = 4',
       [email]
     );
 

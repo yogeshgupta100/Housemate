@@ -347,6 +347,37 @@ class PropertyRepository {
     );
     return rows;
   }
+
+  async delete(id) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // First check if the property exists
+      const { rows: [existingProperty] } = await client.query(
+        'SELECT * FROM properties WHERE id = $1',
+        [parseInt(id)]
+      );
+
+      if (!existingProperty) {
+        throw new Error('Property not found');
+      }
+
+      // Delete the property
+      const { rows: [deletedProperty] } = await client.query(
+        'DELETE FROM properties WHERE id = $1 RETURNING *',
+        [parseInt(id)]
+      );
+
+      await client.query('COMMIT');
+      return deletedProperty;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 export default new PropertyRepository();

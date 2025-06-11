@@ -773,6 +773,8 @@ const PropertyListingForm = () => {
       // Ensure property status is set to a valid value
       if (formDataToSubmit.type === 'pg') {
         formDataToSubmit.propertyStatus = 'ready_to_move';
+        // Set pg_type from pgType
+        formDataToSubmit.pg_type = formDataToSubmit.pgType;
       } else if (!formDataToSubmit.propertyStatus) {
         formDataToSubmit.propertyStatus = 'ready_to_move';
       }
@@ -786,14 +788,11 @@ const PropertyListingForm = () => {
             roomNumber: room.roomNumber,
             capacity: room.capacity,
             occupied: room.occupied,
-            rent: room.rent_amount,
+            rent: room.rent_amount, // Map rent_amount to rent
             availableFrom: room.availableFrom,
             hasBalcony: room.hasBalcony
           }))
         }));
-
-        // Add PG specific fields
-        formDataToSubmit.pg_type = formDataToSubmit.pgType;
       }
 
       // Ensure phone and dial code are included

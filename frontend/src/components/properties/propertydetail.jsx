@@ -658,7 +658,7 @@ const PropertyDetails = () => {
               </div>
             </div>
             {/* Room Status Table for Owner */}
-            {isOwner && (
+            {isOwner && isShow && (
               <div className="px-8 pb-8">
                 <h2 className="text-xl font-semibold mb-4 mt-2">Room & Rent Status</h2>
                 {roomStatusLoading ? (

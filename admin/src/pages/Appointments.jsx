@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
 import {
   Calendar,
   Clock,
@@ -17,6 +18,37 @@ import {
 import { toast } from "react-hot-toast";
 import { backendurl } from "../App";
 
+const Tooltip = ({ content, targetRef }) => {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (targetRef.current) {
+      const rect = targetRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + window.scrollY + 5,
+        left: rect.left + window.scrollX + (rect.width / 2)
+      });
+    }
+  }, [targetRef]);
+
+  return createPortal(
+    <div
+      className="fixed z-[9999] bg-gray-800 text-white text-sm rounded-lg py-2 px-3 w-96 shadow-xl"
+      style={{
+        top: position.top,
+        left: position.left,
+        transform: 'translateX(-50%)',
+        maxHeight: '300px',
+        overflowY: 'auto'
+      }}
+    >
+      <p className="font-medium mb-1 sticky top-0 bg-gray-800 py-1">Notes:</p>
+      <p className="text-gray-200 whitespace-normal break-words">{content}</p>
+    </div>,
+    document.body
+  );
+};
+
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +56,8 @@ const Appointments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingMeetingLink, setEditingMeetingLink] = useState(null);
   const [meetingLink, setMeetingLink] = useState("");
+  const [activeTooltip, setActiveTooltip] = useState(null);
+  const tooltipRef = React.useRef(null);
 
   const fetchAppointments = async () => {
     try {
@@ -216,7 +250,6 @@ const Appointments = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="hover:bg-gray-50"
                   >
-                    {}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <Home className="w-5 h-5 text-gray-400 mr-2" />
@@ -232,7 +265,7 @@ const Appointments = () => {
                     </td>
 
                     {}
-                    <td className="px-6 py-4 relative group">
+                    <td className="px-6 py-4">
                       <div className="flex items-center">
                         <User className="w-5 h-5 text-gray-400 mr-2" />
                         <div>
@@ -245,17 +278,20 @@ const Appointments = () => {
                           <p className="text-xs text-gray-400">
                             {appointment.userId?.phone || "No phone"}
                           </p>
-                          {}
                           {appointment.notes && (
-                            <>
-                              <div className="hidden group-hover:block absolute z-10 bg-gray-800 text-white text-sm rounded-lg py-2 px-3 w-64 mt-2 left-0">
-                                <p className="font-medium mb-1">Notes:</p>
-                                <p className="text-gray-200">{appointment.notes}</p>
-                              </div>
-                              <div className="mt-1 text-xs text-blue-600 cursor-help">
+                            <div className="relative inline-block">
+                              <span 
+                                ref={tooltipRef}
+                                className="text-xs text-blue-600 cursor-help hover:text-blue-800"
+                                onMouseEnter={() => setActiveTooltip(appointment._id)}
+                                onMouseLeave={() => setActiveTooltip(null)}
+                              >
                                 View Notes
-                              </div>
-                            </>
+                              </span>
+                              {activeTooltip === appointment._id && (
+                                <Tooltip content={appointment.notes} targetRef={tooltipRef} />
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -267,11 +303,11 @@ const Appointments = () => {
                         <Calendar className="w-5 h-5 text-gray-400 mr-2" />
                         <div>
                           <p className="font-medium text-gray-900">
-                            {new Date(appointment.date).toLocaleDateString()}
+                            {new Date(appointment.preferredDate).toLocaleDateString()}
                           </p>
                           <div className="flex items-center text-sm text-gray-500">
                             <Clock className="w-4 h-4 mr-1" />
-                            {appointment.time}
+                            {appointment.preferredTime}
                           </div>
                         </div>
                       </div>
