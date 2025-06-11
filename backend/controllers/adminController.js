@@ -42,20 +42,88 @@ const formatRecentProperties = (properties) => {
 
 export const getAdminStats = async (req, res) => {
   try {
+    // Get total properties
     const { rows: [{ total_properties }] } = await pool.query('SELECT COUNT(*) as total_properties FROM properties');
+    
+    // Get active listings
     const { rows: [{ active_listings }] } = await pool.query("SELECT COUNT(*) as active_listings FROM properties WHERE status = 'active'");
-    const { rows: [{ total_users }] } = await pool.query('SELECT COUNT(*) as total_users FROM users');
-    // const { rows: [{ pending_appointments }] } = await pool.query("SELECT COUNT(*) as pending_appointments FROM appointments WHERE status = 'pending'");
+    
+    // Get total views from stats table
+    const { rows: [{ total_views }] } = await pool.query(`
+      SELECT COUNT(*) as total_views 
+      FROM stats 
+      WHERE endpoint LIKE '/api/properties/%' 
+      AND method = 'GET'
+    `);
+    
+    // Get pending appointments
+    const { rows: [{ pending_appointments }] } = await pool.query(`
+      SELECT COUNT(*) as pending_appointments 
+      FROM appointments 
+      WHERE status = 'pending'
+    `);
+
+    // Get recent activity (last 5 activities)
+    const { rows: recentActivity } = await pool.query(`
+      SELECT 
+        'property' as type,
+        'New property listed: ' || title as description,
+        created_at as timestamp
+      FROM properties
+      ORDER BY created_at DESC
+      LIMIT 5
+    `);
+
+    // Get views data for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { rows: viewsData } = await pool.query(`
+      SELECT 
+        DATE(timestamp) as date,
+        COUNT(*) as count
+      FROM stats
+      WHERE endpoint LIKE '/api/properties/%'
+        AND method = 'GET'
+        AND timestamp >= $1
+      GROUP BY DATE(timestamp)
+      ORDER BY date ASC
+    `, [thirtyDaysAgo]);
+
+    // Format views data for chart
+    const chartData = {
+      labels: [],
+      datasets: [{
+        label: 'Property Views',
+        data: [],
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.4,
+        fill: true
+      }]
+    };
+
+    // Generate dates for last 30 days
+    for (let i = 30; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+      chartData.labels.push(dateString);
+
+      const dayData = viewsData.find(d => d.date.toISOString().split('T')[0] === dateString);
+      chartData.datasets[0].data.push(dayData ? parseInt(dayData.count) : 0);
+    }
 
     res.json({
       success: true,
       stats: {
         totalProperties: parseInt(total_properties),
         activeListings: parseInt(active_listings),
-        totalUsers: parseInt(total_users),
-        // pendingAppointments: parseInt(pending_appointments),
-        // Add more stats as needed
-      },
+        totalViews: parseInt(total_views),
+        pendingAppointments: parseInt(pending_appointments),
+        recentActivity,
+        viewsData: chartData
+      }
     });
   } catch (error) {
     console.error("Admin stats error:", error);
@@ -428,3 +496,21 @@ export const getStats = catchAsync(async (req, res) => {
         data: stats
     });
 });
+
+export const verifyUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await import('../services/userService.js').then(m => m.default.updateUser(userId, { verified: true }));
+    res.status(200).json({
+      success: true,
+      message: 'User verified successfully',
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify user',
+      error: error.message
+    });
+  }
+};

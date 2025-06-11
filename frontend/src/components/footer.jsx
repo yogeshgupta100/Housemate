@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Home, 
-  Twitter, 
-  Facebook, 
-  Instagram, 
-  Github, 
+  Home,
   Mail, 
   Send, 
   MapPin, 
@@ -14,12 +10,12 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import { Backendurl } from '../App';
+import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
-// Mobile Collapsible Footer Section
 const MobileFooterSection = ({ title, children }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -89,10 +85,9 @@ const FooterLink = ({ href, children }) => {
 
 // Social Links Component
 const socialLinks = [
-  { icon: Twitter, href: '#', label: 'Twitter', color: 'bg-[#1DA1F2]', hoverColor: 'hover:bg-[#1DA1F2]/90' },
-  { icon: Facebook, href: '#', label: 'Facebook', color: 'bg-[#1877F2]', hoverColor: 'hover:bg-[#1877F2]/90' },
-  { icon: Instagram, href: '#', label: 'Instagram', color: 'bg-gradient-to-tr from-[#fd5949] via-[#d6249f] to-[#285AEB]', hoverColor: 'hover:opacity-90' },
-  { icon: Github, href: 'https://github.com/AAYUSH412/Real-Estate-Website', label: 'GitHub', color: 'bg-[#333]', hoverColor: 'hover:bg-gray-800' },
+  { icon: FaLinkedin, href: '#', label: 'Twitter', color: 'bg-[#1DA1F2]', hoverColor: 'hover:bg-[#1DA1F2]/90' },
+  { icon: FaFacebook, href: 'https://www.facebook.com/share/15mf6frSVt', label: 'Facebook', color: 'bg-[#1877F2]', hoverColor: 'hover:bg-[#1877F2]/90' },
+  { icon: FaInstagram, href: 'https://www.instagram.com/be.housemate?igsh=MTVueGZpcmZjeDBseQ==', label: 'Instagram', color: 'bg-gradient-to-tr from-[#fd5949] via-[#d6249f] to-[#285AEB]', hoverColor: 'hover:opacity-90' },
 ];
 
 const SocialLinks = () => {

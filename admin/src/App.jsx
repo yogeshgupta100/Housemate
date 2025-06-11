@@ -8,12 +8,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorFallback from "./components/ErrorFallback";
 
 import Login from "./components/login";
-// import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard";
 import List from "./pages/List";
 import Add from "./pages/Add";
 import Update from "./pages/Update";
 import Appointments from "./pages/Appointments";
 import Users from "./pages/Users";
+import PropertyDetailsPage from "./pages/PropertyDetailsPage";
 
 export const backendurl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -22,6 +23,7 @@ const pageVariants = {
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -20 }
 };
+
 
 const App = () => {
   return (
@@ -44,10 +46,11 @@ const App = () => {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
               <Route element={<ProtectedRoute />}>
-                {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/list" element={<List />} />
                 <Route path="/add" element={<Add />} />
                 <Route path="/update/:id" element={<Update />} />
+                <Route path="/property/:id" element={<PropertyDetailsPage />} />
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/users" element={<Users />} />
               </Route>

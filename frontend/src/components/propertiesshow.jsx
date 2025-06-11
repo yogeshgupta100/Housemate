@@ -258,8 +258,7 @@ const PropertiesShow = () => {
         const response = await axios.get(`${Backendurl}/api/properties`);
         
         if (response.data.success) {
-          // Access the properties array from the nested data structure
-          const properties = response.data.data.properties || [];
+          const properties = response.data.data || [];
           console.log('Fetched properties:', properties); // Debug log
           setProperties(properties);
         } else {
@@ -380,7 +379,7 @@ const PropertiesShow = () => {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             {filteredProperties.map((property) => (
-              <motion.div key={property._id} variants={itemVariants}>
+              <motion.div key={property.id} variants={itemVariants}>
                 <PropertyCard property={property} favorites={favorites} />
               </motion.div>
             ))}

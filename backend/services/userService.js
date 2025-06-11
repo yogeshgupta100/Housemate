@@ -18,15 +18,59 @@ class UserService {
   }
 
   async updateUser(id, updateData) {
-    const { firstName, lastName, email, userType } = updateData;
-    const { rows } = await pool.query(
-      `UPDATE users 
-       SET first_name = $1, last_name = $2, email = $3, user_type = $4
-       WHERE id = $5
-       RETURNING id, first_name, last_name, email, user_type, created_at`,
-      [firstName, lastName, email, userType, id]
-    );
-    return rows[0];
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // First get the existing user data
+      const { rows: [existingUser] } = await client.query(
+        'SELECT * FROM users WHERE id = $1',
+        [id]
+      );
+
+      if (!existingUser) {
+        throw new Error('User not found');
+      }
+
+      // Convert camelCase to snake_case for updateData
+      const convertedUpdateData = {};
+      for (const [key, value] of Object.entries(updateData)) {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        convertedUpdateData[snakeKey] = value;
+      }
+
+      // Only update the fields that are provided in updateData
+      const setClause = [];
+      const values = [];
+      let paramCount = 1;
+
+      for (const [key, value] of Object.entries(convertedUpdateData)) {
+        if (value !== undefined) {
+          setClause.push(`${key} = $${paramCount}`);
+          values.push(value);
+          paramCount++;
+        }
+      }
+
+      if (setClause.length === 0) return existingUser;
+
+      values.push(id);
+      const { rows } = await client.query(
+        `UPDATE users 
+         SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $${paramCount}
+         RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at`,
+        values
+      );
+
+      await client.query('COMMIT');
+      return rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async deleteUser(id) {

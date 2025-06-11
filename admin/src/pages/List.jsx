@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Trash2, 
-  Edit3, 
   Search, 
   Filter, 
   Plus, 
   Home,
-  BedDouble,
-  Bath,
-  Maximize,
-  MapPin,
-  Building,
   Loader 
 } from "lucide-react";
 import axios from "axios";
@@ -18,6 +11,7 @@ import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { backendurl } from "../App";
+import PropertyCard from "../components/PropertyCard";
 
 const PropertyListings = () => {
   const [properties, setProperties] = useState([]);
@@ -29,14 +23,10 @@ const PropertyListings = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${backendurl}/api/properties`);
+      const response = await axios.get(`${backendurl}/api/properties/admin/all`);
       
       if (response.data.success) {
-        const parsedProperties = response.data.data.properties.map(property => ({
-          ...property,
-          amenities: parseAmenities(property.amenities)
-        }));
-        setProperties(parsedProperties);
+        setProperties(response.data.data || []);
       } else {
         toast.error(response.data.message || "Failed to fetch properties");
       }
@@ -48,23 +38,6 @@ const PropertyListings = () => {
     }
   };
 
-  const parseAmenities = (amenities) => {
-    if (!amenities || !Array.isArray(amenities)) return [];
-    
-    // If amenities is already an array of strings, return it
-    if (typeof amenities[0] === 'string') {
-      return amenities;
-    }
-    
-    // If it's a JSON string, try to parse it
-    try {
-      return Array.isArray(amenities) ? amenities : JSON.parse(amenities);
-    } catch (error) {
-      console.error("Error parsing amenities:", error);
-      return [];
-    }
-  };
-
   useEffect(() => {
     fetchProperties();
   }, []);
@@ -72,8 +45,10 @@ const PropertyListings = () => {
   const handleRemoveProperty = async (propertyId, propertyTitle) => {
     if (window.confirm(`Are you sure you want to remove "${propertyTitle}"?`)) {
       try {
-        const response = await axios.post(`${backendurl}/api/products/remove`, {
-          id: propertyId
+        const response = await axios.delete(`${backendurl}/api/properties/${propertyId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         });
 
         if (response.data.success) {
@@ -102,11 +77,11 @@ const PropertyListings = () => {
     .sort((a, b) => {
       switch (sortBy) {
         case "price-low":
-          return a.price - b.price;
+          return parseFloat(a.price) - parseFloat(b.price);
         case "price-high":
-          return b.price - a.price;
+          return parseFloat(b.price) - parseFloat(a.price);
         case "newest":
-          return new Date(b.createdAt) - new Date(a.createdAt);
+          return new Date(b.created_at) - new Date(a.created_at);
         default:
           return 0;
       }
@@ -126,7 +101,6 @@ const PropertyListings = () => {
   return (
     <div className="min-h-screen pt-32 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">
@@ -146,7 +120,6 @@ const PropertyListings = () => {
           </Link>
         </div>
 
-        {}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
           <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="relative flex-1">
@@ -172,6 +145,7 @@ const PropertyListings = () => {
                   <option value="house">Houses</option>
                   <option value="apartment">Apartments</option>
                   <option value="villa">Villas</option>
+                  <option value="pg">PG</option>
                   <option value="office">Offices</option>
                 </select>
               </div>
@@ -189,110 +163,14 @@ const PropertyListings = () => {
           </div>
         </div>
 
-        {}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
             {filteredProperties.map((property) => (
-              <motion.div
-                key={property._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
-              >
-                {}
-                <div className="relative h-48">
-                  <img
-                    src={property.images?.[0] ? `${backendurl}/uploads/${property.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
-                    alt={property.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
-                      {property.type}
-                    </span>
-                  </div>
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    <Link 
-                      to={`/update/${property.id}`}
-                      className="p-2 bg-white/90 backdrop-blur-sm text-blue-600 rounded-full hover:bg-blue-600 hover:text-white transition-all"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </Link>
-                    <button
-                      onClick={() => handleRemoveProperty(property._id, property.title)}
-                      className="p-2 bg-white/90 backdrop-blur-sm text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {}
-                <div className="p-6">
-                  <div className="mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                      {property.title}
-                    </h2>
-                    <div className="flex items-center text-gray-600">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {property.location}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-6">
-                    <p className="text-2xl font-bold text-blue-600">
-                      ₹{property.price?.toLocaleString()}
-                    </p>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      property.listingType === 'rent' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      For {property.listingType === 'rent' ? 'Rent' : 'Sale'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
-                      <BedDouble className="w-5 h-5 text-gray-400 mb-1" />
-                      <span className="text-sm text-gray-600">{property.beds} Beds</span>
-                    </div>
-                    <div className="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
-                      <Bath className="w-5 h-5 text-gray-400 mb-1" />
-                      <span className="text-sm text-gray-600">{property.baths} Baths</span>
-                    </div>
-                    <div className="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
-                      <Maximize className="w-5 h-5 text-gray-400 mb-1" />
-                      <span className="text-sm text-gray-600">{property.sqft} sqft</span>
-                    </div>
-                  </div>
-
-                  {}
-                  {property.amenities.length > 0 && (
-                    <div className="border-t pt-4">
-                      <h3 className="text-sm font-medium text-gray-900 mb-2">Amenities</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {property.amenities.slice(0, 3).map((amenity, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
-                          >
-                            <Building className="w-3 h-3 mr-1" />
-                            {amenity}
-                          </span>
-                        ))}
-                        {property.amenities.length > 3 && (
-                          <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                            +{property.amenities.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+              <PropertyCard
+                key={property.id}
+                property={property}
+                onRemove={handleRemoveProperty}
+              />
             ))}
           </AnimatePresence>
         </div>

@@ -5,108 +5,79 @@ import pool from '../config/postgres.js';
 
 export const getAllProperties = async (req, res) => {
   try {
-    const { page = 1, limit = 10, ...filters } = req.query;
-    const offset = (page - 1) * limit;
-    const client = await pool.connect();
+    const { type, minPrice, maxPrice, location, status } = req.query;
+    console.log('Frontend Properties Query params:', { type, minPrice, maxPrice, location, status });
 
-    try {
-      // Build the WHERE clause based on filters
-      let whereClause = 'WHERE status = $1';
-      const queryParams = ['Active'];
-      let paramIndex = 2;
-
-      // Add filters to the WHERE clause
-      if (filters.type) {
-        whereClause += ` AND type = $${paramIndex}`;
-        queryParams.push(filters.type);
-        paramIndex++;
-      }
-
-      if (filters.listing_type) {
-        whereClause += ` AND listing_type = $${paramIndex}`;
-        queryParams.push(filters.listing_type);
-        paramIndex++;
-      }
-
-      if (filters.beds) {
-        whereClause += ` AND beds = $${paramIndex}`;
-        queryParams.push(filters.beds);
-        paramIndex++;
-      }
-
-      if (filters.baths) {
-        whereClause += ` AND baths = $${paramIndex}`;
-        queryParams.push(filters.baths);
-        paramIndex++;
-      }
-
-      if (filters.price_min) {
-        whereClause += ` AND price >= $${paramIndex}`;
-        queryParams.push(filters.price_min);
-        paramIndex++;
-      }
-
-      if (filters.price_max) {
-        whereClause += ` AND price <= $${paramIndex}`;
-        queryParams.push(filters.price_max);
-        paramIndex++;
-      }
-
-      if (filters.sqft_min) {
-        whereClause += ` AND sqft >= $${paramIndex}`;
-        queryParams.push(filters.sqft_min);
-        paramIndex++;
-      }
-
-      if (filters.sqft_max) {
-        whereClause += ` AND sqft <= $${paramIndex}`;
-        queryParams.push(filters.sqft_max);
-        paramIndex++;
-      }
-
-      if (filters.city) {
-        whereClause += ` AND city ILIKE $${paramIndex}`;
-        queryParams.push(`%${filters.city}%`);
-        paramIndex++;
-      }
-
-      // Get total count
-      const countQuery = `SELECT COUNT(*) FROM properties ${whereClause}`;
-      const { rows: [{ count }] } = await client.query(countQuery, queryParams);
-
-      // Get properties with pagination
-      const propertiesQuery = `
-        SELECT * FROM properties 
-        ${whereClause}
-        ORDER BY created_at DESC
-        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `;
-      
-      const { rows: properties } = await client.query(
-        propertiesQuery,
-        [...queryParams, limit, offset]
+    // First check if the tables exist
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'properties'
       );
+    `);
 
-      res.status(200).json({
-        success: true,
-        data: {
-          properties,
-          pagination: {
-            total: parseInt(count),
-            page: parseInt(page),
-            limit: parseInt(limit),
-            pages: Math.ceil(parseInt(count) / parseInt(limit))
-          }
-        }
-      });
-    } finally {
-      client.release();
+    if (!tableCheck.rows[0].exists) {
+      throw new Error('Properties table does not exist');
     }
+
+    let query = `
+      SELECT * FROM properties
+      WHERE 1=1
+    `;
+    const queryParams = [];
+
+    if (type) {
+      queryParams.push(type);
+      query += ` AND type = $${queryParams.length}`;
+    }
+
+    if (minPrice) {
+      queryParams.push(minPrice);
+      query += ` AND price >= $${queryParams.length}`;
+    }
+
+    if (maxPrice) {
+      queryParams.push(maxPrice);
+      query += ` AND price <= $${queryParams.length}`;
+    }
+
+    if (location) {
+      queryParams.push(`%${location}%`);
+      query += ` AND location ILIKE $${queryParams.length}`;
+    }
+
+    if (status) {
+      queryParams.push(status);
+      query += ` AND status = $${queryParams.length}`;
+    }
+
+    // For non-admin requests, only show verified properties
+    if (!req.user?.isAdmin) {
+      queryParams.push('verified');
+      query += ` AND verification_status = $${queryParams.length}`;
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    console.log('Executing query:', query);
+    console.log('With params:', queryParams);
+
+    const result = await pool.query(query, queryParams);
+    console.log('Query result:', result.rows.length, 'properties found');
+
+    const properties = result.rows.map(normalizePropertyData);
+
+    res.json({
+      success: true,
+      data: properties
+    });
   } catch (error) {
-    console.error('Error in getAllProperties:', error);
+    console.error("Error in getAllProperties:", error);
     res.status(500).json({
       success: false,
-      message: `Failed to fetch properties: ${error.message}`
+      message: "Error fetching properties",
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
@@ -213,6 +184,11 @@ export const createProperty = async (req, res) => {
     // Get user ID from the authenticated request
     const userId = req.user.id; // This comes from the auth middleware
 
+    // Handle PG type before normalizing data
+    if (req.body.type === 'pg') {
+      req.body.pg_type = req.body.pgType || req.body.pg_type;
+    }
+
     const propertyData = normalizePropertyData(req.body, req.user.id);
     const property = await propertyService.createProperty(propertyData);
 
@@ -227,8 +203,10 @@ export const createProperty = async (req, res) => {
         if (floor.rooms && Array.isArray(floor.rooms)) {
           for (const room of floor.rooms) {
             console.log('Inserting room:', JSON.stringify(room));
-            if (room.rent_amount === undefined || room.rent_amount === null) {
-              throw new Error('Each room must have a rent_amount');
+            // Use rent if available, otherwise use rent_amount
+            const rentAmount = room.rent || room.rent_amount;
+            if (rentAmount === undefined || rentAmount === null) {
+              throw new Error('Each room must have a rent amount');
             }
             await pool.query(
               `INSERT INTO rooms (
@@ -240,7 +218,7 @@ export const createProperty = async (req, res) => {
                 room.roomNumber,
                 room.capacity || 1,
                 room.occupied || 0,
-                room.rent_amount,
+                rentAmount,
                 room.availableFrom,
                 room.hasBalcony || false
               ]
@@ -283,17 +261,56 @@ export const updateProperty = async (req, res) => {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    // Handle JSON stringified fields
-    if (updateData.availability) {
-      try {
-        updateData.availability = typeof updateData.availability === 'string' 
-          ? JSON.parse(updateData.availability)
-          : updateData.availability;
-      } catch (error) {
-        console.error('Error parsing availability:', error);
-        updateData.availability = updateData.availability;
-      }
-    }
+    // Transform frontend data to match database schema
+    const transformedData = {
+      title: updateData.title,
+      subtitle: updateData.subtitle || '',
+      description: updateData.description,
+      slug: updateData.slug,
+      listing_type: updateData.listingType || updateData.listing_type,
+      type: updateData.type,
+      price: updateData.price ? Number(updateData.price) : 0,
+      rent_type: updateData.rentType || updateData.rent_type,
+      deposit: updateData.deposit ? Number(updateData.deposit) : 0,
+      property_age: updateData.propertyAge ? Number(updateData.propertyAge) : null,
+      property_condition: updateData.propertyCondition || updateData.property_condition,
+      property_status: updateData.propertyStatus || updateData.property_status,
+      location: updateData.location,
+      region: updateData.region,
+      latitude: updateData.latitude,
+      longitude: updateData.longitude,
+      street: updateData.street || '',
+      city: updateData.city,
+      state: updateData.state,
+      pincode: updateData.pincode,
+      country: updateData.country,
+      floor_area: updateData.floorArea ? Number(updateData.floorArea) : 0,
+      sqft: updateData.sqft ? Number(updateData.sqft) : 0,
+      floor_no: updateData.floorNo ? Number(updateData.floorNo) : null,
+      total_floors: updateData.totalFloors ? Number(updateData.totalFloors) : null,
+      beds: updateData.beds ? Number(updateData.beds) : 0,
+      baths: updateData.baths ? Number(updateData.baths) : 0,
+      furnishing: updateData.furnishing,
+      amenities: Array.isArray(updateData.amenities) ? updateData.amenities : [],
+      balcony: updateData.balcony === true,
+      central_ac: updateData.centralAc === true,
+      power_backup: updateData.powerBackup === true,
+      parking: updateData.parking === true,
+      security: updateData.security === true,
+      swimming_pool: updateData.swimmingPool === true,
+      gym: updateData.gym === true,
+      garden: updateData.garden === true,
+      lift: updateData.lift === true,
+      images: Array.isArray(updateData.images) ? updateData.images : [],
+      videos: Array.isArray(updateData.videos) ? updateData.videos : [],
+      status: updateData.status || 'available',
+      featured: updateData.featured === true,
+      phone: updateData.phone,
+      dial_code: updateData.dialCode || updateData.dial_code,
+      pg_type: updateData.type === 'pg' ? (updateData.pgType || updateData.pg_type) : null,
+      verification_status: updateData.verification_status || 'unverified',
+      availability: updateData.availability ? (typeof updateData.availability === 'string' ? updateData.availability : JSON.stringify(updateData.availability)) : null
+    };
 
     // Handle floor details
     let floorDetails = null;
@@ -311,22 +328,8 @@ export const updateProperty = async (req, res) => {
       });
     }
 
-    // Handle file uploads
-    if (req.files && req.files.length > 0) {
-      const imagePaths = req.files.map(file => file.path);
-      updateData.images = imagePaths;
-    }
-
-    // Convert numeric fields
-    const numericFields = ['price', 'beds', 'baths', 'sqft', 'floor_area', 'property_age'];
-    numericFields.forEach(field => {
-      if (updateData[field] !== undefined) {
-        updateData[field] = updateData[field] === '' ? null : Number(updateData[field]);
-      }
-    });
-
     // Update the property
-    const property = await propertyService.updateProperty(id, updateData);
+    const property = await propertyService.updateProperty(id, transformedData);
     
     if (!property) {
       return res.status(404).json({
@@ -353,6 +356,11 @@ export const updateProperty = async (req, res) => {
         // Insert rooms for this floor
         if (floor.rooms && Array.isArray(floor.rooms)) {
           for (const room of floor.rooms) {
+            // Use rent if available, otherwise use rent_amount
+            const rentAmount = room.rent || room.rent_amount;
+            if (rentAmount === undefined || rentAmount === null) {
+              throw new Error('Each room must have a rent amount');
+            }
             await pool.query(
               `INSERT INTO rooms (
                 floor_id, room_number, capacity, occupied,
@@ -364,7 +372,7 @@ export const updateProperty = async (req, res) => {
                 room.roomNumber,
                 room.capacity || 1,
                 room.occupied || 0,
-                room.rent_amount || 0,
+                rentAmount,
                 room.availableFrom || null,
                 room.hasBalcony || false,
                 room.roomType || null,
@@ -392,6 +400,14 @@ export const updateProperty = async (req, res) => {
       }
     }
 
+    // Directly update verification_status in the database
+    if (updateData.verification_status) {
+      await pool.query(
+        'UPDATE properties SET verification_status = $1 WHERE id = $2',
+        [updateData.verification_status, id]
+      );
+    }
+
     // Fetch the updated property with floor details
     const updatedProperty = await propertyService.getPropertyById(id);
 
@@ -411,13 +427,15 @@ export const updateProperty = async (req, res) => {
 
 export const deleteProperty = async (req, res) => {
   try {
-    await propertyService.deleteProperty(req.params.id);
+    const property = await propertyService.deleteProperty(req.params.id);
     res.status(200).json({
       success: true,
-      message: 'Property deleted successfully'
+      message: 'Property deleted successfully',
+      property
     });
   } catch (error) {
-    res.status(400).json({
+    console.error('Error deleting property:', error);
+    res.status(error.message.includes('not found') ? 404 : 400).json({
       success: false,
       message: error.message
     });
@@ -439,9 +457,9 @@ export const searchProperties = async (req, res) => {
         }
 
         // Build the WHERE clause
-        let whereClause = 'WHERE p.status = $1';
-        const queryParams = ['Active'];
-        let paramIndex = 2;
+        let whereClause = 'WHERE p.status = $1 AND p.verification_status = $2';
+        const queryParams = ['available', 'verified'];
+        let paramIndex = 3;
 
         // Add search condition
         if (search) {
@@ -537,10 +555,6 @@ export const searchProperties = async (req, res) => {
             whereClause += ` AND p.furnishing = $${paramIndex}`;
             queryParams.push(filters.furnishing);
             paramIndex++;
-        }
-
-        if (filters.verified === 'true') {
-            whereClause += ` AND p.is_verified = true`;
         }
 
         if (filters.amenities && !Array.isArray(filters.amenities)) {
@@ -995,6 +1009,7 @@ function normalizePropertyData(input, userId) {
   }
 
   return {
+    id: input.id,
     title: input.title || '',
     subtitle: input.subtitle || '',
     description: input.description || '',
@@ -1035,12 +1050,15 @@ function normalizePropertyData(input, userId) {
     lift: input.lift === true,
     images: Array.isArray(input.images) ? input.images : [],
     videos: Array.isArray(input.videos) ? input.videos : [],
-    status: input.status || 'Active',
+    status: 'available',
     featured: input.featured === true,
     user_id: userId,
     created_by: userId,
     phone: input.phone || '',
-    dial_code: input.dialCode || '+91'
+    dial_code: input.dialCode || '+91',
+    pg_type: input.type === 'pg' ? (input.pg_type || input.pgType) : null,
+    verification_status: input.verification_status || 'unverified',
+    availability: input.availability ? (typeof input.availability === 'string' ? input.availability : JSON.stringify(input.availability)) : null
   };
 }
 
@@ -1253,5 +1271,129 @@ export const updateRoomOccupancy = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
+  }
+};
+
+export const getAllPropertiesForAdmin = async (req, res) => {
+  try {
+    const { type, minPrice, maxPrice, location, status } = req.query;
+    console.log('Admin Properties Query params:', { type, minPrice, maxPrice, location, status });
+
+    // First check if the tables exist
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'properties'
+      );
+    `);
+
+    if (!tableCheck.rows[0].exists) {
+      throw new Error('Properties table does not exist');
+    }
+
+    let query = `
+      SELECT 
+        id,
+        title,
+        subtitle,
+        description,
+        slug,
+        listing_type,
+        type,
+        price,
+        rent_type,
+        deposit,
+        property_age,
+        property_condition,
+        property_status,
+        location,
+        region,
+        latitude,
+        longitude,
+        street,
+        city,
+        state,
+        pincode,
+        country,
+        floor_area,
+        sqft,
+        floor_no,
+        total_floors,
+        beds,
+        baths,
+        furnishing,
+        amenities,
+        balcony,
+        central_ac,
+        power_backup,
+        parking,
+        security,
+        swimming_pool,
+        gym,
+        garden,
+        lift,
+        images,
+        videos,
+        status,
+        featured,
+        user_id,
+        created_by,
+        phone,
+        pg_type,
+        verification_status,
+        created_at,
+        updated_at
+      FROM properties
+      WHERE 1=1
+    `;
+    const queryParams = [];
+
+    if (type) {
+      queryParams.push(type);
+      query += ` AND type = $${queryParams.length}`;
+    }
+
+    if (minPrice) {
+      queryParams.push(minPrice);
+      query += ` AND price >= $${queryParams.length}`;
+    }
+
+    if (maxPrice) {
+      queryParams.push(maxPrice);
+      query += ` AND price <= $${queryParams.length}`;
+    }
+
+    if (location) {
+      queryParams.push(`%${location}%`);
+      query += ` AND location ILIKE $${queryParams.length}`;
+    }
+
+    if (status) {
+      queryParams.push(status);
+      query += ` AND status = $${queryParams.length}`;
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    console.log('Executing query:', query);
+    console.log('With params:', queryParams);
+
+    const result = await pool.query(query, queryParams);
+    console.log('Query result:', result.rows.length, 'properties found');
+
+    const properties = result.rows.map(normalizePropertyData);
+
+    res.json({
+      success: true,
+      data: properties
+    });
+  } catch (error) {
+    console.error("Error in getAllPropertiesForAdmin:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching properties",
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };

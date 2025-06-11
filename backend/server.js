@@ -22,6 +22,7 @@ import pool from './config/postgres.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import { protect } from './middleware/authmiddleware.js';
 dotenv.config();
 
 const app = express();

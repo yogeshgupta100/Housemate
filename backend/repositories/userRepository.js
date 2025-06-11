@@ -80,16 +80,28 @@ class UserRepository {
     try {
       await client.query('BEGIN');
       
+      const { rows: [existingUser] } = await client.query(
+        'SELECT * FROM users WHERE id = $1',
+        [id]
+      );
+
+      if (!existingUser) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      const convertedUpdateData = {};
+      for (const [key, value] of Object.entries(updateData)) {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        convertedUpdateData[snakeKey] = value;
+      }
+
+      // Only update the fields that are provided in updateData
       const setClause = [];
       const values = [];
       let paramCount = 1;
 
-      // Handle bank_details separately since it's JSONB
-      if (updateData.bank_details) {
-        updateData.bank_details = JSON.stringify(updateData.bank_details);
-      }
-
-      for (const [key, value] of Object.entries(updateData)) {
+      for (const [key, value] of Object.entries(convertedUpdateData)) {
         if (value !== undefined) {
           setClause.push(`${key} = $${paramCount}`);
           values.push(value);
@@ -97,7 +109,7 @@ class UserRepository {
         }
       }
 
-      if (setClause.length === 0) return null;
+      if (setClause.length === 0) return existingUser;
 
       values.push(id);
       const { rows } = await client.query(
