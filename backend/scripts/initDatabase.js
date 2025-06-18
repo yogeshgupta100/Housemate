@@ -249,7 +249,28 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 7. Create appointments table
+        // 7. Create room_availability_requests table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS room_availability_requests (
+                id SERIAL PRIMARY KEY,
+                room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+                property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+                owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // Create room_availability_requests indexes
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_room_availability_requests_room_id ON room_availability_requests(room_id);
+            CREATE INDEX IF NOT EXISTS idx_room_availability_requests_property_id ON room_availability_requests(property_id);
+            CREATE INDEX IF NOT EXISTS idx_room_availability_requests_owner_id ON room_availability_requests(owner_id);
+            CREATE INDEX IF NOT EXISTS idx_room_availability_requests_status ON room_availability_requests(status);
+        `);
+
+        // 8. Create appointments table
         await client.query(`
             CREATE TABLE IF NOT EXISTS appointments (
                 id SERIAL PRIMARY KEY,
@@ -272,7 +293,7 @@ const initializeDatabase = async () => {
             CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(preferred_date);
         `);
 
-        // 8. Create forms table
+        // 9. Create forms table
         await client.query(`
             CREATE TABLE IF NOT EXISTS forms (
                 id SERIAL PRIMARY KEY,
@@ -285,7 +306,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 9. Create stats table
+        // 10. Create stats table
         await client.query(`
             CREATE TABLE IF NOT EXISTS stats (
                 id SERIAL PRIMARY KEY,
@@ -303,7 +324,7 @@ const initializeDatabase = async () => {
             CREATE INDEX IF NOT EXISTS idx_stats_status_code ON stats(status_code);
         `);
 
-        // 10. Create newsletter_subscribers table
+        // 11. Create newsletter_subscribers table
         await client.query(`
             CREATE TABLE IF NOT EXISTS newsletter_subscribers (
                 id SERIAL PRIMARY KEY,
@@ -318,7 +339,7 @@ const initializeDatabase = async () => {
             CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);
         `);
 
-        // 11. Create news_subscribers table
+        // 12. Create news_subscribers table
         await client.query(`
             CREATE TABLE IF NOT EXISTS news_subscribers (
                 id SERIAL PRIMARY KEY,
@@ -330,7 +351,7 @@ const initializeDatabase = async () => {
             CREATE INDEX IF NOT EXISTS idx_news_subscribers_email ON news_subscribers(email);
         `);
 
-        // 12. Create default admin user
+        // 13. Create default admin user
         const hashedPassword = await bcrypt.hash('Admin@123', 10);
         await client.query(`
             INSERT INTO users (

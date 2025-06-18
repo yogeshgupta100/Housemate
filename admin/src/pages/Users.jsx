@@ -9,6 +9,7 @@ import {
     Phone,
     Building,
     AlertCircle,
+    Eye,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -16,8 +17,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { backendurl } from "../App";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Pagination from "../components/Pagination";
+import { useNavigate } from "react-router-dom";
 
 const Users = () => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,6 +33,10 @@ const Users = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+    const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [userProperties, setUserProperties] = useState([]);
+    const [loadingProperties, setLoadingProperties] = useState(false);
     const [newUser, setNewUser] = useState({
         first_name: "",
         last_name: "",
@@ -180,6 +187,10 @@ const Users = () => {
         }
     };
 
+    const handleViewUserDetails = (user) => {
+        navigate(`/users/${user.id}`);
+    };
+
     useEffect(() => {
         fetchRoles();
         fetchUsers();
@@ -220,6 +231,10 @@ const Users = () => {
         }
     };
 
+    const handlePropertyClick = (propertyId) => {
+        navigate(`/property/${propertyId}`);
+    };
+
     const filteredUsers = users.filter((user) => {
         const matchesSearch =
             !searchTerm ||
@@ -244,7 +259,6 @@ const Users = () => {
     return (
         <div className="min-h-screen pt-32 px-4 bg-gray-50">
             <div className="max-w-7xl mx-auto">
-                {}
                 <div className="mb-8 flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900 mb-1">User Management</h1>
@@ -259,27 +273,25 @@ const Users = () => {
                     </button>
                 </div>
 
-                {}
-                <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-                    <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
                         <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
                                 placeholder="Search users..."
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 onChange={(e) => handleSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         </div>
-
                         <div className="flex items-center gap-2">
-                            <Filter className="text-gray-400 w-4 h-4" />
+                            <Filter className="text-gray-400 w-5 h-5" />
                             <select
+                                className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="all">All Types</option>
+                                <option value="all">All Users</option>
                                 {roles.map((role) => (
                                     <option key={role} value={role}>
                                         {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -288,167 +300,49 @@ const Users = () => {
                             </select>
                         </div>
                     </div>
-                </div>
 
-                {}
-                {showCreateUserModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                            <h2 className="text-2xl font-bold mb-4">Create New User</h2>
-                            <form onSubmit={handleCreateUser}>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">First Name</label>
-                                    <input
-                                        type="text"
-                                        value={newUser.first_name}
-                                        onChange={(e) =>
-                                            setNewUser({ ...newUser, first_name: e.target.value })
-                                        }
-                                        className="w-full p-2 border rounded-lg"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                                    <input
-                                        type="text"
-                                        value={newUser.last_name}
-                                        onChange={(e) =>
-                                            setNewUser({ ...newUser, last_name: e.target.value })
-                                        }
-                                        className="w-full p-2 border rounded-lg"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                                    <input
-                                        type="email"
-                                        value={newUser.email}
-                                        onChange={(e) =>
-                                            setNewUser({ ...newUser, email: e.target.value })
-                                        }
-                                        className="w-full p-2 border rounded-lg"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Phone</label>
-                                    <input
-                                        type="text"
-                                        value={newUser.phone}
-                                        onChange={(e) =>
-                                            setNewUser({ ...newUser, phone: e.target.value })
-                                        }
-                                        className="w-full p-2 border rounded-lg"
-                                    />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Role</label>
-                                    <select
-                                        value={newUser.user_type}
-                                        onChange={(e) =>
-                                            setNewUser({ ...newUser, user_type: e.target.value })
-                                        }
-                                        className="w-full p-2 border rounded-lg"
-                                        required
-                                    >
-                                        <option value="">Select Role</option>
-                                        {roles.map((role) => (
-                                            <option key={role} value={role}>
-                                                {role.charAt(0).toUpperCase() + role.slice(1)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="mb-4 flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={newUser.is_verified}
-                                        onChange={(e) =>
-                                            setNewUser({ ...newUser, is_verified: e.target.checked })
-                                        }
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label className="ml-2 text-sm text-gray-700">Verified</label>
-                                </div>
-                                <div className="flex justify-end gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCreateUserModal(false)}
-                                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        Create User
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    User
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Contact
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Type
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Verified
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Name
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Email
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Phone
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Type
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
-                            <AnimatePresence>
-                                {filteredUsers?.map((user) => (
-                                    <motion.tr
-                                        key={user.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className="hover:bg-gray-50"
-                                    >
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredUsers.map((user) => (
+                                    <tr key={user.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-medium">
-                                                    {user.first_name[0]}
-                                                    {user.last_name[0]}
-                                                </div>
-                                                <div className="ml-4">
+                                                <div>
                                                     <div className="text-sm font-medium text-gray-900">
                                                         {user.first_name} {user.last_name}
                                                     </div>
-                                                    <div className="flex items-center text-sm text-gray-500">
-                                                        <Mail className="w-3 h-3 mr-1" />
-                                                        {user.email}
-                                                    </div>
+                                                    <div className="text-sm text-gray-500">ID: {user.id}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center text-sm text-gray-500">
-                                                <Phone className="w-3 h-3 mr-1" />
-                                                {user.phone || 'N/A'}
-                                            </div>
+                                            <div className="text-sm text-gray-900">{user.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{user.phone || "-"}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
@@ -468,62 +362,35 @@ const Users = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    user.is_active
+                                                    user.is_verified
                                                         ? "bg-green-100 text-green-800"
-                                                        : "bg-red-100 text-red-800"
+                                                        : "bg-yellow-100 text-yellow-800"
                                                 }`}
                                             >
-                                                {user.is_active ? "Active" : "Inactive"}
+                                                {user.is_verified ? "Verified" : "Pending"}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={user.is_verified || false}
-                                                    onChange={() =>
-                                                        handleVerificationToggle(user.id, user.is_verified)
-                                                    }
-                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                                />
-                                                <span
-                                                    className={`ml-2 inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        user.is_verified
-                                                            ? "bg-blue-100 text-blue-800"
-                                                            : "bg-gray-100 text-gray-600"
-                                                    }`}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleViewUserDetails(user)}
+                                                    className="text-blue-600 hover:text-blue-900"
                                                 >
-                                                    {user.is_verified ? "Verified" : "Unverified"}
-                                                </span>
+                                                    <Eye className="w-5 h-5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`)}
+                                                    className="text-red-600 hover:text-red-900"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                onClick={() =>
-                                                    handleDeleteUser(
-                                                        user.id,
-                                                        `${user.first_name} ${user.last_name}`
-                                                    )
-                                                }
-                                                className="text-red-600 hover:text-red-900 transition-colors"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
-                                        </td>
-                                    </motion.tr>
+                                    </tr>
                                 ))}
-                            </AnimatePresence>
                             </tbody>
                         </table>
                     </div>
-
-                    {filteredUsers.length === 0 && (
-                        <div className="text-center py-12">
-                            <UsersIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-                            <p className="text-gray-600">Try adjusting your search or filters</p>
-                        </div>
-                    )}
                 </div>
 
                 <ConfirmDialog

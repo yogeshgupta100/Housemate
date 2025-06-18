@@ -1,5 +1,5 @@
 import express from 'express';
-import { getLocationSuggestions, createProperty, getAllProperties, searchProperties, searchPropertiesByCoordinates, getPropertyById, updateProperty, deleteProperty, getPropertiesByUser, getFilterOptions, getPropertyRoomStatus, checkDuplicateProperty, updateRoomDescription, updateRoomOccupancy, getAllPropertiesForAdmin } from '../controllers/propertyController.js';
+import { getLocationSuggestions, createProperty, getAllProperties, searchProperties, searchPropertiesByCoordinates, getPropertyById, updateProperty, deleteProperty, getPropertiesByUser, getFilterOptions, getPropertyRoomStatus, checkDuplicateProperty, updateRoomDescription, updateRoomOccupancy, getAllPropertiesForAdmin, mapPropertyToUser } from '../controllers/propertyController.js';
 import { protect } from '../middleware/authmiddleware.js';
 
 const router = express.Router();
@@ -27,5 +27,6 @@ router.put('/rooms/:roomId/description', updateRoomDescription);
 router.put('/rooms/:roomId/occupy', updateRoomOccupancy);
 router.get('/check-duplicate', checkDuplicateProperty);
 router.get('/admin/all', getAllPropertiesForAdmin);
+router.post('/map-user', mapPropertyToUser);
 
 export default router;

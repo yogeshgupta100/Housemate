@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, 
   Phone, 
@@ -15,16 +15,57 @@ import {
   Video,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  UserPlus,
+  Link as LinkIcon,
+  Search,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { backendurl } from '../App';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
+import { debounce } from 'lodash';
+import SceneUploader from './PropertyDetail/SceneUploader.jsx';
 
 const PropertyDetails = ({ property, onRemove }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showMapTenantModal, setShowMapTenantModal] = useState(false);
+  const [showMapUserModal, setShowMapUserModal] = useState(false);
+  const [selectedFloor, setSelectedFloor] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [moveInDate, setMoveInDate] = useState('');
+  const [rentAmount, setRentAmount] = useState('');
+  const [depositAmount, setDepositAmount] = useState('');
+  const [userId, setUserId] = useState('');
+  const [expandedFloors, setExpandedFloors] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userSuggestions, setUserSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Initialize expanded state for floors
+  useEffect(() => {
+    if (property?.floorDetails) {
+      const initialExpandedState = {};
+      property.floorDetails.forEach(floor => {
+        initialExpandedState[floor.id] = false;
+      });
+      setExpandedFloors(initialExpandedState);
+    }
+  }, [property?.floorDetails]);
+
+  const toggleFloor = (floorId) => {
+    setExpandedFloors(prev => ({
+      ...prev,
+      [floorId]: !prev[floorId]
+    }));
+  };
 
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return "/placeholder.jpg";
@@ -58,6 +99,138 @@ const PropertyDetails = ({ property, onRemove }) => {
     }
   };
 
+  // Debounced search function
+  const searchUsers = debounce(async (query) => {
+    if (!query) {
+      setUserSuggestions([]);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${backendurl}/api/users/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUserSuggestions(data.users);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast.error('Failed to search users');
+    } finally {
+      setIsLoading(false);
+    }
+  }, 300);
+
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    setSelectedUser(null);
+    searchUsers(query);
+    setShowSuggestions(true);
+  };
+
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+    setSearchQuery(user.name);
+    setPhoneNumber(user.phone);
+    setUserSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleMapTenant = async () => {
+    if (!selectedUser) {
+      toast.error('Please select a user');
+      return;
+    }
+    if (!moveInDate) {
+      toast.error('Please select move-in date');
+      return;
+    }
+    if (!depositAmount) {
+      toast.error('Please enter deposit amount');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${backendurl}/api/transactions/map-tenant`,
+        {
+          room_id: selectedRoom.id,
+          user_id: selectedUser.id,
+          move_in_date: moveInDate,
+          rent_amount: selectedRoom.rent,
+          deposit_amount: depositAmount
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Tenant mapped successfully');
+        setShowMapTenantModal(false);
+        // Reset form
+        setSearchQuery('');
+        setSelectedUser(null);
+        setPhoneNumber('');
+        setMoveInDate('');
+        setDepositAmount('');
+        // Refresh property data
+        window.location.reload();
+      } else {
+        toast.error(response.data.message || 'Failed to map tenant');
+      }
+    } catch (error) {
+      console.error('Error mapping tenant:', error);
+      toast.error(error.response?.data?.message || 'Failed to map tenant');
+    }
+  };
+
+  const handleMapUser = async () => {
+    try {
+      const response = await axios.post(
+        `${backendurl}/api/properties/map-user`,
+        {
+          property_id: property.id,
+          user_id: userId
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Property mapped to user successfully');
+        setShowMapUserModal(false);
+        // Refresh property data
+        window.location.reload();
+      } else {
+        toast.error(response.data.message || 'Failed to map property to user');
+      }
+    } catch (error) {
+      console.error('Error mapping property to user:', error);
+      toast.error(error.response?.data?.message || 'Failed to map property to user');
+    }
+  };
+
+  const calculateEndDate = (startDate, leasePeriod) => {
+    if (!startDate || !leasePeriod) return null;
+    
+    const date = new Date(startDate);
+    const [number, unit] = leasePeriod.split(' ');
+    const months = unit.toLowerCase().includes('month') ? parseInt(number) : parseInt(number) * 12;
+    
+    date.setMonth(date.getMonth() + months);
+    return date;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -65,30 +238,34 @@ const PropertyDetails = ({ property, onRemove }) => {
       className="min-h-screen bg-gray-50 py-8 my-14"
     >
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Link
-            to="/list"
-            className="inline-flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Listings
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              to={`/update/${property.id}`}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit3 className="w-5 h-5 mr-2" />
-              Edit Property
-            </Link>
-            <button
-              onClick={handleRemoveProperty}
-              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <Trash2 className="w-5 h-5 mr-2" />
-              Remove Property
-            </button>
+        {/* Property Header */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/dashboard"
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-900">{property.title}</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate(`/update/${property.id}`)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                Edit Property
+              </button>
+              <button
+                onClick={handleRemoveProperty}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Remove
+              </button>
+            </div>
           </div>
         </div>
 
@@ -380,7 +557,335 @@ const PropertyDetails = ({ property, onRemove }) => {
             </div>
           </div>
         </div>
+
+        {/* Add Floors and Rooms Section */}
+        <div className="max-w-7xl mx-auto px-4 mt-8">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Floors and Rooms</h2>
+            <div className="space-y-4">
+              {property?.floorDetails?.map((floor) => (
+                <div key={floor.id} className="border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleFloor(floor.id)}
+                    className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center">
+                      <Building className="h-5 w-5 text-gray-400 mr-2" />
+                      <span className="font-medium">Floor {floor.floorNumber}</span>
+                    </div>
+                    {expandedFloors[floor.id] ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+                  {expandedFloors[floor.id] && (
+                    <div className="p-4 bg-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {floor.rooms?.map((room) => (
+                          <div
+                            key={room.id}
+                            className={`p-4 rounded-lg border ${
+                              room.occupied ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h3 className="font-medium">Room {room.roomNumber}</h3>
+                                <p className="text-sm text-gray-600">Capacity: {room.capacity} persons</p>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                room.occupied ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                              }`}>
+                                {room.occupied ? 'Occupied' : 'Available'}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <p>Rent: ₹{room.rent}</p>
+                              {room.availableFrom && (
+                                <>
+                                  <p>Move In Date: {new Date(room.availableFrom).toLocaleDateString()}</p>
+                                  {property.availability?.minLeasePeriod && (
+                                    <p>Available Until: {calculateEndDate(room.availableFrom, property.availability.minLeasePeriod)?.toLocaleDateString()}</p>
+                                  )}
+                                </>
+                              )}
+                              {room.hasBalcony && (
+                                <p className="text-green-600">Has Balcony</p>
+                              )}
+                            </div>
+                            {room.occupied ? (
+                              <button
+                                onClick={() => {
+                                  
+                                }}
+                                className="mt-3 w-full px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
+                              >
+                                Add 360° Scene
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedFloor(floor);
+                                  setSelectedRoom(room);
+                                  setRentAmount(room?.rent?.toString());
+                                  setShowMapTenantModal(true);
+                                }}
+                                className="mt-3 w-full px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              >
+                                Map Tenant
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Add 360° Scene Uploader Section */}
+        <div className="max-w-7xl mx-auto px-4 mt-8">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">360° Virtual Tour</h2>
+            
+            {/* Room Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Room
+              </label>
+              <select
+                value={selectedRoom?.id || ''}
+                onChange={(e) => {
+                  const roomId = e.target.value;
+                  if (roomId) {
+                    // Find the floor and room
+                    const floor = property.floorDetails.find(f => 
+                      f.rooms.some(r => r.id === parseInt(roomId))
+                    );
+                    const room = floor?.rooms.find(r => r.id === parseInt(roomId));
+                    if (room) {
+                      setSelectedRoom(room);
+                      setSelectedFloor(floor);
+                    }
+                  } else {
+                    setSelectedRoom(null);
+                    setSelectedFloor(null);
+                  }
+                }}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              >
+                <option value="">Select a room</option>
+                {property.floorDetails?.map((floor) => (
+                  <optgroup key={floor.id} label={`Floor ${floor.floorNumber}`}>
+                    {floor.rooms?.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        Room {room.roomNumber} - {room.occupied ? 'Occupied' : 'Available'}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {selectedRoom ? (
+              <div>
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700">Selected Room Details</p>
+                  <p className="text-gray-600">Floor {selectedFloor?.floorNumber}, Room {selectedRoom?.roomNumber}</p>
+                  <p className="text-gray-600">Capacity: {selectedRoom?.capacity} persons</p>
+                  {selectedRoom?.hasBalcony && (
+                    <p className="text-green-600">Has Balcony</p>
+                  )}
+                </div>
+                <SceneUploader 
+                  propertyId={property.id}
+                  roomId={selectedRoom.id}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Please select a room to manage its 360° scenes</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Map Tenant Modal */}
+      {showMapTenantModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Map Tenant to Room</h2>
+              <button
+                onClick={() => setShowMapTenantModal(false)}
+                className="text-gray-400 hover:text-gray-500 transition-colors"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-5">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm font-medium text-gray-700">Selected Room</p>
+                <p className="text-gray-600">Floor {selectedFloor?.floorNumber}, Room {selectedRoom?.roomNumber}</p>
+                <p className="text-gray-600">Capacity: {selectedRoom?.capacity} persons</p>
+                {selectedRoom?.hasBalcony && (
+                  <p className="text-green-600">Has Balcony</p>
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search User</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onFocus={() => setShowSuggestions(true)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Search by name, email, or phone"
+                  />
+                  {isLoading && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    </div>
+                  )}
+                </div>
+                {showSuggestions && userSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+                    {userSuggestions.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => handleUserSelect(user)}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      >
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-gray-500 text-xs">
+                          {user.email} • {user.phone}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Move-in Date</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="date"
+                    value={moveInDate}
+                    onChange={(e) => setMoveInDate(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rent Amount</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 font-medium">₹</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={selectedRoom?.rent}
+                    disabled
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Deposit Amount</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 font-medium">₹</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter deposit amount"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-white z-10">
+                <button
+                  onClick={() => setShowMapTenantModal(false)}
+                  className="px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMapTenant}
+                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Map Tenant
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Map User Modal */}
+      {showMapUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Map Property to User</h2>
+              <button
+                onClick={() => setShowMapUserModal(false)}
+                className="text-gray-400 hover:text-gray-500 transition-colors"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search User</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Search by name, email, or ID"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Enter user's name, email, or ID to search
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowMapUserModal(false)}
+                  className="px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMapUser}
+                  className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Map User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

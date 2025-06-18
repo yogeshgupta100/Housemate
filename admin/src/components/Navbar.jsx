@@ -11,7 +11,8 @@ import {
   LogOut, 
   LayoutDashboard, 
   Database,
-  Users as UsersIcon 
+  Users as UsersIcon,
+  CheckCircle2
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -38,7 +39,8 @@ const Navbar = () => {
     { path: '/list', label: 'Properties', icon: List },
     { path: '/add', label: 'Add Property', icon: PlusSquare },
     { path: '/appointments', label: 'Appointments', icon: Calendar },
-    { path: '/users', label: 'Users', icon: UsersIcon }, // Add this new item
+    { path: '/users', label: 'Users', icon: UsersIcon },
+    { path: '/availability-requests', label: 'Make it Available', icon: CheckCircle2 },
   ];
 
   return (

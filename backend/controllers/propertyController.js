@@ -340,63 +340,181 @@ export const updateProperty = async (req, res) => {
 
     // Handle floor details update if present
     if (floorDetails && Array.isArray(floorDetails)) {
-      // First, delete existing floors and rooms
-      await pool.query('DELETE FROM rooms WHERE floor_id IN (SELECT id FROM floors WHERE property_id = $1)', [id]);
-      await pool.query('DELETE FROM floors WHERE property_id = $1', [id]);
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
 
-      // Then insert new floors and rooms
-      for (const floor of floorDetails) {
-        // Insert floor
-        const floorResult = await pool.query(
-          'INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id',
-          [id, floor.floorNumber]
+        // Get existing floors and rooms for this property
+        const { rows: existingFloors } = await client.query(
+          'SELECT id, floor_number FROM floors WHERE property_id = $1 ORDER BY floor_number',
+          [id]
         );
-        const floorId = floorResult.rows[0].id;
 
-        // Insert rooms for this floor
-        if (floor.rooms && Array.isArray(floor.rooms)) {
-          for (const room of floor.rooms) {
-            // Use rent if available, otherwise use rent_amount
-            const rentAmount = room.rent || room.rent_amount;
-            if (rentAmount === undefined || rentAmount === null) {
-              throw new Error('Each room must have a rent amount');
+        const { rows: existingRooms } = await client.query(
+          `SELECT r.id, r.floor_id, r.room_number, f.floor_number 
+           FROM rooms r 
+           JOIN floors f ON r.floor_id = f.id 
+           WHERE f.property_id = $1 
+           ORDER BY f.floor_number, r.room_number`,
+          [id]
+        );
+
+        // Create maps for easy lookup
+        const existingFloorMap = new Map(existingFloors.map(f => [f.floor_number, f]));
+        const existingRoomMap = new Map(existingRooms.map(r => [`${r.floor_number}-${r.room_number}`, r]));
+
+        // Process each floor in the new floor details
+        for (const floor of floorDetails) {
+          let floorId;
+          
+          // Check if floor already exists
+          if (existingFloorMap.has(floor.floorNumber)) {
+            floorId = existingFloorMap.get(floor.floorNumber).id;
+          } else {
+            // Create new floor
+            const floorResult = await client.query(
+              'INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id',
+              [id, floor.floorNumber]
+            );
+            floorId = floorResult.rows[0].id;
+          }
+
+          // Process rooms for this floor
+          if (floor.rooms && Array.isArray(floor.rooms)) {
+            for (const room of floor.rooms) {
+              const rentAmount = room.rent || room.rent_amount;
+              if (rentAmount === undefined || rentAmount === null) {
+                throw new Error('Each room must have a rent amount');
+              }
+
+              const roomKey = `${floor.floorNumber}-${room.roomNumber}`;
+              
+              // Check if room already exists
+              if (existingRoomMap.has(roomKey)) {
+                // Update existing room
+                await client.query(
+                  `UPDATE rooms SET
+                    capacity = $1,
+                    occupied = $2,
+                    rent_amount = $3,
+                    available_from = $4,
+                    has_balcony = $5,
+                    room_type = $6,
+                    area = $7,
+                    description = $8,
+                    updated_at = CURRENT_TIMESTAMP
+                   WHERE id = $9`,
+                  [
+                    room.capacity || 1,
+                    room.occupied || 0,
+                    rentAmount,
+                    room.availableFrom || null,
+                    room.hasBalcony || false,
+                    room.roomType || null,
+                    room.area || null,
+                    room.description || null,
+                    existingRoomMap.get(roomKey).id
+                  ]
+                );
+              } else {
+                // Create new room
+                await client.query(
+                  `INSERT INTO rooms (
+                    floor_id, room_number, capacity, occupied,
+                    rent_amount, available_from, has_balcony,
+                    room_type, area, description
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                  [
+                    floorId,
+                    room.roomNumber,
+                    room.capacity || 1,
+                    room.occupied || 0,
+                    rentAmount,
+                    room.availableFrom || null,
+                    room.hasBalcony || false,
+                    room.roomType || null,
+                    room.area || null,
+                    room.description || null
+                  ]
+                );
+              }
             }
-            await pool.query(
-              `INSERT INTO rooms (
-                floor_id, room_number, capacity, occupied,
-                rent_amount, available_from, has_balcony,
-                room_type, area, description
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-              [
-                floorId,
-                room.roomNumber,
-                room.capacity || 1,
-                room.occupied || 0,
-                rentAmount,
-                room.availableFrom || null,
-                room.hasBalcony || false,
-                room.roomType || null,
-                room.area || null,
-                room.description || null
-              ]
+          }
+        }
+
+        // Delete rooms that are no longer in the new floor details
+        const newRoomKeys = new Set();
+        floorDetails.forEach(floor => {
+          if (floor.rooms) {
+            floor.rooms.forEach(room => {
+              newRoomKeys.add(`${floor.floorNumber}-${room.roomNumber}`);
+            });
+          }
+        });
+
+        const roomsToDelete = existingRooms.filter(room => {
+          const roomKey = `${room.floor_number}-${room.room_number}`;
+          return !newRoomKeys.has(roomKey);
+        });
+
+        // Delete rooms that are no longer needed (only if they don't have related records)
+        for (const room of roomsToDelete) {
+          // Check if room has any related records
+          const { rows: relatedRecords } = await client.query(
+            'SELECT COUNT(*) as count FROM room_availability_requests WHERE room_id = $1',
+            [room.id]
+          );
+          
+          if (relatedRecords[0].count === '0') {
+            await client.query('DELETE FROM rooms WHERE id = $1', [room.id]);
+          } else {
+            // If room has related records, just mark it as unavailable instead of deleting
+            await client.query(
+              'UPDATE rooms SET occupied = capacity, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+              [room.id]
             );
           }
         }
-      }
 
-      // Update the property price based on minimum room rent
-      const { rows: [{ min }] } = await pool.query(
-        `SELECT MIN(rent_amount) as min FROM rooms WHERE floor_id IN (
-          SELECT id FROM floors WHERE property_id = $1
-        )`,
-        [id]
-      );
-      if (min !== null && min !== undefined) {
-        await pool.query(
-          'UPDATE properties SET price = $1 WHERE id = $2',
-          [min, id]
+        // Delete floors that are no longer needed
+        const newFloorNumbers = new Set(floorDetails.map(f => f.floorNumber));
+        const floorsToDelete = existingFloors.filter(floor => !newFloorNumbers.has(floor.floor_number));
+        
+        for (const floor of floorsToDelete) {
+          // Check if floor has any rooms with related records
+          const { rows: roomsWithRecords } = await client.query(
+            `SELECT COUNT(*) as count FROM rooms r 
+             JOIN room_availability_requests rar ON r.id = rar.room_id 
+             WHERE r.floor_id = $1`,
+            [floor.id]
+          );
+          
+          if (roomsWithRecords[0].count === '0') {
+            await client.query('DELETE FROM floors WHERE id = $1', [floor.id]);
+          }
+        }
+
+        await client.query('COMMIT');
+
+        // Update the property price based on minimum room rent
+        const { rows: [{ min }] } = await pool.query(
+          `SELECT MIN(rent_amount) as min FROM rooms WHERE floor_id IN (
+            SELECT id FROM floors WHERE property_id = $1
+          )`,
+          [id]
         );
-        property.price = min;
+        if (min !== null && min !== undefined) {
+          await pool.query(
+            'UPDATE properties SET price = $1 WHERE id = $2',
+            [min, id]
+          );
+          property.price = min;
+        }
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
       }
     }
 
@@ -1395,5 +1513,65 @@ export const getAllPropertiesForAdmin = async (req, res) => {
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
+  }
+};
+
+export const mapPropertyToUser = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { property_id, user_id } = req.body;
+
+    // Check if property exists
+    const { rows: [property] } = await client.query(
+      'SELECT * FROM properties WHERE id = $1',
+      [property_id]
+    );
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: 'Property not found'
+      });
+    }
+
+    // Check if user exists
+    const { rows: [user] } = await client.query(
+      'SELECT * FROM users WHERE id = $1',
+      [user_id]
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update property with user_id
+    const { rows: [updatedProperty] } = await client.query(
+      `UPDATE properties 
+       SET user_id = $1, 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $2 
+       RETURNING *`,
+      [user_id, property_id]
+    );
+
+    await client.query('COMMIT');
+    res.status(200).json({
+      success: true,
+      message: 'Property mapped to user successfully',
+      property: updatedProperty
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error mapping property to user:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to map property to user'
+    });
+  } finally {
+    client.release();
   }
 };

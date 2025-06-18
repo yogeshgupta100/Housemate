@@ -12,6 +12,7 @@ const AdminDashboard = () => {
     { path: '/admin', label: 'Dashboard', icon: Home },
     { path: '/admin/users', label: 'Users', icon: Users },
     { path: '/admin/properties', label: 'Properties', icon: Building },
+    { path: '/admin/room-availability-requests', label: 'Room Requests', icon: Building },
     { path: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 

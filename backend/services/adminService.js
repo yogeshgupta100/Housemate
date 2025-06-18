@@ -17,7 +17,14 @@ export const getUserById = async (userId) => {
         if (!user) {
             throw new AppError('User not found', 404);
         }
-        return user;
+
+        // Get user's properties
+        const properties = await propertyRepository.findByUser(userId);
+
+        return {
+            ...user,
+            properties
+        };
     } catch (error) {
         if (error instanceof AppError) throw error;
         throw new AppError(`Failed to fetch user: ${error.message}`, 500);

@@ -14,7 +14,10 @@ import Add from "./pages/Add";
 import Update from "./pages/Update";
 import Appointments from "./pages/Appointments";
 import Users from "./pages/Users";
+import UserDetails from "./pages/UserDetails";
 import PropertyDetailsPage from "./pages/PropertyDetailsPage";
+import AvailabilityRequests from './components/AvailabilityRequests';
+import AvailabilityRequestDetails from "./components/AvailabilityRequestDetails";
 
 export const backendurl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -53,6 +56,9 @@ const App = () => {
                 <Route path="/property/:id" element={<PropertyDetailsPage />} />
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/users" element={<Users />} />
+                <Route path="/users/:userId" element={<UserDetails />} />
+                <Route path="/availability-requests" element={<AvailabilityRequests />} />
+                <Route path="/availability-requests/:id" element={<AvailabilityRequestDetails />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

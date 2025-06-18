@@ -16,8 +16,11 @@ import pdfRoutes from './routes/pdfRoutes.js';
 import pool from './config/postgres.js';
 import otpRoutes from './routes/otpRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import sceneRoutes from './routes/sceneRoutes.js';
 
 dotenv.config();
+
+console.log('Starting server initialization...');
 
 pool.connect()
   .then(() => console.log('✅ PostgreSQL Connected'))
@@ -30,6 +33,19 @@ const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Debug middleware
+app.use((req, res, next) => {
+  console.log('Incoming request:', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    query: req.query,
+    params: req.params,
+    body: req.body
+  });
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -51,16 +67,31 @@ app.use((req, res, next) => {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/properties', propertyRoutes);
-app.use('/api/news', newsRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/favorites', favoritesRoutes);
-app.use('/api/pg', pdfRoutes);
-app.use('/api/otp', otpRoutes);
-app.use('/api/upload', uploadRoutes);
+// Debug route to test if server is working
+app.get('/test', (req, res) => {
+  console.log('Test route hit');
+  res.json({ message: 'Server is working!' });
+});
+
+// Log all registered routes
+const routes = [
+  { path: '/api/auth', router: authRoutes },
+  { path: '/api/users', router: userRoutes },
+  { path: '/api/properties', router: propertyRoutes },
+  { path: '/api/news', router: newsRoutes },
+  { path: '/api/appointments', router: appointmentRoutes },
+  { path: '/api/admin', router: adminRoutes },
+  { path: '/api/favorites', router: favoritesRoutes },
+  { path: '/api/pg', router: pdfRoutes },
+  { path: '/api/otp', router: otpRoutes },
+  { path: '/api/upload', router: uploadRoutes },
+  { path: '/api/scenes', router: sceneRoutes }
+];
+
+routes.forEach(route => {
+  console.log(`Registering route: ${route.path}`);
+  app.use(route.path, route.router);
+});
 
 app.use(errorHandler);
 
@@ -68,4 +99,7 @@ const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Test the server at: http://localhost:${PORT}/test`);
+  console.log('Registered routes:');
+  routes.forEach(route => console.log(`- ${route.path}`));
 });

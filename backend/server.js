@@ -23,6 +23,7 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import { protect } from './middleware/authmiddleware.js';
+import sceneRoutes from './routes/sceneRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -124,6 +125,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/scenes', sceneRoutes);
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   const statusCode = err.statusCode || 500;
