@@ -821,6 +821,10 @@ const Update = () => {
     try {
       const formDataToSubmit = { ...formData };
 
+      // Add updated_by field with current user ID
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      formDataToSubmit.updated_by = currentUser.id || currentUser.user_id;
+
       // Format data based on listing type
       if (formDataToSubmit.listingType === 'sale') {
         formDataToSubmit.rent_type = null;
@@ -958,6 +962,10 @@ const Update = () => {
 
     try {
       const formDataToSubmit = { ...formData, isDraft: true };
+
+      // Add updated_by field with current user ID
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      formDataToSubmit.updated_by = currentUser.id || currentUser.user_id;
 
       // Format data based on listing type
       if (formDataToSubmit.listingType === 'sale') {

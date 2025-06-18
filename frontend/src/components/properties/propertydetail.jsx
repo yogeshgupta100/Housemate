@@ -83,6 +83,18 @@ const PropertyDetails = () => {
     setActiveMediaIndex(0);
   }, [id]);
   
+  // Auto-select first room for 360° virtual tour when property loads
+  useEffect(() => {
+    if (property && (property.type === "pg" || property.type === "rk" || property.type === "flat")) {
+      const firstFloor = property.floorDetails?.[0];
+      const firstRoom = firstFloor?.rooms?.[0];
+      
+      if (firstRoom && !selectedRoom) {
+        setSelectedRoom({ ...firstRoom, floor_id: firstFloor.id });
+      }
+    }
+  }, [property, selectedRoom]);
+  
   const getMediaGallery = (property) => {
     if (!property) return [];
     const images = (property.images || []).map((url) => ({ type: "image", url }));

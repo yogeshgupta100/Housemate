@@ -55,6 +55,44 @@ class PropertyService {
       }
   
       const properties = await propertyRepository.findAll(pgFilters, page, limit);
+      
+      // Add room availability information for properties that have rooms
+      const client = await pool.connect();
+      try {
+        for (const property of properties) {
+          // Check if this property type typically has rooms
+          if (['pg', 'rk', 'flat'].includes(property.type)) {
+            const { rows: roomAvailability } = await client.query(
+              `SELECT 
+                COUNT(*) as total_rooms,
+                SUM(CASE WHEN r.capacity > r.occupied THEN 1 ELSE 0 END) as available_rooms
+               FROM floors f
+               JOIN rooms r ON f.id = r.floor_id
+               WHERE f.property_id = $1`,
+              [property.id]
+            );
+            
+            if (roomAvailability.length > 0) {
+              const availability = roomAvailability[0];
+              property.hasAvailableRooms = availability.available_rooms > 0;
+              property.totalRooms = parseInt(availability.total_rooms) || 0;
+              property.availableRooms = parseInt(availability.available_rooms) || 0;
+            } else {
+              property.hasAvailableRooms = false;
+              property.totalRooms = 0;
+              property.availableRooms = 0;
+            }
+          } else {
+            // For non-room properties, set default values
+            property.hasAvailableRooms = true;
+            property.totalRooms = 0;
+            property.availableRooms = 0;
+          }
+        }
+      } finally {
+        client.release();
+      }
+      
       return properties;
     } catch (error) {
       throw new Error(`Failed to fetch properties: ${error.message}`);
@@ -200,6 +238,7 @@ class PropertyService {
         propertyData.featured,
         propertyData.user_id,
         propertyData.created_by,
+        propertyData.updated_by,
         propertyData.phone,
         propertyData.dial_code,
         propertyData.availability
@@ -207,9 +246,9 @@ class PropertyService {
 
       const { rows: [property] } = await client.query(
         `INSERT INTO properties (
-          title, subtitle, description, slug, listing_type, type, price, rent_type, deposit, property_age, property_condition, property_status, location, region, latitude, longitude, street, city, state, pincode, country, floor_area, sqft, floor_no, total_floors, beds, baths, furnishing, amenities, balcony, central_ac, power_backup, parking, security, swimming_pool, gym, garden, lift, images, videos, status, featured, user_id, created_by, phone, dial_code, availability
+          title, subtitle, description, slug, listing_type, type, price, rent_type, deposit, property_age, property_condition, property_status, location, region, latitude, longitude, street, city, state, pincode, country, floor_area, sqft, floor_no, total_floors, beds, baths, furnishing, amenities, balcony, central_ac, power_backup, parking, security, swimming_pool, gym, garden, lift, images, videos, status, featured, user_id, created_by, updated_by, phone, dial_code, availability
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48
         ) RETURNING *`,
         valuesArray
       );
@@ -338,7 +377,7 @@ class PropertyService {
       if (updateData.videos !== undefined) transformedData.videos = Array.isArray(updateData.videos) ? updateData.videos : safeJsonParse(updateData.videos);
       if (updateData.status !== undefined) transformedData.status = updateData.status;
       if (updateData.featured !== undefined) transformedData.featured = updateData.featured;
-
+      if (updateData.updated_by !== undefined) transformedData.updated_by = updateData.updated_by;
 
       Object.entries(transformedData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {

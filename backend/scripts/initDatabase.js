@@ -176,6 +176,7 @@ const initializeDatabase = async () => {
                 featured BOOLEAN DEFAULT false,
                 user_id INTEGER REFERENCES users(id),
                 created_by INTEGER REFERENCES users(id),
+                updated_by INTEGER REFERENCES users(id),
                 
                 -- Timestamps
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -191,6 +192,7 @@ const initializeDatabase = async () => {
             CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
             CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
             CREATE INDEX IF NOT EXISTS idx_properties_created_by ON properties(created_by);
+            CREATE INDEX IF NOT EXISTS idx_properties_updated_by ON properties(updated_by);
             CREATE INDEX IF NOT EXISTS idx_properties_location ON properties(location);
             CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
         `);
