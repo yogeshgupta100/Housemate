@@ -616,12 +616,32 @@ const PropertyDetails = ({ property, onRemove }) => {
                             </div>
                             {room.occupied ? (
                               <button
-                                onClick={() => {
-                                  
+                                onClick={async () => {
+                                  try {
+                                    const response = await axios.post(
+                                      `${backendurl}/api/availability-requests`,
+                                      {
+                                        property_id: property.id,
+                                        floor_id: floor.id,
+                                        room_id: room.id
+                                      },
+                                      {
+                                        headers: {
+                                          Authorization: `Bearer ${localStorage.getItem('token')}`
+                                        }
+                                      }
+                                    );
+                                    if (response.data.success) {
+                                      toast.success('Availability request submitted successfully');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error submitting request:', error);
+                                    toast.error(error.response?.data?.message || 'Failed to submit request');
+                                  }
                                 }}
                                 className="mt-3 w-full px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
                               >
-                                Add 360° Scene
+                                Request to Make Available
                               </button>
                             ) : (
                               <button

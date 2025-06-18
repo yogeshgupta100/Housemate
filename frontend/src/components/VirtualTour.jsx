@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
-import Pannellum from 'pannellum-react';
 import axios from 'axios';
+import PanoramaViewer from './PanoramaViewer';
 
 const VirtualTour = ({ roomId }) => {
   const [scenes, setScenes] = useState([]);
@@ -63,25 +63,7 @@ const VirtualTour = ({ roomId }) => {
 
   return (
     <Box sx={{ width: '100%', height: '500px', position: 'relative' }}>
-      <Pannellum
-        width="100%"
-        height="100%"
-        image={currentScene.image_url}
-        pitch={0}
-        yaw={0}
-        hfov={100}
-        autoLoad
-        onLoad={() => console.log('panorama loaded')}
-        hotspotDebug={false}
-        hotspots={currentScene.hotspots?.map(hotspot => ({
-          pitch: hotspot.pitch,
-          yaw: hotspot.yaw,
-          type: 'info',
-          text: 'Click to move to next scene',
-          URL: hotspot.target
-        }))}
-        onHotspotClick={handleHotspotClick}
-      />
+      <PanoramaViewer roomId={roomId} className="w-full h-full" />
     </Box>
   );
 };

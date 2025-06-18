@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Box, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Card, CardContent, IconButton } from '@mui/material';
+import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-import Pannellum from 'pannellum-react';
 
 const HotspotManager = ({ scene, onClose }) => {
   const [hotspots, setHotspots] = useState([]);
@@ -39,35 +39,32 @@ const HotspotManager = ({ scene, onClose }) => {
     }
   };
 
-  const handleClick = (event) => {
-    if (!isAddingHotspot) return;
-    
-    const { yaw, pitch } = event;
-    setNewHotspot({ ...newHotspot, yaw, pitch });
-  };
-
   return (
     <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Manage Hotspots</DialogTitle>
+      <DialogTitle>Manage Hotspots for Scene</DialogTitle>
       <DialogContent>
-        <Box sx={{ height: 400, position: 'relative' }}>
-          <Pannellum
-            width="100%"
-            height="100%"
-            image={scene.image_url}
-            pitch={0}
-            yaw={0}
-            hfov={100}
-            autoLoad
-            onLoad={() => console.log('panorama loaded')}
-            hotspotDebug={true}
-            onHotspotClick={handleClick}
-          />
-        </Box>
+        {scene && (
+          <Box sx={{ mb: 3 }}>
+            <img 
+              src={scene.image_url} 
+              alt="Scene Preview" 
+              style={{ 
+                width: '100%', 
+                height: '300px', 
+                objectFit: 'cover',
+                borderRadius: '8px'
+              }} 
+            />
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              Scene ID: {scene.id} | Hotspots: {hotspots.length}
+            </Typography>
+          </Box>
+        )}
 
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mb: 3 }}>
           <Button
             variant="contained"
+            startIcon={<AddIcon />}
             onClick={() => setIsAddingHotspot(!isAddingHotspot)}
             sx={{ mb: 2 }}
           >
@@ -75,38 +72,90 @@ const HotspotManager = ({ scene, onClose }) => {
           </Button>
 
           {isAddingHotspot && (
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                label="Target Scene ID"
-                value={newHotspot.target}
-                onChange={(e) => setNewHotspot({ ...newHotspot, target: e.target.value })}
-                fullWidth
-                sx={{ mb: 1 }}
-              />
-              <Button variant="contained" onClick={handleAddHotspot}>
-                Save Hotspot
-              </Button>
+            <Box sx={{ p: 2, border: '1px solid #ddd', borderRadius: '8px', mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Add New Hotspot
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Yaw (degrees)"
+                    type="number"
+                    value={newHotspot.yaw}
+                    onChange={(e) => setNewHotspot({ ...newHotspot, yaw: parseFloat(e.target.value) || 0 })}
+                    fullWidth
+                    inputProps={{ step: 0.1 }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Pitch (degrees)"
+                    type="number"
+                    value={newHotspot.pitch}
+                    onChange={(e) => setNewHotspot({ ...newHotspot, pitch: parseFloat(e.target.value) || 0 })}
+                    fullWidth
+                    inputProps={{ step: 0.1 }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Target Scene ID"
+                    value={newHotspot.target}
+                    onChange={(e) => setNewHotspot({ ...newHotspot, target: e.target.value })}
+                    fullWidth
+                    placeholder="Enter the ID of the scene to navigate to"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Button variant="contained" onClick={handleAddHotspot} fullWidth>
+                    Save Hotspot
+                  </Button>
+                </Grid>
+              </Grid>
             </Box>
           )}
-
-          <Typography variant="h6" gutterBottom>
-            Existing Hotspots
-          </Typography>
-          {hotspots.map((hotspot) => (
-            <Box key={hotspot.id} sx={{ mb: 1, p: 1, border: '1px solid #ddd' }}>
-              <Typography>Yaw: {hotspot.yaw.toFixed(2)}°</Typography>
-              <Typography>Pitch: {hotspot.pitch.toFixed(2)}°</Typography>
-              <Typography>Target: {hotspot.target}</Typography>
-              <Button
-                color="error"
-                size="small"
-                onClick={() => handleDeleteHotspot(hotspot.id)}
-              >
-                Delete
-              </Button>
-            </Box>
-          ))}
         </Box>
+
+        <Typography variant="h6" gutterBottom>
+          Existing Hotspots ({hotspots.length})
+        </Typography>
+        
+        {hotspots.length === 0 ? (
+          <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
+            No hotspots configured for this scene
+          </Typography>
+        ) : (
+          <Grid container spacing={2}>
+            {hotspots.map((hotspot) => (
+              <Grid item xs={12} sm={6} key={hotspot.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Yaw: {hotspot.yaw.toFixed(2)}°
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Pitch: {hotspot.pitch.toFixed(2)}°
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                          <strong>Target:</strong> {hotspot.target}
+                        </Typography>
+                      </Box>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteHotspot(hotspot.id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
