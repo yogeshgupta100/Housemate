@@ -5,67 +5,43 @@ import pool from '../config/postgres.js';
 
 export const getAllProperties = async (req, res) => {
   try {
-    const { type, minPrice, maxPrice, location, status } = req.query;
-    console.log('Frontend Properties Query params:', { type, minPrice, maxPrice, location, status });
+    const { type, minPrice, maxPrice, location, status, page = 1, limit = 10 } = req.query;
+    console.log('Frontend Properties Query params:', { type, minPrice, maxPrice, location, status, page, limit });
 
-    // First check if the tables exist
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'properties'
-      );
-    `);
-
-    if (!tableCheck.rows[0].exists) {
-      throw new Error('Properties table does not exist');
-    }
-
-    let query = `
-      SELECT * FROM properties
-      WHERE 1=1
-    `;
-    const queryParams = [];
+    // Build filters object
+    const filters = {};
 
     if (type) {
-      queryParams.push(type);
-      query += ` AND type = $${queryParams.length}`;
+      filters.type = type;
     }
 
-    if (minPrice) {
-      queryParams.push(minPrice);
-      query += ` AND price >= $${queryParams.length}`;
-    }
-
-    if (maxPrice) {
-      queryParams.push(maxPrice);
-      query += ` AND price <= $${queryParams.length}`;
+    if (minPrice || maxPrice) {
+      filters.price = {};
+      if (minPrice) filters.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filters.price.$lte = parseFloat(maxPrice);
     }
 
     if (location) {
-      queryParams.push(`%${location}%`);
-      query += ` AND location ILIKE $${queryParams.length}`;
+      filters.$or = [
+        { location: { $regex: location, $options: 'i' } },
+        { city: { $regex: location, $options: 'i' } },
+        { state: { $regex: location, $options: 'i' } }
+      ];
     }
 
     if (status) {
-      queryParams.push(status);
-      query += ` AND status = $${queryParams.length}`;
+      filters.status = status;
     }
 
     // For non-admin requests, only show verified properties
     if (!req.user?.isAdmin) {
-      queryParams.push('verified');
-      query += ` AND verification_status = $${queryParams.length}`;
+      filters.verification_status = 'verified';
     }
 
-    query += ` ORDER BY created_at DESC`;
+    // Use propertyService to get properties with room availability
+    const properties = await propertyService.getAllProperties(filters, parseInt(page), parseInt(limit));
 
-    console.log('Executing query:', query);
-    console.log('With params:', queryParams);
-
-    const result = await pool.query(query, queryParams);
-    console.log('Query result:', result.rows.length, 'properties found');
-
-    const properties = result.rows.map(normalizePropertyData);
+    console.log('Query result:', properties.length, 'properties found');
 
     res.json({
       success: true,
@@ -309,7 +285,8 @@ export const updateProperty = async (req, res) => {
       dial_code: updateData.dialCode || updateData.dial_code,
       pg_type: updateData.type === 'pg' ? (updateData.pgType || updateData.pg_type) : null,
       verification_status: updateData.verification_status || 'unverified',
-      availability: updateData.availability ? (typeof updateData.availability === 'string' ? updateData.availability : JSON.stringify(updateData.availability)) : null
+      availability: updateData.availability ? (typeof updateData.availability === 'string' ? updateData.availability : JSON.stringify(updateData.availability)) : null,
+      updated_by: updateData.updated_by
     };
 
     // Handle floor details

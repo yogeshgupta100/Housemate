@@ -119,9 +119,25 @@ class PropertyRepository {
       if (filters.search) {
         conditions.push(`(${filters.search})`);
       }
+
+      // Handle $or conditions (for location search)
+      if (filters.$or) {
+        const orConditions = filters.$or.map(term => {
+          const field = Object.keys(term)[0];
+          const value = term[field].$regex;
+          const options = term[field].$options || '';
+          if (options.includes('i')) {
+            return `LOWER(${field}) LIKE LOWER($${paramCount})`;
+          }
+          return `${field} LIKE $${paramCount}`;
+        });
+        conditions.push(`(${orConditions.join(' OR ')})`);
+        values.push(`%${filters.$or[0][Object.keys(filters.$or[0])[0]].$regex}%`);
+        paramCount++;
+      }
   
       // Exact matches for all fields
-      ['type', 'listing_type', 'beds', 'baths', 'verified', 'user_id', 'created_by'].forEach(field => {
+      ['type', 'listing_type', 'beds', 'baths', 'verified', 'user_id', 'created_by', 'status', 'verification_status'].forEach(field => {
         if (filters[field] !== undefined) {
           conditions.push(`${field} = $${paramCount}`);
           values.push(filters[field]);
@@ -129,8 +145,19 @@ class PropertyRepository {
         }
       });
   
-      // Range queries, amenities etc stay same
+      // Range queries for price
       if (filters.price) {
+        if (filters.price.$gte !== undefined) {
+          conditions.push(`price >= $${paramCount}`);
+          values.push(filters.price.$gte);
+          paramCount++;
+        }
+        if (filters.price.$lte !== undefined) {
+          conditions.push(`price <= $${paramCount}`);
+          values.push(filters.price.$lte);
+          paramCount++;
+        }
+        // Handle old format for backward compatibility
         if (filters.price.min !== undefined) {
           conditions.push(`price >= $${paramCount}`);
           values.push(filters.price.min);
@@ -144,6 +171,17 @@ class PropertyRepository {
       }
   
       if (filters.sqft) {
+        if (filters.sqft.$gte !== undefined) {
+          conditions.push(`sqft >= $${paramCount}`);
+          values.push(filters.sqft.$gte);
+          paramCount++;
+        }
+        if (filters.sqft.$lte !== undefined) {
+          conditions.push(`sqft <= $${paramCount}`);
+          values.push(filters.sqft.$lte);
+          paramCount++;
+        }
+        // Handle old format for backward compatibility
         if (filters.sqft.min !== undefined) {
           conditions.push(`sqft >= $${paramCount}`);
           values.push(filters.sqft.min);
