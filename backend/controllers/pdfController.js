@@ -1,5 +1,5 @@
 import multer from 'multer';
-import s3Service from '../services/s3Service.js';
+import s3Service, { uploadToS3 } from '../services/s3Service.js';
 
 // Configure multer for memory storage
 const upload = multer({
@@ -41,40 +41,27 @@ const handleMulterError = (err, req, res, next) => {
 };
 
 export const uploadPDF = async (req, res) => {
-    console.log('Upload endpoint hit');
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-    
     try {
         if (!req.file) {
-            console.log('No file in request');
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        // Determine the prefix based on file type
-        let prefix = 'images';
-        if (req.file.mimetype === 'application/pdf') {
-            prefix = 'pg';
-        } else if (req.file.mimetype.startsWith('video/')) {
-            prefix = 'videos';
-        }
-        const key = s3Service.generateKey(req.file.originalname, prefix);
-        console.log('Generated S3 key:', key);
+        const file = req.file;
+        const folder = req.body.folder || 'documents';
         
-        const result = await s3Service.uploadPDF(req.file, key);
-        console.log('Upload result:', result);
-
+        // Upload to S3 using the named export function
+        const url = await uploadToS3(file, folder);
+        
         res.status(200).json({
             success: true,
-            message: 'File uploaded successfully',
-            data: result
+            url: url
         });
     } catch (error) {
-        console.error('Error in upload:', error);
-        res.status(500).json({
+        console.error('Error in uploadPDF:', error);
+        res.status(500).json({ 
             success: false,
             message: 'Failed to upload file',
-            error: error.message
+            error: error.message 
         });
     }
 };

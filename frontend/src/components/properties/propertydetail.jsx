@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,8 @@ import GeneralModal from "../GeneralModal.jsx";
 import TermsAndConditions from "../TermsAndConditions.jsx";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext.jsx";
+import PanoramaViewer from '../PanoramaViewer';
+import FullscreenMediaViewer from '../FullscreenMediaViewer';
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -47,6 +49,9 @@ const PropertyDetails = () => {
   const [roomDescription, setRoomDescription] = useState('');
   const navigate = useNavigate();
   const {user} = useAuth();
+  const [isFullViewOpen, setIsFullViewOpen] = useState(false);
+  const [fullViewIndex, setFullViewIndex] = useState(0);
+  const fullViewMediaRef = useRef(null);
 
   
   useEffect(() => {
@@ -254,6 +259,38 @@ const PropertyDetails = () => {
     }
   };
 
+  const handleMakeAvailable = async (roomId) => {
+    try {
+      const res = await axios.post(`${Backendurl}/api/admin/rooms/make-available-request`, {
+        roomId,
+        propertyId: property.id,
+        ownerId: user.data.id,
+      });
+      if (res.data.success) {
+        toast.success('Request sent to admin!');
+      } else {
+        toast.error(res.data.message || 'Failed to send request');
+      }
+    } catch (err) {
+      toast.error('Error sending request');
+    }
+  };
+
+  // Fullscreen API handler
+  const handleGoFullscreen = () => {
+    if (fullViewMediaRef.current) {
+      if (fullViewMediaRef.current.requestFullscreen) {
+        fullViewMediaRef.current.requestFullscreen();
+      } else if (fullViewMediaRef.current.webkitRequestFullscreen) {
+        fullViewMediaRef.current.webkitRequestFullscreen();
+      } else if (fullViewMediaRef.current.mozRequestFullScreen) {
+        fullViewMediaRef.current.mozRequestFullScreen();
+      } else if (fullViewMediaRef.current.msRequestFullscreen) {
+        fullViewMediaRef.current.msRequestFullscreen();
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className={`min-h-screen bg-gray-50 ${isShow ? 'pt-0' : 'pt-16'}`}>
@@ -415,21 +452,47 @@ const PropertyDetails = () => {
         <div className={`${isShow ? 'bg-gray-50' : 'bg-white shadow-lg'} rounded-xl overflow-hidden`}>
           <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-8 flex" style={{ height: '400px', minHeight: '225px' }}>
             <div className="flex-1 flex items-center justify-center">
-              <div className="w-full max-w-full aspect-video flex items-center justify-center bg-black rounded-xl overflow-hidden">
+              <div className="w-full max-w-full aspect-video flex items-center justify-center bg-black rounded-xl overflow-hidden relative group">
                 {mediaGallery[activeMediaIndex]?.type === "image" ? (
-                  <img
-                    src={mediaGallery[activeMediaIndex].url}
-                    alt={`Media ${activeMediaIndex + 1}`}
-                    className="w-full h-full object-contain"
-                    style={{ aspectRatio: '16/9' }}
-                  />
+                  <>
+                    <div className="w-full h-full flex items-center justify-center relative">
+                    <img
+                      src={mediaGallery[activeMediaIndex].url}
+                      alt={`Media ${activeMediaIndex + 1}`}
+                      className="w-full h-full object-contain"
+                      style={{ aspectRatio: '16/9' }}
+                    />
+                    <button
+                      className={`absolute ${mediaGallery?.length > 1 ? 'top-[76%] right-[4%]' : 'top-[72%] right-[2%]'} bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition z-10 opacity-0 group-hover:opacity-100`}
+                      title="View Fullscreen"
+                      onClick={() => {
+                        setFullViewIndex(activeMediaIndex);
+                        setIsFullViewOpen(true);
+                      }}
+                    >
+                      <Maximize className="w-5 h-5" />
+                    </button>
+                    </div>
+                  </>
                 ) : (
-                  <video
-                    src={mediaGallery[activeMediaIndex].url}
-                    controls
-                    className="w-full h-full object-contain"
-                    style={{ aspectRatio: '16/9' }}
-                  />
+                  <>
+                    <video
+                      src={mediaGallery[activeMediaIndex].url}
+                      controls
+                      className="w-full h-full object-contain"
+                      style={{ aspectRatio: '16/9' }}
+                    />
+                    <button
+                      className={`absolute ${mediaGallery?.length > 1 ? 'top-[76%] right-[4%]' : 'top-[72%] right-[2%]'} bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition z-10 opacity-0 group-hover:opacity-100`}
+                      title="View Fullscreen"
+                      onClick={() => {
+                        setFullViewIndex(activeMediaIndex);
+                        setIsFullViewOpen(true);
+                      }}
+                    >
+                      <Maximize className="w-5 h-5" />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -461,6 +524,14 @@ const PropertyDetails = () => {
               </div>
             )}
           </div>
+
+          {/* Fullscreen Modal for Media */}
+          <FullscreenMediaViewer
+            open={isFullViewOpen}
+            onClose={() => setIsFullViewOpen(false)}
+            mediaGallery={mediaGallery}
+            startIndex={fullViewIndex}
+          />
 
           <div>
             <div className="p-8">
@@ -678,6 +749,7 @@ const PropertyDetails = () => {
                               <th className="px-4 py-2 border">Rent Collection Status</th>
                               <th className="px-4 py-2 border">Description</th>
                               <th className="px-4 py-2 border">Actions</th>
+                              <th className="px-4 py-2 border"></th>
                             </tr>
                           </thead>
                           <tbody>
@@ -760,6 +832,17 @@ const PropertyDetails = () => {
                                     </button>
                                   )}
                                 </td>
+                                <td className="px-4 py-2 border">
+                                  <button
+                                    onClick={() => {
+                                      handleMakeAvailable(room.roomId);
+                                    }}
+                                    className="p-2 text-white bg-green-600 hover:bg-green-700 transition-colors rounded-md"
+                                    title="Make it Available"
+                                  >
+                                    Make it Available
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -790,6 +873,58 @@ const PropertyDetails = () => {
             <MapPin className="w-4 h-4" />
             View on Google Maps
           </a>
+        </div>
+
+        <div className="p-4 border-b">
+          <h2 className="text-2xl font-semibold mb-4">360° Virtual Tour</h2>
+          {property?.type === "pg" || property?.type === "rk" || property?.type === "flat" ? (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Room
+                </label>
+                <select
+                  value={selectedRoom?.id || ''}
+                  onChange={(e) => {
+                    const roomId = e.target.value;
+                    if (roomId) {
+                      // Find the floor and room
+                      const floor = property.floorDetails.find(f => 
+                        f.rooms.some(r => r.id === parseInt(roomId))
+                      );
+                      const room = floor?.rooms.find(r => r.id === parseInt(roomId));
+                      if (room) {
+                        setSelectedRoom({ ...room, floor_id: floor.id });
+                      }
+                    } else {
+                      setSelectedRoom(null);
+                    }
+                  }}
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
+                  <option value="">Select a room</option>
+                  {property.floorDetails?.map((floor) => (
+                    <optgroup key={floor.id} label={`Floor ${floor.floorNumber}`}>
+                      {floor.rooms?.map((room) => (
+                        <option key={room.id} value={room.id}>
+                          Room {room.roomNumber} - {room.capacity === room.occupied ? 'Occupied' : 'Available'}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              {selectedRoom ? (
+                <PanoramaViewer roomId={selectedRoom.id} className="w-full h-[500px] rounded-lg" />
+              ) : (
+                <div className="w-full h-[500px] rounded-lg bg-gray-100 flex items-center justify-center">
+                  <p className="text-gray-600">Please select a room to view its 360° tour</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <PanoramaViewer roomId={property?.id} className="w-full h-[500px] rounded-lg" />
+          )}
         </div>
 
         <AnimatePresence>

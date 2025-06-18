@@ -253,3 +253,48 @@ export const forgotPasswordWithOTP = async (req, res) => {
     client.release();
   }
 };
+
+export const searchUsers = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required'
+      });
+    }
+
+    const searchQuery = `
+      SELECT id, first_name, last_name, email, phone, user_type
+      FROM users
+      WHERE 
+        LOWER(first_name || ' ' || last_name) LIKE LOWER($1) OR
+        LOWER(email) LIKE LOWER($1) OR
+        phone LIKE $1
+      LIMIT 10
+    `;
+
+    const { rows: users } = await client.query(searchQuery, [`%${q}%`]);
+
+    res.status(200).json({
+      success: true,
+      users: users.map(user => ({
+        id: user.id,
+        name: `${user.first_name} ${user.last_name}`,
+        email: user.email,
+        phone: user.phone,
+        userType: user.user_type
+      }))
+    });
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search users',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};

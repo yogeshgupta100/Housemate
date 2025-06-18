@@ -927,7 +927,17 @@ const Update = () => {
       }
     } catch (err) {
       console.error("Error saving property:", err);
-      setError(err.response?.data?.message || "Failed to save property");
+      
+      // Handle specific foreign key constraint errors
+      if (err.response?.data?.message?.includes('foreign key constraint')) {
+        const errorMessage = "Cannot update property because some rooms have pending availability requests. Please resolve these requests first or contact support.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } else {
+        const errorMessage = err.response?.data?.message || "Failed to save property";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -1048,8 +1058,17 @@ const Update = () => {
       }
     } catch (err) {
       console.error("Error saving draft:", err);
-      setError(err.response?.data?.message || "Failed to save draft");
-      toast.error(err.response?.data?.message || "Failed to save draft");
+      
+      // Handle specific foreign key constraint errors
+      if (err.response?.data?.message?.includes('foreign key constraint')) {
+        const errorMessage = "Cannot save draft because some rooms have pending availability requests. Please resolve these requests first or contact support.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } else {
+        const errorMessage = err.response?.data?.message || "Failed to save draft";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

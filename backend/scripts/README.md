@@ -1,6 +1,85 @@
-# Database Seed Scripts
+# Database Scripts
 
-This directory contains scripts to seed the database with sample data for development and testing purposes.
+This directory contains various database initialization and maintenance scripts.
+
+## Scripts Overview
+
+### Core Initialization
+- `initDatabase.js` - Main database initialization script
+- `initRoles.js` - Initialize user roles
+- `seedUsers.js` - Seed initial users
+- `seedProperties.js` - Seed sample properties
+
+### Maintenance Scripts
+- `addRoomDetailsColumns.js` - Add room detail columns to existing rooms table
+- `addDescriptionColumn.js` - Add description column to properties table
+- `runPropertyIdMigration.js` - Migrate property IDs
+- `runFavoritesMigration.js` - Migrate user favorites
+
+### Foreign Key Constraint Fix
+- `createRoomAvailabilityRequestsTable.js` - Create room_availability_requests table with proper constraints
+- `cleanupOrphanedRoomRequests.js` - Clean up orphaned room availability request records
+
+## Foreign Key Constraint Issue Resolution
+
+### Problem
+The error `"update or delete on table "rooms" violates foreign key constraint "room_availability_requests_room_id_fkey"` occurs when trying to update properties with floor details because:
+
+1. The `room_availability_requests` table references rooms via foreign key
+2. The original update logic deleted and recreated all rooms
+3. This violated the foreign key constraint when rooms had pending availability requests
+
+### Solution
+1. **Database Schema Fix**: Added proper `room_availability_requests` table definition with `ON DELETE CASCADE`
+2. **Update Logic Improvement**: Modified property update to update rooms in place instead of deleting/recreating
+3. **Constraint Handling**: Added logic to check for related records before deleting rooms
+4. **Error Handling**: Improved frontend error messages for constraint violations
+
+### Running the Fix
+
+1. **Create the missing table** (if not already created):
+   ```bash
+   node scripts/createRoomAvailabilityRequestsTable.js
+   ```
+
+2. **Clean up orphaned records** (if needed):
+   ```bash
+   node scripts/cleanupOrphanedRoomRequests.js
+   ```
+
+3. **Restart the backend server** to use the updated property update logic
+
+### What Changed
+
+#### Backend Changes
+- **propertyController.js**: Updated `updateProperty` function to handle rooms more carefully
+- **initDatabase.js**: Added `room_availability_requests` table definition
+- **New scripts**: Added cleanup and table creation scripts
+
+#### Frontend Changes
+- **Update.jsx**: Improved error handling for foreign key constraint violations
+- Better user feedback when constraint violations occur
+
+### Prevention
+- The new update logic prevents this issue by:
+  - Updating existing rooms instead of deleting/recreating
+  - Checking for related records before deletion
+  - Marking rooms as unavailable instead of deleting when they have related records
+
+## Usage
+
+Run scripts from the backend directory:
+
+```bash
+cd backend
+node scripts/[script-name].js
+```
+
+## Notes
+
+- Always backup your database before running maintenance scripts
+- Some scripts may need to be run multiple times if they fail partway through
+- Check the console output for any errors or warnings
 
 ## Property Seed Script
 

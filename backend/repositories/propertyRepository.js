@@ -243,16 +243,18 @@ class PropertyRepository {
   }
 
   async findByUser(userId) {
-    console.log('typeof userId:', typeof userId, userId);
     const { rows } = await pool.query(
-      `SELECT p.*, 
-              u.first_name as owner_first_name, u.last_name as owner_last_name,
-              c.first_name as creator_first_name, c.last_name as creator_last_name
-       FROM properties p
-       LEFT JOIN users u ON p.user_id = u.id
-       LEFT JOIN users c ON p.created_by = c.id
-       WHERE p.created_by = $1
-       ORDER BY p.created_at DESC`,
+      `SELECT 
+        p.*, 
+        u.first_name as owner_first_name, 
+        u.last_name as owner_last_name,
+        c.first_name as creator_first_name, 
+        c.last_name as creator_last_name
+      FROM properties p
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN users c ON p.created_by = c.id
+      WHERE p.created_by = $1 OR p.user_id = $1
+      ORDER BY p.created_at DESC`,
       [userId]
     );
     return rows;

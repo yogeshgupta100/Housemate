@@ -25,52 +25,50 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const [roles, setRoles] = useState([]);
-  const [selectedRole, setSelectedRole] = useState('')
 
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const apiUrl = `${Backendurl}/api/auth/get-roles`;
+  // useEffect(() => {
+  //   const fetchRoles = async () => {
+  //     try {
+  //       const apiUrl = `${Backendurl}/api/auth/get-roles`;
         
-        if (!Backendurl) {
-          throw new Error('Backend URL is not configured');
-        }
+  //       if (!Backendurl) {
+  //         throw new Error('Backend URL is not configured');
+  //       }
 
-        const response = await axios.get(apiUrl, {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
+  //       const response = await axios.get(apiUrl, {
+  //         headers: {
+  //           'Accept': 'application/json',
+  //           'Content-Type': 'application/json'
+  //         }
+  //       });
         
-        if (!response.data) {
-          throw new Error('No data received from server');
-        }
+  //       if (!response.data) {
+  //         throw new Error('No data received from server');
+  //       }
         
-        if (response.data.success) {
-          setRoles(response.data.data);
-          const defaultRole = response.data.data.find(role => role.name === 'individual');
-          if (defaultRole) {
-            setSelectedRole(defaultRole.id);
-          }
-        } else {
-          throw new Error(response.data.message || 'Failed to fetch roles');
-        }
-      } catch (error) {
-        console.error('Error fetching roles:', error);
-        console.error('Error details:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-          config: error.config
-        });
-        toast.error('Error loading roles. Please try again later.');
-      }
-    };
+  //       if (response.data.success) {
+  //         setRoles(response.data.data);
+  //         const defaultRole = response.data.data.find(role => role.name === 'individual');
+  //         if (defaultRole) {
+  //           setSelectedRole(defaultRole.id);
+  //         }
+  //       } else {
+  //         throw new Error(response.data.message || 'Failed to fetch roles');
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching roles:', error);
+  //       console.error('Error details:', {
+  //         message: error.message,
+  //         response: error.response?.data,
+  //         status: error.response?.status,
+  //         config: error.config
+  //       });
+  //       toast.error('Error loading roles. Please try again later.');
+  //     }
+  //   };
 
-    fetchRoles();
-  }, []);
+  //   fetchRoles();
+  // }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -175,16 +173,16 @@ const Signup = () => {
         phone: formData.phone,
         gender: formData.gender,
         userType: formData.userType || 'individual',
-        role: selectedRole
+        role: 'individual'
       };
 
-      const selectedRoleData = roles.find(role => role.id === selectedRole);
-      if (selectedRoleData?.name === 'corporate') {
-        userData.companyName = formData.companyName;
-        userData.registrationNumber = formData.registrationNumber;
-      } else if (selectedRoleData?.name === 'dealer') {
-        userData.dealerLicense = formData.dealerLicense;
-      }
+      // const selectedRoleData = roles.find(role => role.id === selectedRole);
+      // if (selectedRoleData?.name === 'corporate') {
+      //   userData.companyName = formData.companyName;
+      //   userData.registrationNumber = formData.registrationNumber;
+      // } else if (selectedRoleData?.name === 'dealer') {
+      //   userData.dealerLicense = formData.dealerLicense;
+      // }
 
       const response = await axios.post(
         `${Backendurl}/api/auth/register`,
@@ -237,10 +235,10 @@ const Signup = () => {
               <div className="step-circle">2</div>
               <div className="step-text">Contact</div>
             </div>
-            <div className={`step ${step >= 3 ? 'active' : ''}`}>
+            {/* <div className={`step ${step >= 3 ? 'active' : ''}`}>
               <div className="step-circle">3</div>
               <div className="step-text">Account Type</div>
-            </div>
+            </div> */}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -403,7 +401,7 @@ const Signup = () => {
               </div>
             )}
 
-            {step === 3 && (
+            {/* {step === 3 && (
                 <div className="space-y-6">
                   <div>
                     <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
@@ -527,7 +525,7 @@ const Signup = () => {
                   </button>
                 </div>
               </div>
-            )}
+            )} */}
           </form>
 
           <div className="relative my-6">

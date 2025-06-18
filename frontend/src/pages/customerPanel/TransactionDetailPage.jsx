@@ -128,15 +128,15 @@ const TransactionDetailPage = () => {
   }
 
   const property = {
-    ...transaction.property,
-    images: Array.isArray(transaction.property?.images)
-      ? transaction.property.images
-      : (transaction.property_images || []),
+    ...transaction?.property,
+    images: Array.isArray(transaction?.property?.images)
+      ? transaction?.property?.images
+      : (transaction?.property_images || []),
   };
-  const amount = transaction.amount || Number(transaction.property_price) || 0;
-  const status = transaction.status || 'Pending';
-  const type = transaction.type || 'Rent';
-  const date = transaction.created_at || transaction.date;
+  const amount = transaction?.amount || Number(transaction?.property_price) || 0;
+  const status = transaction?.status || 'Pending';
+  const type = transaction?.type || 'Rent';
+  const date = transaction?.created_at || transaction?.date;
   const documents = transaction.documents || {};
   const seller = transaction.seller || {};
 

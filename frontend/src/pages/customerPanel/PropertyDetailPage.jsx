@@ -23,6 +23,7 @@ import {
 import { Backendurl } from "../../App";
 import ScheduleViewing from "../../components/dashboard/Dashboard";
 import { RoomGrid } from "../../components/properties/RoomGrid";
+import VirtualTour from "../../components/VirtualTour";
 
 const PropertyDetailPage = ({page = "Properties", href = "/properties", className = "pt-16"}) => {
   console.log(page, href , className);
@@ -69,7 +70,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
 
   const getPropertyImages = (property) => {
     if (!property) return [];
-    const images = property.images || property.image || [];
+    const images = property?.images || property?.image || [];
     return images.map(img => img.startsWith('http') ? img : `${Backendurl}${img}`);
   };
 
@@ -86,17 +87,17 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
 
   const getPropertyStatus = (property) => {
     if (!property) return 'N/A';
-    if (typeof property.availability === 'object' && property.availability?.status) {
-      return property.availability.status;
+    if (typeof property?.availability === 'object' && property?.availability?.status) {
+      return property?.availability?.status;
     }
-    return property.availability || property.listingType || 'N/A';
+    return property?.availability || property?.listingType || 'N/A';
   };
 
   const handleKeyNavigation = useCallback((e) => {
     if (e.key === 'ArrowLeft') {
-      setActiveImage(prev => (prev === 0 ? property.image.length - 1 : prev - 1));
+      setActiveImage(prev => (prev === 0 ? property?.image?.length - 1 : prev - 1));
     } else if (e.key === 'ArrowRight') {
-      setActiveImage(prev => (prev === property.image.length - 1 ? 0 : prev + 1));
+      setActiveImage(prev => (prev === property?.image?.length - 1 ? 0 : prev + 1));
     } else if (e.key === 'Escape' && showSchedule) {
       setShowSchedule(false);
     }
@@ -111,8 +112,8 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
     try {
       if (navigator.share) {
         await navigator.share({
-          title: property.title,
-          text: `Check out this ${property.type}: ${property.title}`,
+          title: property?.title,
+          text: `Check out this ${property?.type}: ${property?.title}`,
           url: window.location.href
         });
       } else {
@@ -228,7 +229,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
   }
 
   const images = getPropertyImages(property);
-  const amenities = parseAmenities(property.amenities);
+  const amenities = parseAmenities(property?.amenities);
   const status = getPropertyStatus(property);
 
   return (
@@ -270,7 +271,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
               <motion.img
                 key={activeImage}
                 src={images[activeImage]}
-                alt={`${property.title} - View ${activeImage + 1}`}
+                alt={`${property?.title} - View ${activeImage + 1}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -312,11 +313,11 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {property.title}
+                  {property?.title}
                 </h1>
                 <div className="flex items-center text-gray-600">
                   <MapPin className="w-5 h-5 mr-2" />
-                  {property.location}
+                  {property?.location}
                 </div>
               </div>
               <button
@@ -331,12 +332,12 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
               <div>
                 <div className="mb-4">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    property.listingType === 'rent' 
+                    property?.listingType === 'rent' 
                       ? 'bg-blue-100 text-blue-800' 
                       : 'bg-purple-100 text-purple-800'
                   }`}>
                     <Home className="w-4 h-4 mr-1" />
-                    {property.listingType === 'rent' ? 'Rental Property' : 'Sale Property'}
+                    {property?.listingType === 'rent' ? 'Rental Property' : 'Sale Property'}
                   </span>
                 </div>
 
@@ -345,22 +346,22 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                     <>
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-3xl font-bold text-blue-600">
-                          ₹{Number(property.price).toLocaleString('en-IN')}
-                          <span className="text-sm text-gray-600 font-normal">/{property.rentType}</span>
+                          ₹{Number(property?.price).toLocaleString('en-IN')}
+                          <span className="text-sm text-gray-600 font-normal">/{property?.rentType}</span>
                         </p>
                       </div>
                       <div className="border-t border-blue-100 pt-3">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-gray-600">Security Deposit</span>
                           <span className="font-semibold text-gray-800">
-                            ₹{Number(property.deposit).toLocaleString('en-IN')}
+                            ₹{Number(property?.deposit).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        {property.availability?.availableFrom && (
+                        {property?.availability?.availableFrom && (
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">Available From</span>
                             <span className="font-semibold text-gray-800">
-                              {new Date(property.availability.availableFrom).toLocaleDateString('en-IN', {
+                              {new Date(property?.availability?.availableFrom).toLocaleDateString('en-IN', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
@@ -372,7 +373,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600">Minimum Lease</span>
                             <span className="font-semibold text-gray-800">
-                              {property.availability.minLeasePeriod}
+                              {property?.availability?.minLeasePeriod}
                             </span>
                           </div>
                         )}
@@ -382,26 +383,26 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                     <>
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-3xl font-bold text-blue-600">
-                          ₹{Number(property.price).toLocaleString('en-IN')}
+                          ₹{Number(property?.price).toLocaleString('en-IN')}
                         </p>
                       </div>
                       <div className="border-t border-blue-100 pt-3 space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Property Age</span>
                           <span className="font-semibold text-gray-800">
-                            {property.propertyAge} years
+                            {property?.propertyAge} years
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Condition</span>
                           <span className="font-semibold text-gray-800 capitalize">
-                            {property.propertyCondition ? property.propertyCondition.replace(/_/g, ' ') : 'N/A'}
+                            {property?.propertyCondition ? property?.propertyCondition.replace(/_/g, ' ') : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Status</span>
                           <span className="font-semibold text-gray-800 capitalize">
-                            {property.propertyStatus ? property.propertyStatus.replace(/_/g, ' ') : 'N/A'}
+                            {property?.propertyStatus ? property?.propertyStatus.replace(/_/g, ' ') : 'N/A'}
                           </span>
                         </div>
                       </div>
@@ -416,18 +417,18 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                   <div className="bg-gray-50 p-4 rounded-lg text-center">
                     <BedDouble className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">
-                      {property.beds} {property.beds > 1 ? 'Beds' : 'Bed'}
+                      {property?.beds} {property?.beds > 1 ? 'Beds' : 'Bed'}
                     </p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg text-center">
                     <Bath className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">
-                      {property.baths} {property.baths > 1 ? 'Baths' : 'Bath'}
+                      {property?.baths} {property?.baths > 1 ? 'Baths' : 'Bath'}
                     </p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg text-center">
                     <Maximize className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">{property.sqft} sqft</p>
+                    <p className="text-sm text-gray-600">{property?.sqft} sqft</p>
                   </div>
                 </div>
 
@@ -435,7 +436,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                   <h2 className="text-xl font-semibold mb-4">Contact Details</h2>
                   <div className="flex items-center text-gray-600">
                     <Phone className="w-5 h-5 mr-2" />
-                    {property.phone}
+                    {property?.phone}
                   </div>
                 </div>
 
@@ -454,7 +455,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-4">Description</h2>
                   <p className="text-gray-600 leading-relaxed">
-                    {property.description}
+                    {property?.description}
                   </p>
                 </div>
 
@@ -473,7 +474,7 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
                   </div>
                 </div>
 
-                {property.type === 'pg' && (
+                {property?.type === 'pg' && (
                   <div className="my-8">
                     <h2 className="text-lg font-semibold mb-2">Available Rooms</h2>
                     <RoomGrid
@@ -496,10 +497,10 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
             <h3 className="text-lg font-semibold">Location</h3>
           </div>
           <p className="text-gray-600 mb-4">
-            {property.location}
+            {property?.location}
           </p>
           <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(property.location)}`}
+            href={`https://maps.google.com/?q=${encodeURIComponent(property?.location)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
@@ -512,14 +513,24 @@ const PropertyDetailPage = ({page = "Properties", href = "/properties", classNam
         <AnimatePresence>
           {showSchedule && (
             <ScheduleViewing
-              propertyId={property.id}
-              propertyTitle={property.title}
-              propertyLocation={property.location}
-              propertyImage={property.images?.[0] ? `${"http://localhost:4000"}/uploads/${property.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
+              propertyId={property?.id}
+              propertyTitle={property?.title}
+              propertyLocation={property?.location}
+              propertyImage={property?.images?.[0] ? `${Backendurl}/uploads/${property?.images[0].split('/uploads/').pop()}` : "/placeholder.jpg"}
               onClose={() => setShowSchedule(false)}
             />
           )}
         </AnimatePresence>
+
+        {/* Add Virtual Tour Section */}
+        {property?.room_id && (
+          <div className="max-w-7xl mx-auto px-4 mt-8">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Virtual Tour</h2>
+              <VirtualTour roomId={property?.room_id} />
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );

@@ -9,7 +9,13 @@ class UserRepository {
 
   async findById(id) {
     const { rows } = await pool.query(
-      'SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at FROM users WHERE id = $1',
+      `SELECT 
+        id, first_name, last_name, email, phone, gender, role_id, 
+        user_type, company_name, registration_number, dealer_license, 
+        city, state, bio, profile_image, marital_status, govt_id_number, 
+        id_card_images, verification_status, profession, nationality, 
+        bank_details, is_active, created_at, updated_at 
+      FROM users WHERE id = $1`,
       [id]
     );
     return rows[0];
@@ -19,6 +25,14 @@ class UserRepository {
     const { rows } = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
+    );
+    return rows[0];
+  }
+
+  async findByPhone(phone) {
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE phone = $1',
+      [phone]
     );
     return rows[0];
   }

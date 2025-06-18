@@ -65,8 +65,8 @@ const TransactionCard = ({ transaction }) => {
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
       <div className="relative">
         <img
-          src={property.images[0]}
-          alt={property.title}
+          src={property?.images?.[0]}
+          alt={property?.title}
           className="w-full h-48 object-cover"
         />
         <div className="absolute top-4 left-4 flex gap-2">
@@ -79,9 +79,9 @@ const TransactionCard = ({ transaction }) => {
         </div>
       </div>
       <div className="p-5">
-        <h3 className="text-lg font-semibold mb-2">{property.title}</h3>
+        <h3 className="text-lg font-semibold mb-2">{property?.title}</h3>
         <p className="text-gray-600 mb-3">
-          {property.location}, {property.city}, {property.state}
+          {property?.location}, {property?.city}, {property?.state}
         </p>
         
         <div className="flex justify-between items-center mb-4">
