@@ -2,6 +2,7 @@ import propertyService from '../services/propertyService.js';
 import Property from '../models/propertymodel.js';
 import aiService from '../services/aiService.js';
 import pool from '../config/postgres.js';
+import Scene from '../models/Scene.js';
 
 export const getAllProperties = async (req, res) => {
   try {
@@ -63,9 +64,21 @@ export const getPropertyById = async (req, res) => {
     const { id } = req.params;
     const property = await propertyService.getPropertyById(id);
 
+    // Fetch property scenes
+    let scenes = [];
+    try {
+      scenes = await Scene.getByPropertyId(id);
+    } catch (sceneError) {
+      console.error('Error fetching property scenes:', sceneError);
+      // Don't fail the entire request if scenes fail to load
+    }
+
     res.json({
       success: true,
-      property: property
+      property: {
+        ...property,
+        scenes: scenes
+      }
     });
   } catch (error) {
     console.error('Error fetching property:', error);

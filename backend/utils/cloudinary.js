@@ -15,8 +15,8 @@ export const uploadToCloudinary = async (filePath) => {
       folder: 'housemate/properties',
       resource_type: 'auto',
       transformation: [
-        { width: 1200, height: 800, crop: 'fill' },
-        { quality: 'auto' },
+        { width: 2400, height: 1600, crop: 'limit' },
+        { quality: 'auto:best' },
         { fetch_format: 'auto' }
       ]
     });

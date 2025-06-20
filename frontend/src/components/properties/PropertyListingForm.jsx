@@ -164,6 +164,7 @@ const PropertyListingForm = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoPreviewUrls, setVideoPreviewUrls] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState([]);
 
   const locationInputRef = useRef(null);
 
@@ -200,6 +201,8 @@ const PropertyListingForm = () => {
         return !/^\d{10}$/.test(value)
           ? "Enter valid 10-digit phone number"
           : "";
+      case "images":
+        return (!value || value.length === 0) ? "At least one image is required" : "";
       default:
         return "";
     }
@@ -279,7 +282,6 @@ const PropertyListingForm = () => {
     });
 
     return () => {
-      // Cleanup
       if (autocomplete) {
         google.maps.event.clearInstanceListeners(autocomplete);
       }
@@ -324,7 +326,6 @@ const PropertyListingForm = () => {
       if (response.data.success) {
         const propertyData = response.data.property;
 
-        // Set floor details from the API response
         if (propertyData.floorDetails) {
           setFloorDetails(
             propertyData.floorDetails.map((floor) => ({
@@ -394,12 +395,12 @@ const PropertyListingForm = () => {
           hasBalcony: propertyData.has_balcony || false,
         });
 
-        // Set preview URLs for images
         setPreviewUrls(propertyData.images || []);
       }
     } catch (error) {
-      console.error("Error loading property:", error);
-      setError("Failed to load property details");
+      const errorMessage = error.response?.data?.error || "Failed to load property details";
+      __DEV__ && console.error("Error loading property:", errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -420,8 +421,8 @@ const PropertyListingForm = () => {
       toast.info("Draft loaded successfully");
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || "An error occurred. Please try again.";
-      console.error("Error loading draft:", errorMessage);
+        err.response?.data?.error || "An error occurred. Please try again.";
+      __DEV__ && console.error("Error loading draft:", errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -503,10 +504,40 @@ const PropertyListingForm = () => {
 
     try {
       const uploadedUrls = [];
+      const newUploadingImages = [];
 
-      for (const file of files) {
+      files.forEach((file, index) => {
+        const tempId = `temp-${Date.now()}-${index}`;
+        newUploadingImages.push({
+          id: tempId,
+          name: file.name,
+          progress: 0
+        });
+      });
+      setUploadingImages(prev => [...prev, ...newUploadingImages]);
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const tempId = newUploadingImages[i].id;
+        
+        setUploadingImages(prev => 
+          prev.map(img => 
+            img.id === tempId 
+              ? { ...img, progress: 25 }
+              : img
+          )
+        );
+
         const formData = new FormData();
         formData.append("pdf", file);
+
+        setUploadingImages(prev => 
+          prev.map(img => 
+            img.id === tempId 
+              ? { ...img, progress: 50 }
+              : img
+          )
+        );
 
         const response = await axios.post(
           `${Backendurl}/api/pg/upload`,
@@ -519,8 +550,20 @@ const PropertyListingForm = () => {
           }
         );
 
+        setUploadingImages(prev => 
+          prev.map(img => 
+            img.id === tempId 
+              ? { ...img, progress: 75 }
+              : img
+          )
+        );
+
         if (response.data.success) {
-          uploadedUrls.push(response.data.data.url);
+          uploadedUrls.push(response.data.url);
+          
+          setUploadingImages(prev => 
+            prev.filter(img => img.id !== tempId)
+          );
         }
       }
 
@@ -530,9 +573,16 @@ const PropertyListingForm = () => {
       }));
 
       setPreviewUrls((prev) => [...prev, ...uploadedUrls]);
+      
+      setFieldErrors((prev) => ({
+        ...prev,
+        images: "",
+      }));
     } catch (error) {
-      console.error("Error uploading images:", error);
-      toast.error("Failed to upload some images");
+      const errorMessage = error.response?.data?.error || "Failed to upload images";
+      __DEV__ && console.error("Error uploading images:", errorMessage);
+      toast.error(errorMessage);
+      setUploadingImages([]);
     } finally {
       setImageUploading(false);
     }
@@ -544,6 +594,18 @@ const PropertyListingForm = () => {
       images: prev.images.filter((_, i) => i !== index),
     }));
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    const remainingImages = formData.images.filter((_, i) => i !== index);
+    if (remainingImages.length === 0) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        images: "At least one image is required",
+      }));
+    } else {
+      setFieldErrors((prev) => ({
+        ...prev,
+        images: "",
+      }));
+    }
   };
 
   const handleVideoUpload = async (e) => {
@@ -565,7 +627,7 @@ const PropertyListingForm = () => {
           continue;
         }
         const formData = new FormData();
-        formData.append("pdf", file); // same as images
+        formData.append("pdf", file);
         const response = await axios.post(
           `${Backendurl}/api/pg/upload`,
           formData,
@@ -577,7 +639,7 @@ const PropertyListingForm = () => {
           }
         );
         if (response.data.success) {
-          uploadedUrls.push(response.data.data.url);
+          uploadedUrls.push(response.data.url);
         }
       }
       setFormData((prev) => ({
@@ -586,8 +648,9 @@ const PropertyListingForm = () => {
       }));
       setVideoPreviewUrls((prev) => [...prev, ...uploadedUrls]);
     } catch (error) {
-      console.error("Error uploading videos:", error);
-      toast.error("Failed to upload some videos");
+      const errorMessage = error.response?.data?.error || "Failed to upload videos";
+      __DEV__ && console.error("Error uploading videos:", errorMessage);
+      toast.error(errorMessage);
     } finally {
       setVideoUploading(false);
     }
@@ -599,6 +662,10 @@ const PropertyListingForm = () => {
       videos: prev.videos.filter((_, i) => i !== index),
     }));
     setVideoPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveUploadingImage = (imageId) => {
+    setUploadingImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
   const handleSaveDraft = async () => {
@@ -653,9 +720,10 @@ const PropertyListingForm = () => {
         navigate("/dashboard/draft-properties");
       }
     } catch (error) {
-      console.error("Error saving draft:", error);
-      setError(error.response?.data?.message || "Failed to save draft");
-      toast.error(error.response?.data?.message || "Failed to save draft");
+      const errorMessage = error.response?.data?.error || "Failed to save draft";
+      __DEV__ && console.error("Error saving draft:", errorMessage);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -756,10 +824,16 @@ const PropertyListingForm = () => {
     setLoading(true);
     setError(null);
 
+    if (!formData.images || formData.images.length === 0) {
+      setError("At least one image is required");
+      toast.error("At least one image is required");
+      setLoading(false);
+      return;
+    }
+
     try {
       const formDataToSubmit = { ...formData };
 
-      // Format data based on listing type
       if (formDataToSubmit.listingType === 'sale') {
         formDataToSubmit.rent_type = null;
         formDataToSubmit.deposit = null;
@@ -770,32 +844,27 @@ const PropertyListingForm = () => {
         };
       }
 
-      // Ensure property status is set to a valid value
       if (formDataToSubmit.type === 'pg') {
         formDataToSubmit.propertyStatus = 'ready_to_move';
-        // Set pg_type from pgType
         formDataToSubmit.pg_type = formDataToSubmit.pgType;
       } else if (!formDataToSubmit.propertyStatus) {
         formDataToSubmit.propertyStatus = 'ready_to_move';
       }
 
-      // Add floor details and PG specific fields for PG properties
       if (formDataToSubmit.type === 'pg') {
-        // Map floor details
         formDataToSubmit.floorDetails = floorDetails.map(floor => ({
           floorNumber: floor.floorNumber,
           rooms: floor.rooms.map(room => ({
             roomNumber: room.roomNumber,
             capacity: room.capacity,
             occupied: room.occupied,
-            rent: room.rent_amount, // Map rent_amount to rent
+            rent: room.rent_amount,
             availableFrom: room.availableFrom,
             hasBalcony: room.hasBalcony
           }))
         }));
       }
 
-      // Ensure phone and dial code are included
       formDataToSubmit.phone = formDataToSubmit.phone;
       formDataToSubmit.dial_code = formDataToSubmit.dialCode;
 
@@ -865,8 +934,9 @@ const PropertyListingForm = () => {
         toast.error(response.data.message || "Failed to save property");
       }
     } catch (err) {
-      console.error("Error saving property:", err);
-      setError(err.response?.data?.message || "Failed to save property");
+      const errorMessage = err.response?.data?.error || "Failed to save property";
+      __DEV__ && console.error("Error saving property:", errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -917,6 +987,7 @@ const PropertyListingForm = () => {
                   name="dealerLicense"
                   value={formData.dealerLicense || ""}
                   onChange={handleChange}
+                  onWheel={(e) => e.currentTarget.blur()}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -930,6 +1001,7 @@ const PropertyListingForm = () => {
                   name="dealerExperience"
                   value={formData.dealerExperience || ""}
                   onChange={handleChange}
+                  onWheel={(e) => e.currentTarget.blur()}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -1110,6 +1182,7 @@ const PropertyListingForm = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
+                    onWheel={(e) => e.currentTarget.blur()}
                     style={inputStyles}
                     className={`border ${
                       fieldErrors.title ? "border-red-300" : "border-gray-300"
@@ -1140,6 +1213,7 @@ const PropertyListingForm = () => {
                           name="price"
                           value={formData.price}
                           onChange={handleChange}
+                          onWheel={(e) => e.currentTarget.blur()}
                           min="0"
                           style={{
                             padding: "0.75rem 2rem",
@@ -1215,6 +1289,7 @@ const PropertyListingForm = () => {
                           .toISOString()
                           .split("T")[0]
                       }
+                      onWheel={(e) => e.currentTarget.blur()}
                       style={inputStyles}
                       className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
@@ -1726,10 +1801,17 @@ const PropertyListingForm = () => {
 
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-              Property Images
+              Property Images *
             </h2>
 
             <div className="space-y-4">
+              {(!formData.images || formData.images.length === 0) && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-600">
+                    At least one image is required to list your property
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {previewUrls.map((url, index) => (
                   <div
@@ -1750,21 +1832,67 @@ const PropertyListingForm = () => {
                     </button>
                   </div>
                 ))}
-                <label className="aspect-video flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">Upload Images</span>
+                
+                {/* Show uploading images with progress */}
+                {uploadingImages.map((uploadingImage) => (
+                  <div
+                    key={uploadingImage.id}
+                    className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 border-2 border-dashed border-blue-300"
+                  >
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                      <p className="text-xs text-gray-600 text-center mb-2 truncate w-full">
+                        {uploadingImage.name}
+                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div 
+                          className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadingImage.progress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {uploadingImage.progress}%
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveUploadingImage(uploadingImage.id)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      title="Cancel upload"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                
+                <label className={`aspect-video flex flex-col items-center justify-center border-2 border-dashed rounded-lg transition-colors ${
+                  imageUploading 
+                    ? 'border-blue-300 bg-blue-50 cursor-not-allowed' 
+                    : 'border-gray-300 hover:border-blue-500 cursor-pointer'
+                }`}>
+                  {imageUploading ? (
+                    <>
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                      <span className="text-sm text-blue-600">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-500">Upload Images</span>
+                    </>
+                  )}
                   <input
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
+                    disabled={imageUploading}
                   />
                 </label>
               </div>
               <p className="text-sm text-gray-500">
-                You can upload up to 10 images. Each image should be less than
-                5MB.
+                You can upload up to 10 images. <span className="text-red-600 font-medium">At least one image is required.</span>
               </p>
             </div>
           </div>

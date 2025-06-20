@@ -1,11 +1,11 @@
 import pool from '../config/postgres.js';
 
 class Scene {
-  static async create(imageUrl, roomId) {
+  static async create(imageUrl, roomId = null, propertyId = null, name = null, sceneType = 'room') {
     try {
       const { rows } = await pool.query(
-        'INSERT INTO scenes (image_url, room_id) VALUES ($1, $2) RETURNING *',
-        [imageUrl, roomId]
+        'INSERT INTO scenes (image_url, room_id, property_id, name, scene_type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [imageUrl, roomId, propertyId, name, sceneType]
       );
       return rows[0];
     } catch (error) {
@@ -16,7 +16,7 @@ class Scene {
 
   static async getAll() {
     try {
-      const query = 'SELECT * FROM scenes';
+      const query = 'SELECT * FROM scenes ORDER BY created_at DESC';
       const { rows } = await pool.query(query);
       return rows;
     } catch (error) {
@@ -40,13 +40,27 @@ class Scene {
   static async getByRoomId(roomId) {
     try {
       console.log('Executing getByRoomId query for roomId:', roomId);
-      const query = 'SELECT * FROM scenes WHERE room_id = $1';
+      const query = 'SELECT * FROM scenes WHERE room_id = $1 AND scene_type = \'room\' ORDER BY created_at DESC';
       console.log('Query:', query);
       const { rows } = await pool.query(query, [roomId]);
       console.log('Query result:', rows);
       return rows;
     } catch (error) {
       console.error('Error getting scenes by room:', error);
+      throw error;
+    }
+  }
+
+  static async getByPropertyId(propertyId) {
+    try {
+      console.log('Executing getByPropertyId query for propertyId:', propertyId);
+      const query = 'SELECT * FROM scenes WHERE property_id = $1 AND scene_type = \'property\' ORDER BY created_at DESC';
+      console.log('Query:', query);
+      const { rows } = await pool.query(query, [propertyId]);
+      console.log('Query result:', rows);
+      return rows;
+    } catch (error) {
+      console.error('Error getting scenes by property:', error);
       throw error;
     }
   }

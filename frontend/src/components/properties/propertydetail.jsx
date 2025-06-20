@@ -32,6 +32,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext.jsx";
 import PanoramaViewer from '../PanoramaViewer';
 import FullscreenMediaViewer from '../FullscreenMediaViewer';
+import PropertyVirtualTour from '../PropertyVirtualTour';
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -737,6 +738,15 @@ const PropertyDetails = () => {
                       />
                     </div>
                   )}
+                  <div className="mb-6">
+                    <button
+                      onClick={() => {
+                        setOpenTermsAndConditions(true);
+                      }}
+                    >
+                      Rent
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -889,53 +899,61 @@ const PropertyDetails = () => {
 
         <div className="p-4 border-b">
           <h2 className="text-2xl font-semibold mb-4">360° Virtual Tour</h2>
-          {property?.type === "pg" || property?.type === "rk" || property?.type === "flat" ? (
+          
+          {/* Property-level 360° scenes for all property types */}
+          {property?.floorDetails?.length === 0 && <div className="mb-6">
+            <PropertyVirtualTour propertyId={property?.id} />
+          </div>}
+
+          {/* Room-level 360° scenes for PG, RK, and flat properties */}
+          {(property?.type === "pg" || property?.type === "rk" || property?.type === "flat") && property?.floorDetails && property.floorDetails.length > 0 && (
             <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Room
-                </label>
-                <select
-                  value={selectedRoom?.id || ''}
-                  onChange={(e) => {
-                    const roomId = e.target.value;
-                    if (roomId) {
-                      // Find the floor and room
-                      const floor = property.floorDetails.find(f => 
-                        f.rooms.some(r => r.id === parseInt(roomId))
-                      );
-                      const room = floor?.rooms.find(r => r.id === parseInt(roomId));
-                      if (room) {
-                        setSelectedRoom({ ...room, floor_id: floor.id });
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Room 360° Tours</h3>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Room
+                  </label>
+                  <select
+                    value={selectedRoom?.id || ''}
+                    onChange={(e) => {
+                      const roomId = e.target.value;
+                      if (roomId) {
+                        // Find the floor and room
+                        const floor = property.floorDetails.find(f => 
+                          f.rooms.some(r => r.id === parseInt(roomId))
+                        );
+                        const room = floor?.rooms.find(r => r.id === parseInt(roomId));
+                        if (room) {
+                          setSelectedRoom({ ...room, floor_id: floor.id });
+                        }
+                      } else {
+                        setSelectedRoom(null);
                       }
-                    } else {
-                      setSelectedRoom(null);
-                    }
-                  }}
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                >
-                  <option value="">Select a room</option>
-                  {property.floorDetails?.map((floor) => (
-                    <optgroup key={floor.id} label={`Floor ${floor.floorNumber}`}>
-                      {floor.rooms?.map((room) => (
-                        <option key={room.id} value={room.id}>
-                          Room {room.roomNumber} - {room.capacity === room.occupied ? 'Occupied' : 'Available'}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-              {selectedRoom ? (
-                <PanoramaViewer roomId={selectedRoom.id} className="w-full h-[500px] rounded-lg" />
-              ) : (
-                <div className="w-full h-[500px] rounded-lg bg-gray-100 flex items-center justify-center">
-                  <p className="text-gray-600">Please select a room to view its 360° tour</p>
+                    }}
+                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  >
+                    <option value="">Select a room</option>
+                    {property.floorDetails?.map((floor) => (
+                      <optgroup key={floor.id} label={`Floor ${floor.floorNumber}`}>
+                        {floor.rooms?.map((room) => (
+                          <option key={room.id} value={room.id}>
+                            Room {room.roomNumber} - {room.capacity === room.occupied ? 'Occupied' : 'Available'}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
                 </div>
-              )}
+                {selectedRoom ? (
+                  <PanoramaViewer roomId={selectedRoom.id} className="w-full h-[500px] rounded-lg" />
+                ) : (
+                  <div className="w-full h-[500px] rounded-lg bg-gray-100 flex items-center justify-center">
+                    <p className="text-gray-600">Please select a room to view its 360° tour</p>
+                  </div>
+                )}
+              </div>
             </>
-          ) : (
-            <PanoramaViewer roomId={property?.id} className="w-full h-[500px] rounded-lg" />
           )}
         </div>
 

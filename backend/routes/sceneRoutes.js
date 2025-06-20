@@ -52,16 +52,24 @@ router.get('/proxy-image', async (req, res) => {
   }
 });
 
-// All other routes require authentication and admin, manager, or role 4
+// Apply authentication middleware to all routes below
 router.use(protect);
-router.use(authorize(1, 2, 4)); // Allow roles 1 (admin), 2 (manager), and 4
 
+// Room-based scene routes
 // Create a new scene with hotspots for a room
 router.post('/rooms/:roomId', sceneController.createScene);
 
 // Get all scenes for a room
 router.get('/rooms/:roomId', sceneController.getRoomScenes);
 
+// Property-based scene routes
+// Create a new scene with hotspots for a property
+router.post('/properties/:propertyId', sceneController.createPropertyScene);
+
+// Get all scenes for a property
+router.get('/properties/:propertyId', sceneController.getPropertyScenes);
+
+// General scene routes
 // Get a single scene with its hotspots
 router.get('/:id', sceneController.getScene);
 

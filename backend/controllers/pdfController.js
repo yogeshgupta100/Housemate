@@ -5,7 +5,7 @@ import s3Service, { uploadToS3 } from '../services/s3Service.js';
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB limit for videos, images, and PDFs (will check type below)
+        fileSize: 100 * 1024 * 1024, // 100MB limit for videos, images, and PDFs (will check type below)
     },
     fileFilter: (req, file, cb) => {
         console.log('File received:', file);
@@ -29,7 +29,7 @@ const handleMulterError = (err, req, res, next) => {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 success: false,
-                message: 'File size too large. Maximum size is 5MB'
+                message: 'File size too large. Maximum size is 100MB'
             });
         }
         return res.status(400).json({

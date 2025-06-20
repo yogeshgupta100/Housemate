@@ -3,11 +3,11 @@ import Hotspot from '../models/Hotspot.js';
 import { uploadToS3 } from '../services/s3Service.js';
 
 const sceneController = {
-  // Create a new scene with hotspots
+  // Create a new scene with hotspots for a room
   async createScene(req, res) {
     try {
       const { roomId } = req.params;
-      const { image, hotspots } = req.body;
+      const { image, hotspots, name } = req.body;
 
       if (!image) {
         return res.status(400).json({
@@ -23,7 +23,7 @@ const sceneController = {
       }
 
       // Create scene
-      const scene = await Scene.create(imageUrl, roomId);
+      const scene = await Scene.create(imageUrl, roomId, null, name, 'room');
 
       // Create hotspots if provided
       if (hotspots && Array.isArray(hotspots)) {
@@ -48,6 +48,56 @@ const sceneController = {
       res.status(500).json({
         success: false,
         message: 'Failed to create scene',
+        error: error.message
+      });
+    }
+  },
+
+  // Create a new scene with hotspots for a property
+  async createPropertyScene(req, res) {
+    try {
+      const { propertyId } = req.params;
+      const { image, hotspots, name } = req.body;
+
+      if (!image) {
+        return res.status(400).json({
+          success: false,
+          message: 'Image is required'
+        });
+      }
+
+      let imageUrl = image;
+      // Only upload to S3 if image is not already a URL
+      if (image && !image.startsWith('http')) {
+        imageUrl = await uploadToS3(image, 'scenes');
+      }
+
+      // Create scene
+      const scene = await Scene.create(imageUrl, null, propertyId, name, 'property');
+
+      // Create hotspots if provided
+      if (hotspots && Array.isArray(hotspots)) {
+        for (const hotspot of hotspots) {
+          await Hotspot.create(scene.id, hotspot.yaw, hotspot.pitch, hotspot.target);
+        }
+      }
+
+      // Get the complete scene with hotspots
+      const completeScene = await Scene.getById(scene.id);
+      const sceneHotspots = await Hotspot.getBySceneId(scene.id);
+
+      res.status(201).json({
+        success: true,
+        data: {
+          ...completeScene,
+          hotspots: sceneHotspots
+        }
+      });
+    } catch (error) {
+      console.error('Error creating property scene:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create property scene',
         error: error.message
       });
     }
@@ -84,6 +134,42 @@ const sceneController = {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch room scenes',
+        error: error.message
+      });
+    }
+  },
+
+  // Get all scenes for a property
+  async getPropertyScenes(req, res) {
+    try {
+      const { propertyId } = req.params;
+      console.log('Fetching scenes for property:', propertyId);
+      
+      const scenes = await Scene.getByPropertyId(propertyId);
+      console.log('Found scenes:', scenes);
+
+      const scenesWithHotspots = await Promise.all(
+        scenes.map(async (scene) => {
+          const hotspots = await Hotspot.getBySceneId(scene.id);
+          return {
+            ...scene,
+            hotspots
+          };
+        })
+      );
+
+      console.log('Property scenes with hotspots:', scenesWithHotspots);
+
+      res.json({
+        success: true,
+        data: scenesWithHotspots
+      });
+    } catch (error) {
+      console.error('Error fetching property scenes:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch property scenes',
         error: error.message
       });
     }

@@ -29,6 +29,7 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { debounce } from 'lodash';
 import SceneUploader from './PropertyDetail/SceneUploader.jsx';
+import PropertySceneUploader from './PropertyDetail/PropertySceneUploader.jsx';
 
 const PropertyDetails = ({ property, onRemove }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -559,7 +560,7 @@ const PropertyDetails = ({ property, onRemove }) => {
         </div>
 
         {/* Add Floors and Rooms Section */}
-        <div className="max-w-7xl mx-auto px-4 mt-8">
+        {property?.floorDetails?.length > 0 && <div className="max-w-7xl mx-auto px-4 mt-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Floors and Rooms</h2>
             <div className="space-y-4">
@@ -616,32 +617,37 @@ const PropertyDetails = ({ property, onRemove }) => {
                             </div>
                             {room.occupied ? (
                               <button
-                                onClick={async () => {
-                                  try {
-                                    const response = await axios.post(
-                                      `${backendurl}/api/availability-requests`,
-                                      {
-                                        property_id: property.id,
-                                        floor_id: floor.id,
-                                        room_id: room.id
-                                      },
-                                      {
-                                        headers: {
-                                          Authorization: `Bearer ${localStorage.getItem('token')}`
-                                        }
-                                      }
-                                    );
-                                    if (response.data.success) {
-                                      toast.success('Availability request submitted successfully');
-                                    }
-                                  } catch (error) {
-                                    console.error('Error submitting request:', error);
-                                    toast.error(error.response?.data?.message || 'Failed to submit request');
-                                  }
+                                // onClick={async () => {
+                                //   try {
+                                //     const response = await axios.post(
+                                //       `${backendurl}/api/availability-requests`,
+                                //       {
+                                //         property_id: property.id,
+                                //         floor_id: floor.id,
+                                //         room_id: room.id
+                                //       },
+                                //       {
+                                //         headers: {
+                                //           Authorization: `Bearer ${localStorage.getItem('token')}`
+                                //         }
+                                //       }
+                                //     );
+                                //     if (response.data.success) {
+                                //       toast.success('Availability request submitted successfully');
+                                //     }
+                                //   } catch (error) {
+                                //     console.error('Error submitting request:', error);
+                                //     toast.error(error.response?.data?.message || 'Failed to submit request');
+                                //   }
+                                // }}
+                                onClick={() => {
+                                  setSelectedFloor(floor);
+                                  setSelectedRoom(room);
+                                  setShowMapTenantModal(true);
                                 }}
                                 className="mt-3 w-full px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
                               >
-                                Request to Make Available
+                                Map Tenant
                               </button>
                             ) : (
                               <button
@@ -665,10 +671,10 @@ const PropertyDetails = ({ property, onRemove }) => {
               ))}
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Add 360° Scene Uploader Section */}
-        <div className="max-w-7xl mx-auto px-4 mt-8">
+        {property?.floorDetails?.length > 0 && <div className="max-w-7xl mx-auto px-4 mt-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">360° Virtual Tour</h2>
             
@@ -732,7 +738,21 @@ const PropertyDetails = ({ property, onRemove }) => {
               </div>
             )}
           </div>
-        </div>
+        </div>}
+
+        {/* Property 360° Scenes Section */}
+        {property?.floorDetails?.length === 0 && <div className="bg-white rounded-xl shadow-sm p-6 mb-6 mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Property 360° Scenes</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Upload 360° panoramic images for the entire property (available for all property types)
+              </p>
+            </div>
+          </div>
+          
+          <PropertySceneUploader propertyId={property.id} />
+        </div>}
       </div>
 
       {/* Map Tenant Modal */}
