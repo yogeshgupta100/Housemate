@@ -24,19 +24,21 @@ import CustomerPanel from './components/customerPanel/CustomerPanel';
 import FeaturesDetail from './pages/FeaturesDetail';
 import ScrollToTop from './components/ScrollToTop';
 import RoomAvailabilityRequestsPage from './pages/admin/RoomAvailabilityRequests.jsx';
+import SceneViewer from './pages/SceneViewer';
 
 export const Backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
 const AppContent = () => {
   const location = useLocation();
   const isCustomerPanel = location.pathname.startsWith('/customer-panel');
+  const isSceneViewer = location.pathname.startsWith('/scene-viewer');
 
   return (
     <>
       <StructuredData type="website" />
       <StructuredData type="organization" />
       
-      <Navbar />
+      {!isSceneViewer && <Navbar />}
       <Routes>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
@@ -46,6 +48,7 @@ const AppContent = () => {
         <Route path="/properties" element={<Properties />} />
         <Route path="/list-property" element={<PropertyListingForm />} />
         <Route path="/properties/single/:id" element={<PropertyDetails />} />
+        <Route path="/scene-viewer/:sceneId" element={<SceneViewer />} />
         <Route path="/about" element={<Aboutus />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/ai-property-hub" element={<AIPropertyHub />} />
@@ -63,7 +66,7 @@ const AppContent = () => {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <Footer />
+      {!isSceneViewer && <Footer />}
     </>
   );
 };
