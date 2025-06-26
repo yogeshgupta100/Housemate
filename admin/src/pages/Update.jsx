@@ -224,26 +224,68 @@ const Update = () => {
 
   const validateField = (name, value) => {
     switch (name) {
-      case "price" && !["pg", "rk", "flat"].includes(currentType):
-        return value <= 0 ? "Price must be greater than 0" : "";
-      case "beds" && !["pg", "rk", "flat"].includes(currentType):
-      case "baths" && !["pg", "rk", "flat"].includes(currentType):
-        return value < 0 && value !== ""
-          ? "Cannot be negative"
-          : !Number.isInteger(Number(value))
-          ? "Must be a whole number"
-          : "";
-      case "sqft" && !["pg", "rk", "flat"].includes(currentType):
-        return value <= 0 ? "Area must be greater than 0" : "";
       case "title":
-        return value.length < 5 ? "Title must be at least 5 characters" : "";
+        if (!value.trim()) return "Property title is required";
+        if (value.length < 10) return "Title must be at least 10 characters";
+        if (value.length > 100) return "Title must be less than 100 characters";
+        break;
+      case "price":
+        if (!value) return "Price is required";
+        if (isNaN(value) || value <= 0) return "Price must be a positive number";
+        break;
+      case "deposit":
+        if (formData.listingType === "rent" && !value) return "Deposit is required for rental properties";
+        if (value && (isNaN(value) || value < 0)) return "Deposit must be a non-negative number";
+        break;
+      case "type":
+        if (!value) return "Property type is required";
+        break;
+      case "location":
+        if (!value.trim()) return "Location is required";
+        break;
+      case "description":
+        if (!value.trim()) return "Description is required";
+        if (value.length < 50) return "Description must be at least 50 characters";
+        break;
+      case "beds":
+        if (value && (isNaN(value) || value < 0)) return "Number of beds must be a non-negative number";
+        break;
+      case "baths":
+        if (value && (isNaN(value) || value < 0)) return "Number of baths must be a non-negative number";
+        break;
+      case "sqft":
+        if (value && (isNaN(value) || value <= 0)) return "Square footage must be a positive number";
+        break;
       case "phone":
-        return !/^\d{10}$/.test(value)
-          ? "Enter valid 10-digit phone number"
-          : "";
-      default:
-        return "";
+        if (value && !/^[0-9]{10}$/.test(value.replace(/\D/g, ""))) {
+          return "Please enter a valid 10-digit phone number";
+        }
+        break;
+      case "availability.availableFrom":
+        if (formData.listingType === "rent" && !value) {
+          return "Available from date is required for rental properties";
+        }
+        break;
+      case "propertyAge":
+        if (formData.listingType === "sale" && !value) {
+          return "Property age is required for sale properties";
+        }
+        if (value && (isNaN(value) || value < 0)) {
+          return "Property age must be a non-negative number";
+        }
+        break;
+      case "propertyCondition":
+        if (formData.listingType === "sale" && !value) {
+          return "Property condition is required for sale properties";
+        }
+        break;
+      case "propertyStatus":
+        if (formData.listingType === "sale" && !value) {
+          return "Property status is required for sale properties";
+        }
+        break;
     }
+    return null;
   };
 
   useEffect(() => {
@@ -499,7 +541,7 @@ const Update = () => {
                 roomNumber: room.roomNumber,
                 capacity: room.capacity,
                 occupied: room.occupied,
-                rent_amount: room.rent,
+                rent: room.rent_amount,
                 availableFrom: room.availableFrom,
                 hasBalcony: room.hasBalcony,
               })),
@@ -1309,6 +1351,7 @@ const Update = () => {
                         <input
                           type="number"
                           name="price"
+                          onWheel={(e) => e.currentTarget.blur()}
                           value={formData.price}
                           onChange={handleChange}
                           min="0"
@@ -1337,6 +1380,70 @@ const Update = () => {
                     </div>
                   )}
             </div>
+
+              {/* Deposit Input Field for Admin */}
+              {formData.listingType === "rent" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Security Deposit *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <IndianRupee className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="number"
+                        name="deposit"
+                        onWheel={(e) => e.currentTarget.blur()}
+                        value={formData.deposit}
+                        onChange={handleChange}
+                        min="0"
+                        style={{
+                          padding: "0.75rem 2rem",
+                          fontSize: "1rem",
+                          lineHeight: "1.5",
+                          borderRadius: "0.5rem",
+                          width: "100%",
+                          transition: "all 0.2s",
+                          outline: "none",
+                        }}
+                        className={`pl-10 border ${
+                          fieldErrors.deposit
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                        placeholder="Enter deposit amount"
+                      />
+                    </div>
+                    {fieldErrors.deposit && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {fieldErrors.deposit}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Set the security deposit amount manually
+                    </p>
+                  </div>
+                  
+                  {/* Calculated Deposit Display */}
+                  {formData.price > 0 && (
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-700">
+                          Auto-Calculated Deposit
+                        </span>
+                        <span className="text-lg font-semibold text-blue-700">
+                          ₹{calculatedDeposit.toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Based on property type multiplier
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {formData.listingType === "rent" && formData.price > 0 && (
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -1372,6 +1479,7 @@ const Update = () => {
                 </label>
                     <input
                       type="date"
+                      onWheel={(e) => e.currentTarget.blur()}
                       name="availability.availableFrom"
                       value={
                         formData.availability.availableFrom
@@ -1433,7 +1541,7 @@ const Update = () => {
                     name="propertyAge"
                     value={formData.propertyAge}
                     onChange={handleChange}
-                    onWheel={(e) => e.target.blur()}
+                    onWheel={(e) => e.currentTarget.blur()}
                   min="0"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter property age"
