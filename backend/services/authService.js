@@ -43,8 +43,8 @@ class AuthService {
         `INSERT INTO users (
           first_name, last_name, email, password, phone, gender,
           role_id, user_type, company_name, registration_number,
-          dealer_license
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          dealer_license, is_verified
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *`,
         [
           userData.firstName,
@@ -57,7 +57,8 @@ class AuthService {
           userData.userType || 'individual',
           userData.companyName,
           userData.registrationNumber,
-          userData.dealerLicense
+          userData.dealerLicense,
+          userData.isVerified || false
         ]
       );
 

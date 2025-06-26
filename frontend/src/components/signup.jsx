@@ -3,9 +3,11 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Loader, UserPlus, Mail, Lock, Phone, User, Building } from 'lucide-react';
+import { Loader, UserPlus, Mail, Lock, Phone, User, Building, CheckCircle } from 'lucide-react';
 import { Backendurl } from '../App';
 import { toast } from 'react-toastify';
+import GoogleSignInButton from './GoogleSignInButton';
+import VerificationModal from './VerificationModal';
 import './signup.css';
 
 const Signup = () => {
@@ -24,6 +26,10 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const navigate = useNavigate();
 
   // useEffect(() => {
@@ -76,6 +82,18 @@ const Signup = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleEmailVerificationSuccess = () => {
+    setEmailVerified(true);
+    toast.success('Email verified successfully!');
+    setStep(2); // Move to next step after email verification
+  };
+
+  const handlePhoneVerificationSuccess = () => {
+    setPhoneVerified(true);
+    toast.success('Phone number verified successfully!');
+    setStep(3); // Move to next step after phone verification
   };
 
   const validateStep1 = () => {
@@ -146,9 +164,11 @@ const Signup = () => {
 
   const nextStep = () => {
     if (step === 1 && validateStep1()) {
-      setStep(2);
+      // Instead of moving to next step, trigger email verification
+      setShowEmailVerification(true);
     } else if (step === 2 && validateStep2()) {
-      setStep(3);
+      // Instead of moving to next step, trigger phone verification
+      setShowPhoneVerification(true);
     }
   };
 
@@ -158,6 +178,16 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!emailVerified) {
+      toast.error('Please verify your email address first');
+      return;
+    }
+
+    if (!phoneVerified) {
+      toast.error('Please verify your phone number first');
+      return;
+    }
     
     if (step === 3 && !validateStep3()) {
       return;
@@ -173,7 +203,9 @@ const Signup = () => {
         phone: formData.phone,
         gender: formData.gender,
         userType: formData.userType || 'individual',
-        role: 'individual'
+        role: 'individual',
+        emailVerified: emailVerified,
+        phoneVerified: phoneVerified
       };
 
       // const selectedRoleData = roles.find(role => role.id === selectedRole);
@@ -197,7 +229,7 @@ const Signup = () => {
       if (response.data.success) {
         localStorage.setItem('token', response.data.data.token);
         toast.success('Account created successfully!');
-        navigate('/login');
+        navigate('/properties');
       }
     } catch (error) {
       console.error('Error signing up:', error);
@@ -205,6 +237,16 @@ const Signup = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = (data) => {
+    // Google sign-in successful, redirect to properties
+    toast.success('Account created successfully with Google!');
+    navigate('/properties');
+  };
+
+  const handleGoogleError = (error) => {
+    console.error("Google sign-in error:", error);
   };
 
   return (
@@ -235,10 +277,10 @@ const Signup = () => {
               <div className="step-circle">2</div>
               <div className="step-text">Contact</div>
             </div>
-            {/* <div className={`step ${step >= 3 ? 'active' : ''}`}>
+            <div className={`step ${step >= 3 ? 'active' : ''}`}>
               <div className="step-circle">3</div>
-              <div className="step-text">Account Type</div>
-            </div> */}
+              <div className="step-text">Complete</div>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -333,8 +375,22 @@ const Signup = () => {
                   onClick={nextStep}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg shadow-blue-500/25"
                 >
-                  <span>Next</span>
+                  <span>Verify Email & Continue</span>
                 </button>
+
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  </div>
+                </div>
+
+                <GoogleSignInButton
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                />
               </div>
             )}
 
@@ -395,111 +451,43 @@ const Signup = () => {
                     onClick={nextStep}
                     className="w-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg shadow-blue-500/25"
                   >
-                    <span>Next</span>
+                    <span>Verify Phone</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* {step === 3 && (
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
-                      Account Type *
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                      <select
-                          name="roleId"
-                          id="roleId"
-                          required
-                          value={selectedRole}
-                          onChange={(e) => {
-                            setSelectedRole(e.target.value);
-                            setFormData(prev => ({
-                              ...prev,
-                              companyName: '',
-                              registrationNumber: '',
-                              dealerLicense: ''
-                            }));
-                          }}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                      >
-                        <option value="">Select Account Type</option>
-                        {roles.map((role) => (
-                            <option key={role.id} value={role.id}>
-                              {role.name === 'individual' && 'Individual'}
-                              {role.name === 'corporate' && 'Corporate'}
-                              {role.name === 'dealer' && 'Property Dealer'}
-                              {role.name === 'admin' && 'Property admin'}
-                            </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Registration</h3>
+                  <p className="text-gray-600">Your email and phone have been verified. Complete your registration.</p>
+                </div>
 
-                {selectedRole && roles.find(role => role.id === selectedRole)?.name === 'corporate' && (
-                  <>
-                    <div>
-                      <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Company Name *
-                      </label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                        <input
-                          type="text"
-                          name="companyName"
-                          id="companyName"
-                          required
-                          value={formData.companyName}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                          placeholder="Company Name"
-                        />
+                {/* Verification Status */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                      <Mail className="w-5 h-5 text-green-500 mr-3" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Email Verified</h4>
+                        <p className="text-sm text-gray-600">{formData.email}</p>
                       </div>
                     </div>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  </div>
 
-                    <div>
-                      <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                        Registration Number *
-                      </label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                        <input
-                          type="text"
-                          name="registrationNumber"
-                          id="registrationNumber"
-                          required
-                          value={formData.registrationNumber}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                          placeholder="Company Registration Number"
-                        />
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                      <Phone className="w-5 h-5 text-green-500 mr-3" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Phone Verified</h4>
+                        <p className="text-sm text-gray-600">{formData.phone}</p>
                       </div>
                     </div>
-                  </>
-                )}
-
-                  {selectedRole && roles.find(role => role.id === selectedRole)?.name === 'dealer' && (
-                  <div>
-                    <label htmlFor="dealerLicense" className="block text-sm font-medium text-gray-700 mb-1">
-                      Dealer License Number *
-                    </label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                      <input
-                        type="text"
-                        name="dealerLicense"
-                        id="dealerLicense"
-                        required
-                        value={formData.dealerLicense}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                        placeholder="Dealer License Number"
-                      />
-                    </div>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
                   </div>
-                )}
+                </div>
 
                 <div className="flex space-x-4">
                   <button
@@ -512,7 +500,7 @@ const Signup = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg shadow-blue-500/25"
+                    className="w-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <Loader className="w-5 h-5 animate-spin" />
@@ -525,7 +513,7 @@ const Signup = () => {
                   </button>
                 </div>
               </div>
-            )} */}
+            )}
           </form>
 
           <div className="relative my-6">
@@ -545,6 +533,27 @@ const Signup = () => {
           </Link>
         </div>
       </motion.div>
+
+      {/* Verification Modals */}
+      <VerificationModal
+        isOpen={showEmailVerification}
+        onClose={() => setShowEmailVerification(false)}
+        type="email"
+        identifier={formData.email}
+        userId={null}
+        onSuccess={handleEmailVerificationSuccess}
+        isSignup={true}
+      />
+
+      <VerificationModal
+        isOpen={showPhoneVerification}
+        onClose={() => setShowPhoneVerification(false)}
+        type="phone"
+        identifier={formData.phone}
+        userId={null}
+        onSuccess={handlePhoneVerificationSuccess}
+        isSignup={true}
+      />
     </div>
   );
 };

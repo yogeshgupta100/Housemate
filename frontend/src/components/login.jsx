@@ -7,7 +7,9 @@ import { toast } from "react-toastify";
 import { useAuth } from '../context/AuthContext';
 import OTPInput from './OTPInput';
 import PasswordInput from './PasswordInput';
+import GoogleSignInButton from './GoogleSignInButton';
 import { Backendurl } from "../App.jsx";
+
 const Login = () => {
   const [formData, setFormData] = useState({
     identifier: "",
@@ -76,6 +78,16 @@ const Login = () => {
     }
   };
 
+  const handleGoogleSuccess = (data) => {
+    // Update auth context
+    login(data.user.email, null, data.token);
+    navigate("/properties");
+  };
+
+  const handleGoogleError = (error) => {
+    console.error("Google sign-in error:", error);
+  };
+
   if (showOTP) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center px-4 py-12">
@@ -119,25 +131,19 @@ const Login = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="w-full max-w-md bg-white rounded-xl shadow-lg p-8"
+        className="w-full max-w-md"
       >
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
-        </div>
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                HOUSEMATE
+              </h2>
+            </Link>
+            <h1 className="mt-6 text-2xl font-semibold text-gray-800">Welcome back</h1>
+            <p className="mt-2 text-gray-600">Sign in to your account</p>
+          </div>
 
-        {showOTP ? (
-          <OTPInput 
-            identifier={formData.identifier}
-            onVerificationSuccess={handleOTPVerificationSuccess}
-          />
-        ) : showPassword ? (
-          <PasswordInput
-            identifier={formData.identifier}
-            onSubmit={handlePasswordSubmit}
-            loading={loading}
-          />
-        ) : (
           <form onSubmit={handleIdentifierSubmit} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
@@ -172,6 +178,20 @@ const Login = () => {
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+            />
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
               </div>
             </div>
@@ -183,7 +203,7 @@ const Login = () => {
               Create an account
             </Link>
           </form>
-        )}
+        </div>
       </motion.div>
     </div>
   );

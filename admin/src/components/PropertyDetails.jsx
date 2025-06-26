@@ -534,6 +534,170 @@ const PropertyDetails = ({ property, onRemove }) => {
               </div>
             </div>
 
+            {/* Property-Specific Details */}
+            {property.listing_type === "sale" && (
+              <>
+                {/* Office-Specific Details */}
+                {property.type === "office" && (
+                  <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Office Details</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {property.office_area && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Area</span>
+                          <span className="font-medium">{property.office_area} sq ft</span>
+                        </div>
+                      )}
+                      {property.office_floors && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Floors</span>
+                          <span className="font-medium">{property.office_floors}</span>
+                        </div>
+                      )}
+                      {property.office_capacity && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Capacity</span>
+                          <span className="font-medium">{property.office_capacity} people</span>
+                        </div>
+                      )}
+                      {property.office_cabins && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Cabins</span>
+                          <span className="font-medium">{property.office_cabins}</span>
+                        </div>
+                      )}
+                      {property.meeting_rooms && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Meeting Rooms</span>
+                          <span className="font-medium">{property.meeting_rooms}</span>
+                        </div>
+                      )}
+                      {property.head_cabins && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Head Cabins</span>
+                          <span className="font-medium">{property.head_cabins}</span>
+                        </div>
+                      )}
+                    </div>
+                    {property.office_amenities && property.office_amenities.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-lg font-medium mb-2">Office Amenities</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {property.office_amenities.map((amenity, index) => (
+                            <div key={index} className="flex items-center text-gray-600">
+                              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                              {amenity}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Plot-Specific Details */}
+                {(property.type === "commercial plot" || property.type === "residential plot") && (
+                  <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Plot Details</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {property.plot_area && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Area</span>
+                          <span className="font-medium">{property.plot_area} sq ft</span>
+                        </div>
+                      )}
+                      {property.nearby_area && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Nearby Area</span>
+                          <span className="font-medium">{property.nearby_area}</span>
+                        </div>
+                      )}
+                      {property.estimated_rental_income && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Estimated Rental Income</span>
+                          <span className="font-medium">₹{Number(property.estimated_rental_income).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Under Committee</span>
+                        <span className="font-medium">{property.under_committee ? "Yes" : "No"}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Passed Building Land</span>
+                        <span className="font-medium">{property.passed_building_land ? "Yes" : "No"}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Builder Floor/House-Specific Details */}
+                {(property.type === "builder floor" || property.type === "house") && (
+                  <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                      {property.type === "builder floor" ? "Builder Floor" : "House"} Details
+                    </h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {property.type === "builder floor" && property.builder_floors && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Number of Floors</span>
+                          <span className="font-medium">{property.builder_floors}</span>
+                        </div>
+                      )}
+                      {property.house_area && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Area</span>
+                          <span className="font-medium">{property.house_area} sq ft</span>
+                        </div>
+                      )}
+                      {property.house_bedrooms && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Bedrooms</span>
+                          <span className="font-medium">{property.house_bedrooms}</span>
+                        </div>
+                      )}
+                      {property.house_bathrooms && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Bathrooms</span>
+                          <span className="font-medium">{property.house_bathrooms}</span>
+                        </div>
+                      )}
+                      {property.house_balcony && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Balconies</span>
+                          <span className="font-medium">{property.house_balcony}</span>
+                        </div>
+                      )}
+                      {property.house_parking && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Parking Spaces</span>
+                          <span className="font-medium">{property.house_parking}</span>
+                        </div>
+                      )}
+                      {property.house_location && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Location Details</span>
+                          <span className="font-medium">{property.house_location}</span>
+                        </div>
+                      )}
+                    </div>
+                    {property.house_amenities && property.house_amenities.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-lg font-medium mb-2">House Amenities</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {property.house_amenities.map((amenity, index) => (
+                            <div key={index} className="flex items-center text-gray-600">
+                              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                              {amenity}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Listing Information */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Listing Information</h2>
@@ -617,29 +781,6 @@ const PropertyDetails = ({ property, onRemove }) => {
                             </div>
                             {room.occupied ? (
                               <button
-                                // onClick={async () => {
-                                //   try {
-                                //     const response = await axios.post(
-                                //       `${backendurl}/api/availability-requests`,
-                                //       {
-                                //         property_id: property.id,
-                                //         floor_id: floor.id,
-                                //         room_id: room.id
-                                //       },
-                                //       {
-                                //         headers: {
-                                //           Authorization: `Bearer ${localStorage.getItem('token')}`
-                                //         }
-                                //       }
-                                //     );
-                                //     if (response.data.success) {
-                                //       toast.success('Availability request submitted successfully');
-                                //     }
-                                //   } catch (error) {
-                                //     console.error('Error submitting request:', error);
-                                //     toast.error(error.response?.data?.message || 'Failed to submit request');
-                                //   }
-                                // }}
                                 onClick={() => {
                                   setSelectedFloor(floor);
                                   setSelectedRoom(room);

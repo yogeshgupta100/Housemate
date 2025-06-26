@@ -17,9 +17,9 @@ export const validateProperty = (data) => {
     errors.push('Property type is required');
   } else {
     const saleTypes = ['house', 'apartment', 'office', 'villa', 'flat', 'commercial', 
-                      'residential plot', 'commercial plot'];
+                      'residential plot', 'commercial plot', 'builder floor'];
     const rentTypes = ['house', 'apartment', 'office', 'villa', 'pg', 'flat', 'rk', 
-                      'commercial'];
+                      'commercial', 'builder floor'];
 
     if (data.listingType === 'sale' && !saleTypes.includes(data.type)) {
       errors.push('Invalid property type for sale listing');
@@ -55,6 +55,42 @@ export const validateProperty = (data) => {
     }
     if (!data.propertyStatus) {
       errors.push('Property status is required for sale listings');
+    }
+  }
+
+  // Validate office-specific fields
+  if (data.type === 'office' && data.listingType === 'sale') {
+    if (!data.office_area || data.office_area <= 0) {
+      errors.push('Office area is required and must be positive');
+    }
+    if (!data.office_floors || data.office_floors < 1) {
+      errors.push('Number of floors is required and must be at least 1');
+    }
+    if (!data.office_capacity || data.office_capacity <= 0) {
+      errors.push('Office capacity is required and must be positive');
+    }
+  }
+
+  // Validate plot-specific fields
+  if ((data.type === 'commercial plot' || data.type === 'residential plot') && data.listingType === 'sale') {
+    if (!data.plot_area || data.plot_area <= 0) {
+      errors.push('Plot area is required and must be positive');
+    }
+  }
+
+  // Validate builder floor/house-specific fields
+  if ((data.type === 'builder floor' || data.type === 'house') && data.listingType === 'sale') {
+    if (data.type === 'builder floor' && (!data.builder_floors || data.builder_floors < 1)) {
+      errors.push('Number of floors is required and must be at least 1 for builder floor');
+    }
+    if (!data.house_area || data.house_area <= 0) {
+      errors.push('House area is required and must be positive');
+    }
+    if (!data.house_bedrooms || data.house_bedrooms < 0) {
+      errors.push('Number of bedrooms is required and must be non-negative');
+    }
+    if (!data.house_bathrooms || data.house_bathrooms < 0) {
+      errors.push('Number of bathrooms is required and must be non-negative');
     }
   }
 

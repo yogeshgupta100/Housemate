@@ -25,8 +25,18 @@ import FeaturesDetail from './pages/FeaturesDetail';
 import ScrollToTop from './components/ScrollToTop';
 import RoomAvailabilityRequestsPage from './pages/admin/RoomAvailabilityRequests.jsx';
 import SceneViewer from './pages/SceneViewer';
+import GoogleOAuthProviderWrapper from './components/GoogleOAuthProvider';
 
 export const Backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
+// Suppress Cross-Origin-Opener-Policy warnings for Google OAuth
+const originalError = console.error;
+console.error = (...args) => {
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('Cross-Origin-Opener-Policy')) {
+    return; // Suppress these specific warnings
+  }
+  originalError.apply(console, args);
+};
 
 const AppContent = () => {
   const location = useLocation();
@@ -74,13 +84,15 @@ const AppContent = () => {
 const App = () => {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <AppContent />
-        </Router>
-        <ToastContainer />
-      </AuthProvider>
+      <GoogleOAuthProviderWrapper>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <AppContent />
+          </Router>
+          <ToastContainer />
+        </AuthProvider>
+      </GoogleOAuthProviderWrapper>
     </HelmetProvider>
   );
 };

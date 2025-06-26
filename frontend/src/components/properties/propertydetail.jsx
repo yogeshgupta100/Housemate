@@ -10,11 +10,8 @@ import {
   Phone,
   Calendar,
   MapPin,
-  Loader,
   Building,
   Share2,
-  ChevronLeft,
-  ChevronRight,
   Copy,
   Compass,
   AlertTriangle,
@@ -723,6 +720,206 @@ const PropertyDetails = () => {
                     </div>
                   </div>
 
+                  {/* Property-Specific Details */}
+                  {property.listing_type === "sale" && (
+                    <>
+                      {/* Office-Specific Details */}
+                      {property.type === "office" && (
+                        <div className="mb-6">
+                          <h2 className="text-xl font-semibold mb-4">Office Details</h2>
+                          <div className="grid grid-cols-2 gap-4">
+                            {property.office_area && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Area</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.office_area} sq ft
+                                </span>
+                              </div>
+                            )}
+                            {property.office_floors && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Floors</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.office_floors}
+                                </span>
+                              </div>
+                            )}
+                            {property.office_capacity && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Capacity</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.office_capacity} people
+                                </span>
+                              </div>
+                            )}
+                            {property.office_cabins && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Cabins</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.office_cabins}
+                                </span>
+                              </div>
+                            )}
+                            {property.meeting_rooms && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Meeting Rooms</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.meeting_rooms}
+                                </span>
+                              </div>
+                            )}
+                            {property.head_cabins && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Head Cabins</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.head_cabins}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {property.office_amenities && property.office_amenities.length > 0 && (
+                            <div className="mt-4">
+                              <h3 className="text-lg font-medium mb-2">Office Amenities</h3>
+                              <div className="grid grid-cols-2 gap-2">
+                                {property.office_amenities.map((amenity, index) => (
+                                  <div key={index} className="flex items-center text-gray-600">
+                                    <Building className="w-4 h-4 mr-2 text-blue-600" />
+                                    {amenity}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Plot-Specific Details */}
+                      {(property.type === "commercial plot" || property.type === "residential plot") && (
+                        <div className="mb-6">
+                          <h2 className="text-xl font-semibold mb-4">Plot Details</h2>
+                          <div className="grid grid-cols-2 gap-4">
+                            {property.plot_area && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Area</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.plot_area} sq ft
+                                </span>
+                              </div>
+                            )}
+                            {property.nearby_area && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Nearby Area</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.nearby_area}
+                                </span>
+                              </div>
+                            )}
+                            {property.estimated_rental_income && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Estimated Rental Income</span>
+                                <span className="font-semibold text-gray-800">
+                                  ₹{Number(property.estimated_rental_income).toLocaleString("en-IN")}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Under Committee</span>
+                              <span className="font-semibold text-gray-800">
+                                {property.under_committee ? "Yes" : "No"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Passed Building Land</span>
+                              <span className="font-semibold text-gray-800">
+                                {property.passed_building_land ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Builder Floor/House-Specific Details */}
+                      {(property.type === "builder floor" || property.type === "house") && (
+                        <div className="mb-6">
+                          <h2 className="text-xl font-semibold mb-4">
+                            {property.type === "builder floor" ? "Builder Floor" : "House"} Details
+                          </h2>
+                          <div className="grid grid-cols-2 gap-4">
+                            {property.type === "builder floor" && property.builder_floors && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Number of Floors</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.builder_floors}
+                                </span>
+                              </div>
+                            )}
+                            {property.house_area && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Area</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.house_area} sq ft
+                                </span>
+                              </div>
+                            )}
+                            {property.house_bedrooms && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Bedrooms</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.house_bedrooms}
+                                </span>
+                              </div>
+                            )}
+                            {property.house_bathrooms && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Bathrooms</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.house_bathrooms}
+                                </span>
+                              </div>
+                            )}
+                            {property.house_balcony && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Balconies</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.house_balcony}
+                                </span>
+                              </div>
+                            )}
+                            {property.house_parking && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Parking Spaces</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.house_parking}
+                                </span>
+                              </div>
+                            )}
+                            {property.house_location && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Location Details</span>
+                                <span className="font-semibold text-gray-800">
+                                  {property.house_location}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {property.house_amenities && property.house_amenities.length > 0 && (
+                            <div className="mt-4">
+                              <h3 className="text-lg font-medium mb-2">House Amenities</h3>
+                              <div className="grid grid-cols-2 gap-2">
+                                {property.house_amenities.map((amenity, index) => (
+                                  <div key={index} className="flex items-center text-gray-600">
+                                    <Building className="w-4 h-4 mr-2 text-blue-600" />
+                                    {amenity}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   {["pg", "rk", "flat"].includes(property.type) && (
                     <div className="my-8">
                       <h2 className="text-lg font-semibold mb-2">
@@ -743,6 +940,9 @@ const PropertyDetails = () => {
                       onClick={() => {
                         setOpenTermsAndConditions(true);
                       }}
+                      className="w-fit bg-blue-600 text-white p-3 rounded-lg 
+                      hover:bg-blue-700 transition-colors flex items-center 
+                      justify-center gap-2"
                     >
                       Rent
                     </button>

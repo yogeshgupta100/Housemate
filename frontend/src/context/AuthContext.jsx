@@ -96,8 +96,26 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (identifier, password) => {
+  const login = async (identifier, password, token = null) => {
     try {
+      if (token) {
+        // Google authentication - token is already provided
+        console.log('Google login with token:', token);
+        setTokenWithExpiry(token);
+        const userDataFetched = await fetchUserData(token);
+        
+        if (userDataFetched) {
+          return { success: true };
+        } else {
+          clearToken();
+          return {
+            success: false,
+            message: "Failed to fetch user data"
+          };
+        }
+      }
+
+      // Regular email/password authentication
       console.log('Login attempt with:', { identifier });
       const response = await axios.post(`${Backendurl}/api/auth/login`, {
         identifier,
@@ -107,11 +125,11 @@ export const AuthProvider = ({ children }) => {
       console.log('Login response:', response.data);
 
       if (response.data.success) {
-        const { token, user } = response.data.data;
-        console.log('Login successful, token received:', token);
+        const { token: responseToken, user } = response.data.data;
+        console.log('Login successful, token received:', responseToken);
         
-        setTokenWithExpiry(token);
-        const userDataFetched = await fetchUserData(token);
+        setTokenWithExpiry(responseToken);
+        const userDataFetched = await fetchUserData(responseToken);
         
         if (userDataFetched) {
           return { success: true };
