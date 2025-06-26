@@ -87,45 +87,45 @@ const Navbar = () => {
           : "bg-white/80 backdrop-blur-md border-b border-gray-200"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-3 group">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
+          <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
             <motion.div
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
-              className="p-2 rounded-lg"
+              className="p-1 sm:p-2 rounded-lg"
             >
-              <img src={logo} alt="HOUSEMATE logo" className="w-8 h-8" />
+              <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
             </motion.div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:from-indigo-600 group-hover:to-blue-600 transition-all duration-300">
+            <span className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:from-indigo-600 group-hover:to-blue-600 transition-all duration-300">
             HOUSEMATE
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-8">
             <NavLinks currentPath={location.pathname} />
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 lg:space-x-4">
               {isLoggedIn ? (
                 <div className="relative" ref={dropdownRef}>
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={toggleDropdown}
-                    className="flex items-center space-x-3 focus:outline-none"
+                    className="flex items-center space-x-2 lg:space-x-3 focus:outline-none"
                     aria-label="User menu"
                     aria-expanded={isDropdownOpen}
                   >
                     <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-md hover:shadow-lg transition-shadow">
+                      <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-xs lg:text-sm shadow-md hover:shadow-lg transition-shadow">
                         {getInitials(user?.data?.first_name)}
                       </div>
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 lg:w-3 lg:h-3 bg-green-400 border-2 border-white rounded-full"></div>
                     </div>
                     <motion.div
                       animate={{ rotate: isDropdownOpen ? 180 : 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                      <ChevronDown className="w-3 h-3 lg:w-4 lg:h-4 text-gray-600" />
                     </motion.div>
                   </motion.button>
 
@@ -136,7 +136,7 @@ const Navbar = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg py-2 border border-gray-100 overflow-hidden"
+                        className="absolute right-0 mt-2 w-56 lg:w-64 bg-white rounded-xl shadow-lg py-2 border border-gray-100 overflow-hidden"
                       >
                         <div className="px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-semibold text-gray-900">
@@ -181,10 +181,10 @@ const Navbar = () => {
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 lg:space-x-4">
                   <Link
                     to="/login"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm lg:text-base"
                   >
                     Sign in
                   </Link>
@@ -194,7 +194,7 @@ const Navbar = () => {
                   >
                     <Link
                       to="/signup"
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 lg:px-5 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium text-sm lg:text-base"
                     >
                       Get started
                     </Link>
@@ -207,14 +207,14 @@ const Navbar = () => {
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={toggleMobileMenu}
-            className="md:hidden rounded-lg p-2 hover:bg-gray-100 transition-colors focus:outline-none"
+            className="md:hidden rounded-lg p-1.5 sm:p-2 hover:bg-gray-100 transition-colors focus:outline-none"
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             )}
           </motion.button>
         </div>
@@ -257,15 +257,15 @@ const NavLinks = ({ currentPath }) => {
   const isListPropertyActive = currentPath.startsWith("/list-property");
 
   return (
-    <div className="flex space-x-4 items-center">
-      <div className="flex space-x-2">
+    <div className="flex space-x-2 lg:space-x-4 items-center">
+      <div className="flex space-x-1 lg:space-x-2">
         {navLinks.map(({ name, path, icon: Icon }) => {
           const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
           return (
             <Link
               key={name}
               to={path}
-              className={`relative font-medium transition-colors duration-200 flex items-center gap-1.5 px-3 py-2 rounded-md
+              className={`relative font-medium transition-colors duration-200 flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-2 rounded-md
                 ${isActive
                   ? "text-blue-600 bg-blue-50"
                   : "text-gray-700 hover:text-blue-600 hover:bg-blue-50/50"
@@ -273,7 +273,7 @@ const NavLinks = ({ currentPath }) => {
               `}
             >
               <Icon className="w-4 h-4" />
-              <span>{name}</span>
+              <span className="hidden sm:inline">{name}</span>
               {isActive && (
                 <motion.div
                   layoutId="navIndicator"
@@ -285,43 +285,18 @@ const NavLinks = ({ currentPath }) => {
           );
         })}
       </div>
-      <div className="flex items-center space-x-3 pl-2 border-l border-gray-200">
+      <div className="flex items-center space-x-2 lg:space-x-3 pl-2 border-l border-gray-200">
         <Link
           to="/list-property"
-          className={`px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-sm hover:shadow-md
+          className={`px-2 lg:px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-1 lg:gap-2 shadow-sm hover:shadow-md text-sm lg:text-base
             ${isListPropertyActive 
               ? "bg-blue-700 text-white"
               : "bg-blue-600 text-white hover:bg-blue-700"}`}
         >
           <Building className="w-4 h-4" />
-          <span>List Property</span>
+          <span className="hidden sm:inline">List Property</span>
+          <span className="sm:hidden">List</span>
         </Link>
-
-        {/* <Link
-          to="/ai-property-hub"
-          className={`relative font-medium transition-all duration-300 flex items-center gap-2 px-3 py-2 rounded-md ${
-            isAIHubActive
-              ? "text-white bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 shadow-md shadow-purple-500/30"
-              : "text-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-600 hover:via-purple-500 hover:to-pink-500 hover:text-white"
-          }`}
-        >
-          <div className="relative">
-            <BotMessageSquare className={`w-4 h-4 ${isAIHubActive ? "text-white" : "text-indigo-600"}`} />
-            <motion.div
-              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -top-1 -right-1"
-            >
-              <Sparkles className="w-3 h-3 text-yellow-400" />
-            </motion.div>
-          </div>
-          <span className="font-medium">AI Hub</span>
-          {!isAIHubActive && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-full text-[10px] font-bold">
-              NEW
-            </span>
-          )}
-        </Link> */}
       </div>
     </div>
   );
@@ -416,6 +391,22 @@ const MobileNavLinks = ({
             </motion.div>
           );
         })}
+
+        {/* List Property Button for Mobile */}
+        <motion.div whileTap={{ scale: 0.97 }} className="px-3 py-2">
+          <Link
+            to="/list-property"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium
+              ${isListPropertyActive
+                ? "bg-blue-600 text-white"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Building className="w-5 h-5" />
+            List Property
+          </Link>
+        </motion.div>
 
         <div className="pt-4 mt-2 border-t border-gray-100">
           {isLoggedIn ? (
