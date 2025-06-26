@@ -4,9 +4,11 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Loader } from 'lucide-react';
 import { Backendurl } from '../App.jsx';
+import getOAuthConfig from '../config/oauth.js';
 
 const GoogleSignInButton = ({ onSuccess, onError, className = '', children }) => {
   const [loading, setLoading] = React.useState(false);
+  const oauthConfig = getOAuthConfig();
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
@@ -48,14 +50,23 @@ const GoogleSignInButton = ({ onSuccess, onError, className = '', children }) =>
     },
     onError: (error) => {
       console.error('Google login error:', error);
-      toast.error('Google sign-in failed');
+      
+      // Handle specific OAuth errors
+      if (error.error === 'redirect_uri_mismatch') {
+        toast.error('OAuth configuration error. Please contact support.');
+      } else if (error.error === 'popup_closed_by_user') {
+        toast.error('Sign-in was cancelled. Please try again.');
+      } else {
+        toast.error('Google sign-in failed. Please try again.');
+      }
       
       if (onError) {
         onError(error);
       }
     },
     flow: 'implicit',
-    ux_mode: 'popup'
+    ux_mode: oauthConfig.uxMode,
+    redirect_uri: oauthConfig.redirectUri
   });
 
   return (
