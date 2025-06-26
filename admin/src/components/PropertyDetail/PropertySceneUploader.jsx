@@ -29,7 +29,8 @@ const PropertySceneUploader = ({ propertyId }) => {
       });
       setScenes(response.data.data);
     } catch (error) {
-      toast.error('Failed to fetch property scenes');
+      const errorMessage = error.response?.data?.message || 'Failed to fetch property scenes';
+      toast.error(errorMessage);
       console.error('Error fetching property scenes:', error);
     } finally {
       setLoading(false);
@@ -86,7 +87,8 @@ const PropertySceneUploader = ({ propertyId }) => {
       setSceneName('');
       fetchScenes();
     } catch (error) {
-      toast.error('Failed to upload property scene');
+      const errorMessage = error.response?.data?.message || 'Failed to upload property scene';
+      toast.error(errorMessage);
       console.error('Error uploading property scene:', error);
     } finally {
       setUploading(false);

@@ -141,29 +141,6 @@ export default function HowItWorks() {
             <ArrowRight className="ml-2 h-5 w-5" />
           </motion.a>
         </motion.div>
-        
-        {}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.8 }}
-          className="mt-20 max-w-3xl mx-auto"
-        >
-          <div className="bg-white p-8 rounded-xl shadow-xl border border-gray-50 text-center">
-            <p className="text-gray-700 italic text-lg mb-4">
-              {`"The 3-step process was incredibly smooth. Within a week, I found and secured my dream apartment!"`}
-            </p>
-            <p className="font-bold text-gray-900">Sarah Johnson, New York</p>
-            <div className="flex justify-center mt-2">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                </svg>
-              ))}
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

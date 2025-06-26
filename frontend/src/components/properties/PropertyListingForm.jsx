@@ -29,14 +29,15 @@ const PROPERTY_TYPES = {
     "commercial",
   ],
   sale: [
-    "house",
-    "apartment",
-    "office",
-    "villa",
     "flat",
-    "commercial",
-    "residential plot",
+    "builder floor",
+    "house",
+    "office",
     "commercial plot",
+    "residential plot",
+    "commercial",
+    "apartment",
+    "villa",
   ],
 };
 
@@ -155,6 +156,26 @@ const PropertyListingForm = () => {
     pgType: "",
     sharingType: "",
     hasBalcony: false,
+    officeArea: "",
+    officeFloors: "",
+    officeCapacity: "",
+    officeCabins: "",
+    meetingRooms: "",
+    headCabins: "",
+    officeAmenities: [],
+    plotArea: "",
+    nearbyArea: "",
+    underCommittee: false,
+    passedBuildingLand: false,
+    estimatedRentalIncome: "",
+    builderFloors: "",
+    houseArea: "",
+    houseBedrooms: "",
+    houseBathrooms: "",
+    houseBalcony: "",
+    houseParking: "",
+    houseAmenities: [],
+    houseLocation: "",
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -393,6 +414,26 @@ const PropertyListingForm = () => {
           pgType: propertyData.pg_type || "",
           sharingType: propertyData.sharing_type || "",
           hasBalcony: propertyData.has_balcony || false,
+          officeArea: propertyData.office_area || "",
+          officeFloors: propertyData.office_floors || "",
+          officeCapacity: propertyData.office_capacity || "",
+          officeCabins: propertyData.office_cabins || "",
+          meetingRooms: propertyData.meeting_rooms || "",
+          headCabins: propertyData.head_cabins || "",
+          officeAmenities: propertyData.office_amenities || [],
+          plotArea: propertyData.plot_area || "",
+          nearbyArea: propertyData.nearby_area || "",
+          underCommittee: propertyData.under_committee || false,
+          passedBuildingLand: propertyData.passed_building_land || false,
+          estimatedRentalIncome: propertyData.estimated_rental_income || "",
+          builderFloors: propertyData.builder_floors || "",
+          houseArea: propertyData.house_area || "",
+          houseBedrooms: propertyData.house_bedrooms || "",
+          houseBathrooms: propertyData.house_bathrooms || "",
+          houseBalcony: propertyData.house_balcony || "",
+          houseParking: propertyData.house_parking || "",
+          houseAmenities: propertyData.house_amenities || [],
+          houseLocation: propertyData.house_location || "",
         });
 
         setPreviewUrls(propertyData.images || []);
@@ -867,6 +908,36 @@ const PropertyListingForm = () => {
 
       formDataToSubmit.phone = formDataToSubmit.phone;
       formDataToSubmit.dial_code = formDataToSubmit.dialCode;
+
+      // Map new fields for different property types
+      if (formDataToSubmit.type === 'office') {
+        formDataToSubmit.office_area = formDataToSubmit.officeArea;
+        formDataToSubmit.office_floors = formDataToSubmit.officeFloors;
+        formDataToSubmit.office_capacity = formDataToSubmit.officeCapacity;
+        formDataToSubmit.office_cabins = formDataToSubmit.officeCabins;
+        formDataToSubmit.meeting_rooms = formDataToSubmit.meetingRooms;
+        formDataToSubmit.head_cabins = formDataToSubmit.headCabins;
+        formDataToSubmit.office_amenities = formDataToSubmit.officeAmenities;
+      }
+
+      if (formDataToSubmit.type === 'commercial plot' || formDataToSubmit.type === 'residential plot') {
+        formDataToSubmit.plot_area = formDataToSubmit.plotArea;
+        formDataToSubmit.nearby_area = formDataToSubmit.nearbyArea;
+        formDataToSubmit.under_committee = formDataToSubmit.underCommittee;
+        formDataToSubmit.passed_building_land = formDataToSubmit.passedBuildingLand;
+        formDataToSubmit.estimated_rental_income = formDataToSubmit.estimatedRentalIncome;
+      }
+
+      if (formDataToSubmit.type === 'builder floor' || formDataToSubmit.type === 'house') {
+        formDataToSubmit.builder_floors = formDataToSubmit.builderFloors;
+        formDataToSubmit.house_area = formDataToSubmit.houseArea;
+        formDataToSubmit.house_bedrooms = formDataToSubmit.houseBedrooms;
+        formDataToSubmit.house_bathrooms = formDataToSubmit.houseBathrooms;
+        formDataToSubmit.house_balcony = formDataToSubmit.houseBalcony;
+        formDataToSubmit.house_parking = formDataToSubmit.houseParking;
+        formDataToSubmit.house_amenities = formDataToSubmit.houseAmenities;
+        formDataToSubmit.house_location = formDataToSubmit.houseLocation;
+      }
 
       if (formData.images && formData.images.length > 0) {
         formDataToSubmit.images = formData.images.map((image) => {
@@ -1394,6 +1465,397 @@ const PropertyListingForm = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Office-Specific Details */}
+          {formData.listingType === "sale" && formData.type === "office" && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Office-Specific Details
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Area (sq ft) *
+                  </label>
+                  <input
+                    type="number"
+                    name="officeArea"
+                    value={formData.officeArea}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter office area"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Floors *
+                  </label>
+                  <input
+                    type="number"
+                    name="officeFloors"
+                    value={formData.officeFloors}
+                    onChange={handleChange}
+                    min="1"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of floors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Capacity *
+                  </label>
+                  <input
+                    type="number"
+                    name="officeCapacity"
+                    value={formData.officeCapacity}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter office capacity"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Cabins
+                  </label>
+                  <input
+                    type="number"
+                    name="officeCabins"
+                    value={formData.officeCabins}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of cabins"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Meeting Rooms
+                  </label>
+                  <input
+                    type="number"
+                    name="meetingRooms"
+                    value={formData.meetingRooms}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of meeting rooms"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Head Cabins
+                  </label>
+                  <input
+                    type="number"
+                    name="headCabins"
+                    value={formData.headCabins}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of head cabins"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Office Amenities
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    "Parking",
+                    "Security",
+                    "Lift",
+                    "Power Backup",
+                    "Central AC",
+                    "Cafeteria",
+                    "Conference Room",
+                    "Reception Area",
+                    "IT Infrastructure",
+                    "Fire Safety",
+                    "24/7 Security",
+                    "Visitor Parking"
+                  ].map((amenity) => (
+                    <label key={amenity} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.officeAmenities.includes(amenity)}
+                        onChange={() => {
+                          const updatedAmenities = formData.officeAmenities.includes(amenity)
+                            ? formData.officeAmenities.filter(a => a !== amenity)
+                            : [...formData.officeAmenities, amenity];
+                          setFormData(prev => ({ ...prev, officeAmenities: updatedAmenities }));
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{amenity}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Plot-Specific Details */}
+          {formData.listingType === "sale" && (formData.type === "commercial plot" || formData.type === "residential plot") && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Plot-Specific Details
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Area (sq ft) *
+                  </label>
+                  <input
+                    type="number"
+                    name="plotArea"
+                    value={formData.plotArea}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter plot area"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nearby Area
+                  </label>
+                  <input
+                    type="text"
+                    name="nearbyArea"
+                    value={formData.nearbyArea}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter nearby area details"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estimated Rental Income (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    name="estimatedRentalIncome"
+                    value={formData.estimatedRentalIncome}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter estimated rental income"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="underCommittee"
+                    checked={formData.underCommittee}
+                    onChange={(e) => setFormData(prev => ({ ...prev, underCommittee: e.target.checked }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label className="text-sm font-medium text-gray-700">
+                    Under Committee
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="passedBuildingLand"
+                    checked={formData.passedBuildingLand}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passedBuildingLand: e.target.checked }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label className="text-sm font-medium text-gray-700">
+                    Passed Building Land
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Builder Floor/House-Specific Details */}
+          {formData.listingType === "sale" && (formData.type === "builder floor" || formData.type === "house") && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                {formData.type === "builder floor" ? "Builder Floor" : "House"}-Specific Details
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {formData.type === "builder floor" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Floors *
+                    </label>
+                    <input
+                      type="number"
+                      name="builderFloors"
+                      value={formData.builderFloors}
+                      onChange={handleChange}
+                      min="1"
+                      style={inputStyles}
+                      className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter number of floors"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Area (sq ft) *
+                  </label>
+                  <input
+                    type="number"
+                    name="houseArea"
+                    value={formData.houseArea}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter area"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Bedrooms *
+                  </label>
+                  <input
+                    type="number"
+                    name="houseBedrooms"
+                    value={formData.houseBedrooms}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of bedrooms"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Bathrooms *
+                  </label>
+                  <input
+                    type="number"
+                    name="houseBathrooms"
+                    value={formData.houseBathrooms}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of bathrooms"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Balconies
+                  </label>
+                  <input
+                    type="number"
+                    name="houseBalcony"
+                    value={formData.houseBalcony}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of balconies"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Parking Spaces
+                  </label>
+                  <input
+                    type="number"
+                    name="houseParking"
+                    value={formData.houseParking}
+                    onChange={handleChange}
+                    min="0"
+                    style={inputStyles}
+                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter number of parking spaces"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  House Amenities
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    "Garden",
+                    "Swimming Pool",
+                    "Gym",
+                    "Security System",
+                    "Lift",
+                    "Power Backup",
+                    "Central AC",
+                    "Fireplace",
+                    "Home Theater",
+                    "Study Room",
+                    "Servant Quarter",
+                    "Pooja Room"
+                  ].map((amenity) => (
+                    <label key={amenity} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.houseAmenities.includes(amenity)}
+                        onChange={() => {
+                          const updatedAmenities = formData.houseAmenities.includes(amenity)
+                            ? formData.houseAmenities.filter(a => a !== amenity)
+                            : [...formData.houseAmenities, amenity];
+                          setFormData(prev => ({ ...prev, houseAmenities: updatedAmenities }));
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{amenity}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location Details
+                </label>
+                <input
+                  type="text"
+                  name="houseLocation"
+                  value={formData.houseLocation}
+                  onChange={handleChange}
+                  style={inputStyles}
+                  className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter specific location details"
+                />
               </div>
             </div>
           )}

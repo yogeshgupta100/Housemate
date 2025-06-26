@@ -15,7 +15,14 @@ export const register = async (req, res) => {
       });
     }
 
-    const { user, token } = await authService.register(req.body);
+    // Check if user has verified email and phone during signup
+    const { emailVerified = false, phoneVerified = false } = req.body;
+    const isVerified = emailVerified && phoneVerified;
+
+    const { user, token } = await authService.register({
+      ...req.body,
+      isVerified
+    });
 
     res.status(201).json({
       success: true,
@@ -27,7 +34,8 @@ export const register = async (req, res) => {
           email: user.email,
           phone: user.phone,
           user_type: user.user_type,
-          role_id: user.role_id
+          role_id: user.role_id,
+          is_verified: user.is_verified
         },
         token
       }

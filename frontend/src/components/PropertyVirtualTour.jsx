@@ -26,7 +26,8 @@ const PropertyVirtualTour = ({ propertyId }) => {
       }
     } catch (error) {
       console.error('Error fetching property scenes:', error);
-      toast.error('Failed to load virtual tour');
+      const errorMessage = error.response?.data?.message || 'Failed to load virtual tour';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

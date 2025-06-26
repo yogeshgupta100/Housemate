@@ -51,6 +51,8 @@ const SceneViewer = () => {
             }
           } catch (propertyError) {
             console.error('Error fetching property scenes:', propertyError);
+            const errorMessage = propertyError.response?.data?.message || 'Failed to fetch property scenes';
+            toast.error(errorMessage);
             // If we can't fetch property scenes, just use the single scene
             setScenes([sceneData]);
           }
