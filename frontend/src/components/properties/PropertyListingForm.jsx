@@ -1030,12 +1030,25 @@ const PropertyListingForm = () => {
     width: "100%",
     transition: "all 0.2s",
     outline: "none",
+    border: "1px solid #d1d5db",
+    backgroundColor: "#ffffff",
   };
 
   const textareaStyles = {
     ...inputStyles,
     minHeight: "120px",
     resize: "vertical",
+  };
+
+  const selectStyles = {
+    ...inputStyles,
+    cursor: "pointer",
+  };
+
+  const getInputClassName = (hasError = false) => {
+    return `focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+      hasError ? "border-red-300" : "border-gray-300"
+    }`;
   };
 
   const getUserSpecificFields = () => {
@@ -1059,7 +1072,8 @@ const PropertyListingForm = () => {
                   value={formData.dealerLicense || ""}
                   onChange={handleChange}
                   onWheel={(e) => e.currentTarget.blur()}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  style={inputStyles}
+                  className={getInputClassName()}
                   required
                 />
               </div>
@@ -1073,7 +1087,8 @@ const PropertyListingForm = () => {
                   value={formData.dealerExperience || ""}
                   onChange={handleChange}
                   onWheel={(e) => e.currentTarget.blur()}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  style={inputStyles}
+                  className={getInputClassName()}
                   required
                 />
               </div>
@@ -1095,7 +1110,8 @@ const PropertyListingForm = () => {
                   name="status"
                   value={formData.status || "active"}
                   onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  style={selectStyles}
+                  className={getInputClassName()}
                 >
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
@@ -1111,7 +1127,8 @@ const PropertyListingForm = () => {
                   name="verified"
                   value={formData.verified || false}
                   onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  style={selectStyles}
+                  className={getInputClassName()}
                 >
                   <option value={true}>Verified</option>
                   <option value={false}>Unverified</option>
@@ -1255,9 +1272,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     onWheel={(e) => e.currentTarget.blur()}
                     style={inputStyles}
-                    className={`border ${
-                      fieldErrors.title ? "border-red-300" : "border-gray-300"
-                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    className={getInputClassName(fieldErrors.title)}
                     placeholder="Enter a descriptive title"
                   />
                   {fieldErrors.title && (
@@ -1287,19 +1302,10 @@ const PropertyListingForm = () => {
                           onWheel={(e) => e.currentTarget.blur()}
                           min="0"
                           style={{
-                            padding: "0.75rem 2rem",
-                            fontSize: "1rem",
-                            lineHeight: "1.5",
-                            borderRadius: "0.5rem",
-                            width: "100%",
-                            transition: "all 0.2s",
-                            outline: "none",
+                            ...inputStyles,
+                            paddingLeft: "2rem",
                           }}
-                          className={`pl-10 border ${
-                            fieldErrors.price
-                              ? "border-red-300"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                          className={getInputClassName(fieldErrors.price)}
                           placeholder="Enter amount"
                         />
                       </div>
@@ -1362,7 +1368,7 @@ const PropertyListingForm = () => {
                       }
                       onWheel={(e) => e.currentTarget.blur()}
                       style={inputStyles}
-                      className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={getInputClassName()}
                       required
                     />
                   </div>
@@ -1375,8 +1381,8 @@ const PropertyListingForm = () => {
                       name="availability.minLeasePeriod"
                       value={formData.availability.minLeasePeriod}
                       onChange={handleChange}
-                      style={inputStyles}
-                      className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      style={selectStyles}
+                      className={getInputClassName()}
                       required
                     >
                       {LEASE_PERIODS.map((period) => (
@@ -1409,7 +1415,7 @@ const PropertyListingForm = () => {
                     onWheel={(e) => e.target.blur()}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter property age"
                   />
                 </div>
@@ -1422,8 +1428,8 @@ const PropertyListingForm = () => {
                     name="propertyCondition"
                     value={formData.propertyCondition}
                     onChange={handleChange}
-                    style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={selectStyles}
+                    className={getInputClassName()}
                   >
                     <option value="">Select condition</option>
                     {PROPERTY_CONDITIONS.map((condition) => (
@@ -1448,8 +1454,8 @@ const PropertyListingForm = () => {
                     name="propertyStatus"
                     value={formData.propertyStatus}
                     onChange={handleChange}
-                    style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={selectStyles}
+                    className={getInputClassName()}
                   >
                     <option value="">Select status</option>
                     {PROPERTY_STATUSES.map((status) => (
@@ -1488,7 +1494,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter office area"
                   />
                 </div>
@@ -1504,7 +1510,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="1"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of floors"
                   />
                 </div>
@@ -1520,7 +1526,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter office capacity"
                   />
                 </div>
@@ -1536,7 +1542,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of cabins"
                   />
                 </div>
@@ -1552,7 +1558,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of meeting rooms"
                   />
                 </div>
@@ -1568,7 +1574,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of head cabins"
                   />
                 </div>
@@ -1632,7 +1638,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter plot area"
                   />
                 </div>
@@ -1647,7 +1653,7 @@ const PropertyListingForm = () => {
                     value={formData.nearbyArea}
                     onChange={handleChange}
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter nearby area details"
                   />
                 </div>
@@ -1663,7 +1669,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter estimated rental income"
                   />
                 </div>
@@ -1719,7 +1725,7 @@ const PropertyListingForm = () => {
                       onChange={handleChange}
                       min="1"
                       style={inputStyles}
-                      className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={getInputClassName()}
                       placeholder="Enter number of floors"
                     />
                   </div>
@@ -1736,7 +1742,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter area"
                   />
                 </div>
@@ -1752,7 +1758,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of bedrooms"
                   />
                 </div>
@@ -1768,7 +1774,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of bathrooms"
                   />
                 </div>
@@ -1784,7 +1790,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of balconies"
                   />
                 </div>
@@ -1800,7 +1806,7 @@ const PropertyListingForm = () => {
                     onChange={handleChange}
                     min="0"
                     style={inputStyles}
-                    className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getInputClassName()}
                     placeholder="Enter number of parking spaces"
                   />
                 </div>
@@ -1853,7 +1859,7 @@ const PropertyListingForm = () => {
                   value={formData.houseLocation}
                   onChange={handleChange}
                   style={inputStyles}
-                  className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={getInputClassName()}
                   placeholder="Enter specific location details"
                 />
               </div>
@@ -1877,7 +1883,7 @@ const PropertyListingForm = () => {
                   value={formData.location}
                   onChange={handleChange}
                   style={inputStyles}
-                  className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={getInputClassName()}
                   placeholder="Search for location"
                 />
                 <p className="mt-1 text-sm text-gray-500">
@@ -1914,7 +1920,7 @@ const PropertyListingForm = () => {
                         onChange={handleChange}
                         min="0"
                         style={inputStyles}
-                        className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className={getInputClassName()}
                       />
                     </div>
                   )}
@@ -1934,7 +1940,7 @@ const PropertyListingForm = () => {
                           onWheel={(e) => e.target.blur()}
                           min="0"
                           style={inputStyles}
-                          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className={getInputClassName()}
                         />
                       </div>
 
@@ -1950,7 +1956,7 @@ const PropertyListingForm = () => {
                           onWheel={(e) => e.target.blur()}
                           min="0"
                           style={inputStyles}
-                          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className={getInputClassName()}
                         />
                       </div>
                     </>
@@ -1966,7 +1972,8 @@ const PropertyListingForm = () => {
                     name="dialCode"
                     value={formData.dialCode}
                     onChange={handleChange}
-                    className="w-[180px] px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={selectStyles}
+                    className={getInputClassName()}
                   >
                     {DIAL_CODES.map(({ code, country }) => (
                       <option key={code} value={code}>
@@ -1980,9 +1987,8 @@ const PropertyListingForm = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2 border ${
-                        fieldErrors.phone ? "border-red-300" : "border-gray-300"
-                      } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      style={inputStyles}
+                      className={getInputClassName(fieldErrors.phone)}
                       placeholder="Enter phone number"
                       maxLength={15}
                     />
@@ -2004,7 +2010,7 @@ const PropertyListingForm = () => {
                   value={formData.description}
                   onChange={handleChange}
                   style={textareaStyles}
-                  className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={getInputClassName()}
                   placeholder="Describe your property..."
                 />
               </div>
@@ -2029,8 +2035,8 @@ const PropertyListingForm = () => {
                           name="pgType"
                           value={formData.pgType}
                           onChange={handleChange}
-                          style={inputStyles}
-                          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          style={selectStyles}
+                          className={getInputClassName()}
                           required
                         >
                           <option value="">Select PG Type</option>
@@ -2100,7 +2106,8 @@ const PropertyListingForm = () => {
                                       )
                                     }
                                     min="1"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    style={inputStyles}
+                                    className={getInputClassName()}
                                   />
                                 </div>
                                 {formData.type !== "rk" && (
@@ -2120,7 +2127,8 @@ const PropertyListingForm = () => {
                                         )
                                       }
                                       min="1"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      style={inputStyles}
+                                      className={getInputClassName()}
                                     />
                                   </div>
                                 )}
@@ -2142,7 +2150,8 @@ const PropertyListingForm = () => {
                                       }
                                       min="0"
                                       max={room.capacity}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      style={inputStyles}
+                                      className={getInputClassName()}
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
                                       Max: {room.capacity}
@@ -2168,7 +2177,8 @@ const PropertyListingForm = () => {
                                     }
                                     onWheel={(e) => e.target.blur()}
                                     min="0"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    style={inputStyles}
+                                    className={getInputClassName()}
                                     placeholder="Enter rent amount"
                                   />
                                 </div>
@@ -2188,7 +2198,8 @@ const PropertyListingForm = () => {
                                       )
                                     }
                                     min={new Date().toISOString().split("T")[0]}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    style={inputStyles}
+                                    className={getInputClassName()}
                                   />
                                 </div>
                               </div>
