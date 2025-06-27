@@ -944,7 +944,7 @@ const PropertyDetails = () => {
                       hover:bg-blue-700 transition-colors flex items-center 
                       justify-center gap-2"
                     >
-                      Rent
+                      {property.listing_type === "rent" ? "Rent" : "Sale"}
                     </button>
                   </div>
                 </div>
