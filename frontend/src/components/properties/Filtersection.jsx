@@ -1,20 +1,56 @@
 import { Home, IndianRupee, Filter, Bed, Bath, Calendar, MapPin, Building, Star, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
+import axios from "axios";
+import { Backendurl } from "../../App.jsx";
 
-const propertyTypes = ["House", "Apartment", "Villa", "Office", "PG", "Flat", "RK"];
-const availabilityTypes = ["Rent", "Buy", "Lease"];
-const furnishingTypes = ["Furnished", "Semi-Furnished", "Unfurnished"];
-const propertyConditions = ["New", "Good", "Average", "Needs Repair"];
-const propertyStatuses = ["Ready to Move", "Under Construction", "Renovated"];
-const pgTypes = ["Boys", "Girls", "Co-living"];
 const sharingTypes = ["Single", "Double", "Triple", "Quad"];
 
-const MIN_PRICE = 0;
-const MAX_PRICE = 50000000;
-const STEP = 50000;
-
 const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
+  const [filterOptions, setFilterOptions] = useState({
+    types: [],
+    listingTypes: [],
+    pgTypes: [],
+    furnishingTypes: [],
+    propertyConditions: [],
+    propertyStatuses: [],
+    amenities: [],
+    priceRange: { min: 0, max: 10000000 },
+    areaRange: { min: 0, max: 10000 }
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch filter options from backend
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${Backendurl}/api/properties/filter-options`);
+        if (response.data.success) {
+          setFilterOptions(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching filter options:', error);
+        // Fallback to default options if API fails
+        setFilterOptions({
+          types: ["house", "apartment", "office", "villa", "pg", "flat", "rk", "commercial", "residential plot", "commercial plot", "builder floor"],
+          listingTypes: ["rent", "sale"],
+          pgTypes: ["boys", "girls", "co-living"],
+          furnishingTypes: ["Furnished", "Semi-Furnished", "Unfurnished"],
+          propertyConditions: ["new", "good", "average", "needs_repair"],
+          propertyStatuses: ["ready_to_move", "under_construction", "renovated"],
+          amenities: ["Parking", "Security", "Power Backup", "Lift", "Gym", "Swimming Pool", "Club House", "Garden"],
+          priceRange: { min: 0, max: 10000000 },
+          areaRange: { min: 0, max: 10000 }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFilterOptions();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const updatedFilters = {
@@ -47,10 +83,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
   };
 
   const debouncedPriceUpdate = useCallback(
-    debounce((value) => {
+    debounce((minPrice, maxPrice) => {
       const updatedFilters = {
         ...filters,
-        priceRange: [MIN_PRICE, value]
+        priceRange: [minPrice, maxPrice]
       };
       setFilters(updatedFilters);
       onApplyFilters(updatedFilters);
@@ -58,10 +94,67 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     [filters, setFilters, onApplyFilters]
   );
 
-  const handlePriceSlider = (e) => {
+  const handlePriceSlider = (e, isMin = false) => {
     const value = Number(e.target.value);
-    document.getElementById('maxPriceDisplay').textContent = value.toLocaleString();
-    debouncedPriceUpdate(value);
+    const currentMin = filters.priceRange[0];
+    const currentMax = filters.priceRange[1];
+    
+    if (isMin) {
+      // Ensure min doesn't exceed max
+      const newMin = Math.min(value, currentMax);
+      debouncedPriceUpdate(newMin, currentMax);
+    } else {
+      // Ensure max doesn't go below min
+      const newMax = Math.max(value, currentMin);
+      debouncedPriceUpdate(currentMin, newMax);
+    }
+  };
+
+  const handlePriceInputChange = (e, isMin = false) => {
+    const value = Number(e.target.value) || 0;
+    const currentMin = filters.priceRange[0];
+    const currentMax = filters.priceRange[1];
+    
+    if (isMin) {
+      // Ensure min doesn't exceed max
+      const newMin = Math.min(value, currentMax);
+      setFilters(prev => ({
+        ...prev,
+        priceRange: [newMin, currentMax]
+      }));
+      debouncedPriceUpdate(newMin, currentMax);
+    } else {
+      // Ensure max doesn't go below min
+      const newMax = Math.max(value, currentMin);
+      setFilters(prev => ({
+        ...prev,
+        priceRange: [currentMin, newMax]
+      }));
+      debouncedPriceUpdate(currentMin, newMax);
+    }
+  };
+
+  const formatPrice = (price) => {
+    if (price === 0 || price === Number.MAX_SAFE_INTEGER) return '';
+    if (price >= 10000000) {
+      return `${(price / 10000000).toFixed(1)}Cr`;
+    } else if (price >= 100000) {
+      return `${(price / 100000).toFixed(1)}L`;
+    } else {
+      return price.toLocaleString();
+    }
+  };
+
+  const parsePrice = (priceStr) => {
+    if (!priceStr) return 0;
+    const cleanStr = priceStr.replace(/[^\d.]/g, '');
+    const num = parseFloat(cleanStr);
+    if (priceStr.toLowerCase().includes('cr')) {
+      return num * 10000000;
+    } else if (priceStr.toLowerCase().includes('l')) {
+      return num * 100000;
+    }
+    return num;
   };
 
   const handleAmenityChange = (amenity) => {
@@ -110,15 +203,20 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
   const minValue = Math.min(filters.priceRange[0], filters.priceRange[1]);
   const maxValue = Math.max(filters.priceRange[0], filters.priceRange[1]);
 
-  const handleRangeChange = (e) => {
-    const [min, max] = e.target.value.split(',').map(Number);
-    const updatedFilters = {
-      ...filters,
-      priceRange: [min, max]
-    };
-    setFilters(updatedFilters);
-    onApplyFilters(updatedFilters);
-  };
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-4 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -144,6 +242,29 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
       </div>
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Buy/Rent Filter */}
+        <div className="space-y-3">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <Calendar className="w-4 h-4 mr-2" />
+            Buy/Rent
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {filterOptions.listingTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => handleButtonChange("availability", type)}
+                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                  filters.availability === type
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                {type === 'sale' ? 'Buy' : 'Rent'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Property Type */}
         <div className="space-y-3">
           <label className="flex items-center text-sm font-medium text-gray-700">
@@ -151,17 +272,17 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
             Property Type
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {propertyTypes.map((type) => (
+            {filterOptions.types.map((type) => (
               <button
                 key={type}
-                onClick={() => handleButtonChange("propertyType", type.toLowerCase())}
+                onClick={() => handleButtonChange("propertyType", type)}
                 className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                  filters.propertyType === type.toLowerCase()
+                  filters.propertyType === type
                     ? "bg-blue-600 text-white shadow-md"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                 }`}
               >
-                {type}
+                {type.charAt(0).toUpperCase() + type.slice(1)}
               </button>
             ))}
           </div>
@@ -176,17 +297,17 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
                 PG Type
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {pgTypes.map((type) => (
+                {filterOptions.pgTypes.map((type) => (
                   <button
                     key={type}
-                    onClick={() => handleButtonChange("pgType", type.toLowerCase())}
+                    onClick={() => handleButtonChange("pgType", type)}
                     className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                      filters.pgType === type.toLowerCase()
+                      filters.pgType === type
                         ? "bg-blue-600 text-white shadow-md"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                     }`}
                   >
-                    {type}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
                 ))}
               </div>
@@ -235,20 +356,99 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
             <IndianRupee className="w-4 h-4 mr-2" />
             Price Range
           </label>
-          <div className="space-y-3">
-            <input
-              type="range"
-              min={MIN_PRICE}
-              max={MAX_PRICE}
-              step={STEP}
-              value={filters.priceRange[1]}
-              onChange={handlePriceSlider}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>₹{MIN_PRICE.toLocaleString()}</span>
-              <span>₹<span id="maxPriceDisplay">{Number(filters.priceRange[1]).toLocaleString()}</span></span>
+          
+          {/* Price Input Fields */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Min Price</label>
+              <input
+                type="text"
+                value={formatPrice(filters.priceRange[0])}
+                onChange={(e) => {
+                  const value = parsePrice(e.target.value);
+                  handlePriceInputChange({ target: { value } }, true);
+                }}
+                placeholder="Min"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Max Price</label>
+              <input
+                type="text"
+                value={formatPrice(filters.priceRange[1])}
+                onChange={(e) => {
+                  const value = parsePrice(e.target.value);
+                  handlePriceInputChange({ target: { value } }, false);
+                }}
+                placeholder="Max"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Price Range Display */}
+          <div className="text-center text-sm text-gray-600">
+            ₹{formatPrice(filters.priceRange[0])} - ₹{formatPrice(filters.priceRange[1])}
+          </div>
+
+          {/* Dual Range Sliders */}
+          <div className="relative space-y-4">
+            {/* Min Price Slider */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-2">Min Price</label>
+              <input
+                type="range"
+                min={filterOptions.priceRange.min}
+                max={filterOptions.priceRange.max}
+                step={Math.max(1000, Math.floor(filterOptions.priceRange.max / 1000))}
+                value={filters.priceRange[0]}
+                onChange={(e) => handlePriceSlider(e, true)}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              />
+            </div>
+
+            {/* Max Price Slider */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-2">Max Price</label>
+              <input
+                type="range"
+                min={filterOptions.priceRange.min}
+                max={filterOptions.priceRange.max}
+                step={Math.max(1000, Math.floor(filterOptions.priceRange.max / 1000))}
+                value={filters.priceRange[1]}
+                onChange={(e) => handlePriceSlider(e, false)}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              />
+            </div>
+
+            {/* Range Labels */}
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>₹{formatPrice(filterOptions.priceRange.min)}</span>
+              <span>₹{formatPrice(filterOptions.priceRange.max)}</span>
+            </div>
+          </div>
+
+          {/* Quick Price Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                const newMin = Math.max(filterOptions.priceRange.min, filters.priceRange[1] - 5000000);
+                handlePriceInputChange({ target: { value: newMin } }, true);
+              }}
+              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              -50L
+            </button>
+            <button
+              onClick={() => {
+                const newMax = Math.min(filterOptions.priceRange.max, filters.priceRange[0] + 5000000);
+                handlePriceInputChange({ target: { value: newMax } }, false);
+              }}
+              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              +50L
+            </button>
           </div>
         </div>
 
@@ -340,9 +540,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
               className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="">Any</option>
-              {propertyConditions.map(condition => (
-                <option key={condition} value={condition.toLowerCase()}>
-                  {condition}
+              {filterOptions.propertyConditions.map(condition => (
+                <option key={condition} value={condition}>
+                  {condition.charAt(0).toUpperCase() + condition.slice(1).replace('_', ' ')}
                 </option>
               ))}
             </select>
@@ -360,9 +560,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
               className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="">Any</option>
-              {propertyStatuses.map(status => (
-                <option key={status} value={status.toLowerCase().replace(' ', '_')}>
-                  {status}
+              {filterOptions.propertyStatuses.map(status => (
+                <option key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
                 </option>
               ))}
             </select>
@@ -376,12 +576,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
             Furnishing
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {furnishingTypes.map((type) => (
+            {filterOptions.furnishingTypes.map((type) => (
               <button
                 key={type}
-                onClick={() => handleButtonChange("furnishing", type.toLowerCase())}
+                onClick={() => handleButtonChange("furnishing", type)}
                 className={`py-2 rounded-lg text-xs sm:text-sm font-medium px-1 sm:px-2 transition-all duration-200 flex justify-center items-center ${
-                  filters.furnishing === type.toLowerCase()
+                  filters.furnishing === type
                     ? "bg-blue-600 text-white shadow-md"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                 }`}
@@ -398,12 +598,8 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
             <Star className="w-4 h-4 mr-2" />
             Amenities
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              'Parking', 'Gym', 'Swimming Pool', 'Garden',
-              'Security', 'Power Backup', 'Lift', 'Park',
-              'Club House', 'Play Area', 'Sports Facility'
-            ].map((amenity) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+            {filterOptions.amenities.map((amenity) => (
               <label key={amenity} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
@@ -441,6 +637,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
           background: #2563eb;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 2px solid white;
         }
         
         .slider::-moz-range-thumb {
@@ -449,8 +646,21 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
           border-radius: 50%;
           background: #2563eb;
           cursor: pointer;
-          border: none;
+          border: 2px solid white;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .slider::-webkit-slider-track {
+          background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 50%, #d1d5db 50%, #d1d5db 100%);
+          border-radius: 8px;
+          height: 8px;
+        }
+
+        .slider::-moz-range-track {
+          background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 50%, #d1d5db 50%, #d1d5db 100%);
+          border-radius: 8px;
+          height: 8px;
+          border: none;
         }
       `}</style>
     </motion.div>

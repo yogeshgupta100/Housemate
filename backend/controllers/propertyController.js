@@ -1063,30 +1063,63 @@ export const getFilterOptions = async (req, res) => {
         'SELECT DISTINCT type FROM properties WHERE type IS NOT NULL ORDER BY type'
       );
 
-      // Get unique statuses
-      const { rows: statuses } = await client.query(
-        'SELECT DISTINCT status FROM properties WHERE status IS NOT NULL ORDER BY status'
+      // Get unique listing types (rent/sale)
+      const { rows: listingTypes } = await client.query(
+        'SELECT DISTINCT listing_type FROM properties WHERE listing_type IS NOT NULL ORDER BY listing_type'
       );
 
-      // Get unique cities
-      const { rows: cities } = await client.query(
-        'SELECT DISTINCT city FROM properties WHERE city IS NOT NULL ORDER BY city'
+      // Get unique PG types
+      const { rows: pgTypes } = await client.query(
+        'SELECT DISTINCT pg_type FROM properties WHERE pg_type IS NOT NULL ORDER BY pg_type'
+      );
+
+      // Get unique furnishing types
+      const { rows: furnishingTypes } = await client.query(
+        'SELECT DISTINCT furnishing FROM properties WHERE furnishing IS NOT NULL ORDER BY furnishing'
+      );
+
+      // Get unique property conditions
+      const { rows: propertyConditions } = await client.query(
+        'SELECT DISTINCT property_condition FROM properties WHERE property_condition IS NOT NULL ORDER BY property_condition'
+      );
+
+      // Get unique property statuses
+      const { rows: propertyStatuses } = await client.query(
+        'SELECT DISTINCT property_status FROM properties WHERE property_status IS NOT NULL ORDER BY property_status'
+      );
+
+      // Get all unique amenities from the database
+      const { rows: amenitiesResult } = await client.query(
+        'SELECT DISTINCT unnest(amenities) as amenity FROM properties WHERE amenities IS NOT NULL AND array_length(amenities, 1) > 0'
       );
 
       // Get price ranges
       const { rows: [{ min_price, max_price }] } = await client.query(
-        'SELECT MIN(price) as min_price, MAX(price) as max_price FROM properties'
+        'SELECT MIN(price) as min_price, MAX(price) as max_price FROM properties WHERE price > 0'
+      );
+
+      // Get area ranges
+      const { rows: [{ min_area, max_area }] } = await client.query(
+        'SELECT MIN(sqft) as min_area, MAX(sqft) as max_area FROM properties WHERE sqft > 0'
       );
 
       res.status(200).json({
         success: true,
         data: {
           types: types.map(t => t.type),
-          statuses: statuses.map(s => s.status),
-          cities: cities.map(c => c.city),
+          listingTypes: listingTypes.map(lt => lt.listing_type),
+          pgTypes: pgTypes.map(pt => pt.pg_type),
+          furnishingTypes: furnishingTypes.map(ft => ft.furnishing),
+          propertyConditions: propertyConditions.map(pc => pc.property_condition),
+          propertyStatuses: propertyStatuses.map(ps => ps.property_status),
+          amenities: amenitiesResult.map(a => a.amenity).filter(Boolean),
           priceRange: {
             min: min_price || 0,
-            max: max_price || 0
+            max: max_price || 10000000
+          },
+          areaRange: {
+            min: min_area || 0,
+            max: max_area || 10000
           }
         }
       });
