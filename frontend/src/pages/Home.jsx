@@ -61,7 +61,7 @@ const Home = () => {
       </div>
       <Properties />
       <Steps />
-      <Testimonials />
+      {/* <Testimonials /> */}
       <Blog />
     </div>
   );

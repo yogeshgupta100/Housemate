@@ -82,18 +82,28 @@ class UserService {
   }
 
   async getPaginatedUsers(query = {}, skip = 0, limit = 10) {
-    let sql = 'SELECT id, first_name, last_name, email, user_type, created_at FROM users';
+    let sql = 'SELECT id, first_name, last_name, email, user_type, is_verified, created_at FROM users';
     const params = [];
+    let whereConditions = [];
     
     if (query.search) {
-      sql += ` WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR email ILIKE $1`;
+      whereConditions.push(`(first_name ILIKE $${params.length + 1} OR last_name ILIKE $${params.length + 1} OR email ILIKE $${params.length + 1})`);
       params.push(`%${query.search}%`);
     }
     
     if (query.userType && query.userType !== 'all') {
-      sql += params.length ? ' AND' : ' WHERE';
-      sql += ` user_type = $${params.length + 1}`;
+      whereConditions.push(`user_type = $${params.length + 1}`);
       params.push(query.userType);
+    }
+
+    if (query.verificationStatus && query.verificationStatus !== 'all') {
+      const isVerified = query.verificationStatus === 'verified';
+      whereConditions.push(`is_verified = $${params.length + 1}`);
+      params.push(isVerified);
+    }
+    
+    if (whereConditions.length > 0) {
+      sql += ` WHERE ${whereConditions.join(' AND ')}`;
     }
     
     sql += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -106,16 +116,26 @@ class UserService {
   async getTotalUsers(query = {}) {
     let sql = 'SELECT COUNT(*) FROM users';
     const params = [];
+    let whereConditions = [];
     
     if (query.search) {
-      sql += ` WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR email ILIKE $1`;
+      whereConditions.push(`(first_name ILIKE $${params.length + 1} OR last_name ILIKE $${params.length + 1} OR email ILIKE $${params.length + 1})`);
       params.push(`%${query.search}%`);
     }
     
     if (query.userType && query.userType !== 'all') {
-      sql += params.length ? ' AND' : ' WHERE';
-      sql += ` user_type = $${params.length + 1}`;
+      whereConditions.push(`user_type = $${params.length + 1}`);
       params.push(query.userType);
+    }
+
+    if (query.verificationStatus && query.verificationStatus !== 'all') {
+      const isVerified = query.verificationStatus === 'verified';
+      whereConditions.push(`is_verified = $${params.length + 1}`);
+      params.push(isVerified);
+    }
+    
+    if (whereConditions.length > 0) {
+      sql += ` WHERE ${whereConditions.join(' AND ')}`;
     }
     
     const { rows } = await pool.query(sql, params);

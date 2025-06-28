@@ -19,6 +19,10 @@ export const getAllUsers = async (req, res) => {
       query.userType = req.query.userType;
     }
 
+    if (req.query.verificationStatus) {
+      query.verificationStatus = req.query.verificationStatus;
+    }
+
     const [users, totalUsers] = await Promise.all([
       userService.getPaginatedUsers(query, skip, limit),
       userService.getTotalUsers(query)

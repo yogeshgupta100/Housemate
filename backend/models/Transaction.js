@@ -5,11 +5,11 @@ const TransactionModel = {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const { property_id, floor_id, room_id, user_id, move_in_date, status } = data;
+      const { property_id, floor_id, room_id, user_id, move_in_date, status, rent_amount, deposit_amount } = data;
       const { rows } = await client.query(
         `INSERT INTO transactions
-          (property_id, floor_id, room_id, user_id, move_in_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6)
+          (property_id, floor_id, room_id, user_id, move_in_date, status, rent_amount, deposit_amount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
           property_id,
@@ -17,7 +17,9 @@ const TransactionModel = {
           room_id,
           user_id,
           move_in_date,
-          status || 'pending'
+          status || 'pending',
+          rent_amount || 0,
+          deposit_amount || 0
         ]
       );
       await client.query('COMMIT');
@@ -74,7 +76,7 @@ const TransactionModel = {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const { property_id, floor_id, room_id, user_id, move_in_date, status } = data;
+      const { property_id, floor_id, room_id, user_id, move_in_date, status, rent_amount, deposit_amount } = data;
       const { rows } = await client.query(
         `UPDATE transactions SET
           property_id = $1,
@@ -83,8 +85,10 @@ const TransactionModel = {
           user_id = $4,
           move_in_date = $5,
           status = $6,
+          rent_amount = $7,
+          deposit_amount = $8,
           updated_at = CURRENT_TIMESTAMP
-         WHERE id = $7
+         WHERE id = $9
          RETURNING *`,
         [
           property_id,
@@ -93,6 +97,8 @@ const TransactionModel = {
           user_id,
           move_in_date,
           status,
+          rent_amount || 0,
+          deposit_amount || 0,
           id
         ]
       );
