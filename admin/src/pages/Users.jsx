@@ -26,6 +26,7 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("all");
+    const [verificationFilter, setVerificationFilter] = useState("all");
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -92,6 +93,7 @@ const Users = () => {
                 limit,
                 ...(searchTerm && { search: searchTerm }),
                 ...(filterType !== "all" && { userType: filterType }),
+                ...(verificationFilter !== "all" && { verificationStatus: verificationFilter }),
             });
 
             const response = await axios.get(`${backendurl}/api/admin/users?${params}`, {
@@ -194,7 +196,7 @@ const Users = () => {
     useEffect(() => {
         fetchRoles();
         fetchUsers();
-    }, [currentPage, itemsPerPage, searchTerm, filterType]);
+    }, [currentPage, itemsPerPage, searchTerm, filterType, verificationFilter]);
 
     const handleDeleteUser = async (userId, userName) => {
         setUserToDelete({ id: userId, name: userName });
@@ -299,6 +301,18 @@ const Users = () => {
                                 ))}
                             </select>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <Filter className="text-gray-400 w-5 h-5" />
+                            <select
+                                className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={verificationFilter}
+                                onChange={(e) => setVerificationFilter(e.target.value)}
+                            >
+                                <option value="all">All Status</option>
+                                <option value="verified">Verified</option>
+                                <option value="unverified">Unverified</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -360,15 +374,28 @@ const Users = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    user.is_verified
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-yellow-100 text-yellow-800"
-                                                }`}
-                                            >
-                                                {user.is_verified ? "Verified" : "Pending"}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                        user.is_verified
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-yellow-100 text-yellow-800"
+                                                    }`}
+                                                >
+                                                    {user.is_verified ? "Verified" : "Pending"}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleVerificationToggle(user.id, user.is_verified)}
+                                                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                                                        user.is_verified
+                                                            ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                                                    }`}
+                                                    title={user.is_verified ? "Unverify User" : "Verify User"}
+                                                >
+                                                    {user.is_verified ? "Unverify" : "Verify"}
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center gap-2">

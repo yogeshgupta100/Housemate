@@ -83,6 +83,10 @@ const AMENITIES = [
   "Four Wheeler Parking",
   "Two Wheeler Parking",
   "High-Speed Internet Ready",
+  // Sale-specific amenities
+  "Club House",
+  "Temple",
+  "Society Shops",
 ];
 const PROPERTY_CONDITIONS = ["new", "good", "average", "needs_repair"];
 const PROPERTY_STATUSES = ["ready_to_move", "under_construction", "renovated"];
@@ -108,6 +112,73 @@ const DIAL_CODES = [
   { code: "+27", country: "South Africa" },
   { code: "+60", country: "Malaysia" },
   { code: "+66", country: "Thailand" },
+];
+
+// Separate amenities for rent and sale
+const RENT_AMENITIES = [
+  "Food",
+  "Microwave",
+  "Induction",
+  "Television",
+  "Refrigerator",
+  "Laundry",
+  "Bedsheets",
+  "Kitchen essentials",
+  "Power Backup",
+  "Gyser",
+  "Chimney",
+  "Washing Machine",
+  "Table Tennis",
+  "Play Area",
+  "Lake View",
+  "Fireplace",
+  "Central Heating and Air Conditioning",
+  "Dock",
+  "Pool",
+  "Garage",
+  "Garden",
+  "Gym",
+  "Security System",
+  "Master Bathroom",
+  "Guest Bathroom",
+  "Home Theater",
+  "Exercise Room/Gym",
+  "Four Wheeler Parking",
+  "Two Wheeler Parking",
+  "High-Speed Internet Ready",
+];
+
+const SALE_AMENITIES = [
+  "Microwave",
+  "Television",
+  "Refrigerator",
+  "Bedsheets",
+  "Kitchen essentials",
+  "Power Backup",
+  "Gyser",
+  "Chimney",
+  "Washing Machine",
+  "Table Tennis",
+  "Play Area",
+  "Lake View",
+  "Fireplace",
+  "Central Heating and Air Conditioning",
+  "Dock",
+  "Pool",
+  "Garage",
+  "Garden",
+  "Gym",
+  "Security System",
+  "Master Bathroom",
+  "Guest Bathroom",
+  "Home Theater",
+  "Exercise Room/Gym",
+  "Four Wheeler Parking",
+  "Two Wheeler Parking",
+  "High-Speed Internet Ready",
+  "Club House",
+  "Temple",
+  "Society Shops",
 ];
 
 const PropertyListingForm = () => {
@@ -1396,7 +1467,9 @@ const PropertyListingForm = () => {
               </div>
             )}
 
-          {formData.listingType === "sale" && (
+          {/* Sale-Specific Details */}
+          {formData.listingType === "sale" && 
+            !["commercial plot", "residential plot"].includes(formData.type) && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
                 Sale-Specific Details
@@ -1925,8 +1998,26 @@ const PropertyListingForm = () => {
                     </div>
                   )}
 
+                {formData.listingType === "sale" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Area (sq ft) *
+                    </label>
+                    <input
+                      type="number"
+                      name="sqft"
+                      value={formData.sqft}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                    />
+                  </div>
+                )}
+
                 {!formData.type?.includes("plot") &&
-                  !["pg", "rk", "flat"].includes(formData.type) && (
+                  !["pg", "rk", "flat"].includes(formData.type) &&
+                  !(formData.listingType === "sale" && ["office", "commercial"].includes(formData.type)) && (
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2249,7 +2340,7 @@ const PropertyListingForm = () => {
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {AMENITIES.map((amenity) => (
+              {(formData.listingType === "sale" ? SALE_AMENITIES : RENT_AMENITIES).map((amenity) => (
                 <button
                   key={amenity}
                   type="button"

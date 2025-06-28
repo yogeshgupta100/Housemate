@@ -99,7 +99,7 @@ export const mapTenantToRoom = async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { room_id, user_id, move_in_date } = req.body;
+    const { room_id, user_id, move_in_date, rent_amount, deposit_amount } = req.body;
 
     // Check if user exists
     const { rows: [user] } = await client.query(
@@ -138,12 +138,16 @@ export const mapTenantToRoom = async (req, res) => {
       });
     }
 
+    // Use provided rent_amount or room's default rent
+    const finalRentAmount = rent_amount || room.rent_amount || 0;
+    const finalDepositAmount = deposit_amount || room.rent_amount || 0;
+
     // Create transaction
     const { rows: [transaction] } = await client.query(
       `INSERT INTO transactions (
         property_id, floor_id, room_id, user_id, 
-        move_in_date, status
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        move_in_date, status, rent_amount, deposit_amount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
         room.property_id,
@@ -151,7 +155,9 @@ export const mapTenantToRoom = async (req, res) => {
         room.id,
         user.id,
         move_in_date || new Date(),
-        'active'
+        'active',
+        finalRentAmount,
+        finalDepositAmount
       ]
     );
 
@@ -167,8 +173,8 @@ export const mapTenantToRoom = async (req, res) => {
       message: 'Tenant mapped to room successfully',
       transaction,
       room_details: {
-        rent_amount: room.rent_amount,
-        deposit_amount: room.rent_amount // Using room rent as deposit amount
+        rent_amount: finalRentAmount,
+        deposit_amount: finalDepositAmount
       }
     });
   } catch (error) {

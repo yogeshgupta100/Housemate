@@ -150,10 +150,6 @@ const PropertyDetails = ({ property, onRemove }) => {
       toast.error('Please select move-in date');
       return;
     }
-    if (!depositAmount) {
-      toast.error('Please enter deposit amount');
-      return;
-    }
 
     try {
       const response = await axios.post(
@@ -163,7 +159,7 @@ const PropertyDetails = ({ property, onRemove }) => {
           user_id: selectedUser.id,
           move_in_date: moveInDate,
           rent_amount: selectedRoom.rent,
-          deposit_amount: depositAmount
+          deposit_amount: depositAmount || 0 // Make deposit optional, default to 0
         },
         {
           headers: {
@@ -800,7 +796,7 @@ const PropertyDetails = ({ property, onRemove }) => {
                                 }}
                                 className="mt-3 w-full px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                               >
-                                Map Tenant
+                                Map Tenant (Admin)
                               </button>
                             )}
                           </div>
@@ -901,7 +897,7 @@ const PropertyDetails = ({ property, onRemove }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Map Tenant to Room</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Map Tenant to Room (Admin)</h2>
               <button
                 onClick={() => setShowMapTenantModal(false)}
                 className="text-gray-400 hover:text-gray-500 transition-colors"
@@ -984,7 +980,9 @@ const PropertyDetails = ({ property, onRemove }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Deposit Amount</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deposit Amount <span className="text-gray-500 text-xs">(Optional for admin mapping)</span>
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 font-medium">₹</span>
@@ -994,9 +992,12 @@ const PropertyDetails = ({ property, onRemove }) => {
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
                     className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter deposit amount"
+                    placeholder="Enter deposit amount (optional)"
                   />
                 </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Leave empty to map tenant without deposit requirement
+                </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-white z-10">
                 <button
@@ -1009,7 +1010,7 @@ const PropertyDetails = ({ property, onRemove }) => {
                   onClick={handleMapTenant}
                   className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  Map Tenant
+                  Map Tenant (Admin)
                 </button>
               </div>
             </div>

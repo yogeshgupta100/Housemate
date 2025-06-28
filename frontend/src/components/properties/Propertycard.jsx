@@ -195,6 +195,14 @@ const PropertyCard = ({ property, viewType }) => {
 
         {/* Property Tags */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <motion.span 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-gradient-to-r from-orange-600 to-orange-500 text-white 
+              px-3 py-1 rounded-full text-sm font-medium shadow-lg"
+          >
+            {property.listing_type === "rent" ? "Rent" : "Buy"}
+          </motion.span>
           <motion.span 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}

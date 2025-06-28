@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ArrowLeft, ArrowRight, Quote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { testimonials } from '../assets/testimonialdata';
 
 const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
   return (
@@ -13,18 +12,15 @@ const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
       transition={{ duration: 0.5, ease: "easeInOut" }}
       className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 relative"
     >
-      {}
       <div className="absolute top-4 right-4 opacity-10">
         <Quote className="w-12 h-12 text-blue-500" />
       </div>
 
-      {}
       <p className="text-gray-700 italic mb-6 text-lg leading-relaxed relative z-10">
         "{testimonial.text}"
       </p>
 
       <div className="mt-8 flex items-center">
-        {}
         <div className="relative">
           <img
             src={testimonial.image}
@@ -43,14 +39,12 @@ const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
         </div>
 
         <div className="ml-4">
-          {}
           <h3 className="font-bold text-gray-900 text-lg">{testimonial.name}</h3>
           <p className="text-sm text-gray-600 flex items-center">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 mr-2"></span>
             {testimonial.location}
           </p>
           
-          {}
           <div className="flex mt-1">
             {[...Array(5)].map((_, i) => (
               <Star
@@ -62,7 +56,6 @@ const TestimonialCard = ({ testimonial, index, activeIndex, direction }) => {
         </div>
       </div>
 
-      {}
       <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-1">
         {testimonials.map((_, i) => (
           <div
@@ -124,7 +117,6 @@ const Testimonials = () => {
           </p>
         </motion.div>
 
-        {}
         <div className="hidden md:block">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial) => (
@@ -179,7 +171,6 @@ const Testimonials = () => {
           </div>
         </div>
 
-        {}
         <div className="md:hidden relative">
           <div className="overflow-hidden px-4">
             <AnimatePresence mode="wait" initial={false}>
@@ -211,7 +202,6 @@ const Testimonials = () => {
           </div>
         </div>
 
-        {}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
