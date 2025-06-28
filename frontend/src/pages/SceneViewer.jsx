@@ -23,49 +23,71 @@ const SceneViewer = () => {
   const fetchScene = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${Backendurl}/api/scenes/${sceneId}`);
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication required to view 360° tours');
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get(`${Backendurl}/api/scenes/${sceneId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       if (response.data.success) {
-        const sceneData = response.data.data;
-        setScene(sceneData);
+        setScene(response.data.data);
         
-        // Determine if this is a room-based or property-based scene
-        if (sceneData.room_id) {
-          // Room-based scene - fetch all scenes for this room
+        // If this is a room scene, fetch all scenes for that room
+        if (response.data.data.room_id) {
           try {
-            const roomScenesResponse = await axios.get(`${Backendurl}/api/scenes/rooms/${sceneData.room_id}`);
+            const roomScenesResponse = await axios.get(`${Backendurl}/api/scenes/rooms/${response.data.data.room_id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
             if (roomScenesResponse.data.success) {
               setScenes(roomScenesResponse.data.data);
             }
           } catch (roomError) {
             console.error('Error fetching room scenes:', roomError);
-            // If we can't fetch room scenes, just use the single scene
-            setScenes([sceneData]);
+            // Don't set error for room scenes, just use the single scene
           }
-        } else if (sceneData.property_id) {
-          // Property-based scene - fetch all scenes for this property
+        } else {
+          // If this is a property scene, fetch all scenes for that property
           try {
-            const propertyScenesResponse = await axios.get(`${Backendurl}/api/scenes/properties/${sceneData.property_id}`);
+            const propertyScenesResponse = await axios.get(`${Backendurl}/api/scenes/properties/${response.data.data.property_id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
             if (propertyScenesResponse.data.success) {
               setScenes(propertyScenesResponse.data.data);
             }
           } catch (propertyError) {
             console.error('Error fetching property scenes:', propertyError);
-            const errorMessage = propertyError.response?.data?.message || 'Failed to fetch property scenes';
-            toast.error(errorMessage);
-            // If we can't fetch property scenes, just use the single scene
-            setScenes([sceneData]);
+            // Don't set error for property scenes, just use the single scene
           }
-        } else {
-          // Fallback - just use the single scene
-          setScenes([sceneData]);
         }
       } else {
-        setError('Scene not found');
+        setError(response.data.message || 'Scene not found');
       }
     } catch (error) {
       console.error('Error fetching scene:', error);
-      setError('Failed to load scene');
+      
+      // Handle different error cases
+      if (error.response?.status === 401) {
+        setError('Authentication required to view 360° tours');
+      } else if (error.response?.status === 403) {
+        setError('Access denied to 360° tours');
+      } else if (error.response?.status === 404) {
+        setError('Scene not found');
+      } else {
+        setError('Failed to load 360° view. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }

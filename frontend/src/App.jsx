@@ -9,12 +9,16 @@ import PropertyDetails from './components/properties/propertydetail';
 import PropertyListingForm from './components/properties/PropertyListingForm';
 import Aboutus from './pages/About'
 import Contact from './pages/Contact'
+import FAQs from './pages/FAQs'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 import Login from './components/login';
 import Signup from './components/signup';
 import ForgotPassword from './components/forgetpassword';
 import ResetPassword from './components/resetpassword';
 import Footer from './components/footer';
 import NotFoundPage from './components/Notfound';
+import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import AIPropertyHub from './pages/Aiagent'
 import StructuredData from './components/SEO/StructuredData';
@@ -57,10 +61,17 @@ const AppContent = () => {
         <Route path="/" element={<Home />} />
         <Route path="/properties" element={<Properties />} />
         <Route path="/list-property" element={<PropertyListingForm />} />
-        <Route path="/properties/single/:id" element={<PropertyDetails />} />
+        <Route path="/properties/single/:id" element={
+          <ProtectedRoute>
+            <PropertyDetails />
+          </ProtectedRoute>
+        } />
         <Route path="/scene-viewer/:sceneId" element={<SceneViewer />} />
         <Route path="/about" element={<Aboutus />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/faqs" element={<FAQs />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/ai-property-hub" element={<AIPropertyHub />} />
         <Route path="/features" element={<FeaturesDetail />} />
         

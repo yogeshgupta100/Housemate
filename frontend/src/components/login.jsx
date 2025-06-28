@@ -66,7 +66,8 @@ const Login = () => {
       
       if (result.success) {
         toast.success("Login successful!");
-        navigate("/properties");
+        const from = location.state?.from?.pathname || "/properties";
+        navigate(from);
       } else {
         toast.error(result.message || "Login failed");
       }
@@ -81,7 +82,8 @@ const Login = () => {
   const handleGoogleSuccess = (data) => {
     // Update auth context
     login(data.user.email, null, data.token);
-    navigate("/properties");
+    const from = location.state?.from?.pathname || "/properties";
+    navigate(from);
   };
 
   const handleGoogleError = (error) => {

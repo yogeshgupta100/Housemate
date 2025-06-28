@@ -17,17 +17,35 @@ const PropertyVirtualTour = ({ propertyId }) => {
   const fetchPropertyScenes = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${Backendurl}/api/scenes/properties/${propertyId}`);
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setScenes([]);
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get(`${Backendurl}/api/scenes/properties/${propertyId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       if (response.data.success) {
         setScenes(response.data.data);
       } else {
         console.error('Failed to fetch property scenes:', response.data.message);
+        setScenes([]);
       }
     } catch (error) {
       console.error('Error fetching property scenes:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to load virtual tour';
-      toast.error(errorMessage);
+      // Don't show toast for authentication errors
+      if (error.response?.status !== 401 && error.response?.status !== 403) {
+        const errorMessage = error.response?.data?.message || 'Failed to load virtual tour';
+        toast.error(errorMessage);
+      }
+      setScenes([]);
     } finally {
       setLoading(false);
     }

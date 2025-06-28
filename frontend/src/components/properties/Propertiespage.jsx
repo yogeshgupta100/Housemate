@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Grid, List, SlidersHorizontal, MapPin, X } from "lucide-react";
+import { Grid, List, SlidersHorizontal, MapPin, X, Info } from "lucide-react";
 import SearchBar from "./Searchbar.jsx";
 import FilterSection from "./Filtersection.jsx";
 import PropertyListing from "./PropertyListing.jsx";
 import { Backendurl } from "../../App.jsx";
+import { useAuth } from "../../context/AuthContext";
 
 const PropertiesPage = () => {
+  const { isLoggedIn } = useAuth();
   const [viewState, setViewState] = useState({
     isGridView: true,
     showFilters: false,
