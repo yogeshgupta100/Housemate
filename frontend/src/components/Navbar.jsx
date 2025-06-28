@@ -90,13 +90,11 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
-            <motion.div
-              whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-              transition={{ duration: 0.5 }}
+            <div
               className="p-1 sm:p-2 rounded-lg"
             >
               <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
-            </motion.div>
+            </div>
             <span className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:from-indigo-600 group-hover:to-blue-600 transition-all duration-300">
             HOUSEMATE
             </span>

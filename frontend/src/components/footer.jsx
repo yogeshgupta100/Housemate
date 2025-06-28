@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Home,
   Mail, 
   Send, 
   MapPin, 
@@ -15,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import { Backendurl } from '../App';
 import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import logo from "../assets/Housemate_Logo_01.png";
 
 const MobileFooterSection = ({ title, children }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -236,9 +236,11 @@ const Footer = () => {
           {/* Brand section - Always visible above other sections on mobile */}
           <div className="mb-10">
             <div className="flex items-center justify-center lg:justify-start">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Home className="h-6 w-6 text-blue-600" />
-              </div>
+            <div
+              className="p-1 sm:p-2 rounded-lg"
+            >
+              <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
+            </div>
               <span className="ml-3 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
               HOUSEMATE
               </span>
