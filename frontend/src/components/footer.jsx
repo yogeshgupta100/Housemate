@@ -234,21 +234,25 @@ const Footer = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Brand section - Always visible above other sections on mobile */}
           <div className="mb-10">
-            <div className="flex items-center justify-center lg:justify-start">
-            <div
-              className="p-1 sm:p-2 rounded-lg"
-            >
-              <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
-            </div>
-              <span className="ml-3 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-              HOUSEMATE
-              </span>
-            </div>
-            
-            <div className="text-center lg:text-left mt-2">
-              <p className="text-sm text-gray-500 font-medium tracking-wider">
-                ————— YOUR NEXT HOME —————
-              </p>
+            <div className="flex items-center lg:items-start justify-center flex-col">
+              <div className="flex flex-col items-center lg:items-start">
+                <div className="flex items-center justify-center lg:justify-start">
+                  <div className="mr-2 rounded-lg">
+                    <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
+                  </div>
+                  <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                    HOUSEMATE
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 w-full pl-2">
+                  <div className="flex-1 h-px bg-gray-400"></div>
+                  <span className="text-sm text-gray-500 font-medium tracking-wider whitespace-nowrap">
+                    YOUR NEXT HOME
+                  </span>
+                  <div className="flex-1 h-px bg-gray-400"></div>
+                </div>
+              </div>
             </div>
             
             <p className="text-gray-600 mt-4 text-center lg:text-left lg:mt-6 max-w-md mx-auto lg:mx-0 leading-relaxed">

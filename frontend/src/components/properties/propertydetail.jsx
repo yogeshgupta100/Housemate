@@ -991,7 +991,7 @@ const PropertyDetails = () => {
                   <div className="mb-6">
                     <button
                       onClick={() => {
-                        setOpenTermsAndConditions(true);
+                        property?.type === "rent" ? setOpenTermsAndConditions(true) : toast.success("You will be redirected to the Payment page")
                       }}
                       className="w-full md:w-fit bg-blue-600 text-white p-3 rounded-lg 
                       hover:bg-blue-700 transition-colors flex items-center 
