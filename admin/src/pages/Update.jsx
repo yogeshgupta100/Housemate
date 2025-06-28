@@ -1378,7 +1378,7 @@ const Update = () => {
 
               {formData.listingType && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label lassName="block text-sm font-medium text-gray-700 mb-3">
                     Select Property Type *
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

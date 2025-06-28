@@ -198,7 +198,7 @@ const PropertyCard = ({ property, viewType }) => {
         <motion.span 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-gradient-to-r from-orange-600 to-orange-500 text-white 
+            className="bg-gradient-to-r text-center from-orange-600 to-orange-500 text-white 
               px-3 py-1 rounded-full text-sm font-medium shadow-lg"
           >
             {property.listing_type === "rent" ? "Rent" : "Buy"}
@@ -206,15 +206,15 @@ const PropertyCard = ({ property, viewType }) => {
           <motion.span 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-gradient-to-r from-blue-600 to-blue-500 text-white 
+            className="bg-gradient-to-r text-center from-blue-600 to-blue-500 text-white 
               px-3 py-1 rounded-full text-sm font-medium shadow-lg"
           >
-            {property.type}
+            {property.type?.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
           </motion.span>
           <motion.span 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${getBadgeColor()}`}
+            className={`px-3 py-1 rounded-full text-center text-sm font-medium shadow-lg ${getBadgeColor()}`}
           >
             {formatListingType(getListingStatus())}
           </motion.span>

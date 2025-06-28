@@ -1999,21 +1999,21 @@ const PropertyListingForm = () => {
                   )}
 
                 {formData.listingType === "sale" && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Area (sq ft) *
-                    </label>
-                    <input
-                      type="number"
-                      name="sqft"
-                      value={formData.sqft}
-                      onChange={handleChange}
-                      min="0"
-                      style={inputStyles}
-                      className={getInputClassName()}
-                    />
-                  </div>
-                )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Area (sq ft) *
+                      </label>
+                      <input
+                        type="number"
+                        name="sqft"
+                        value={formData.sqft}
+                        onChange={handleChange}
+                        min="0"
+                        style={inputStyles}
+                        className={getInputClassName()}
+                      />
+                    </div>
+                  )}
 
                 {!formData.type?.includes("plot") &&
                   !["pg", "rk", "flat"].includes(formData.type) &&

@@ -375,15 +375,15 @@ const Users = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
-                                                <span
-                                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                        user.is_verified
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-yellow-100 text-yellow-800"
-                                                    }`}
-                                                >
-                                                    {user.is_verified ? "Verified" : "Pending"}
-                                                </span>
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    user.is_verified
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-yellow-100 text-yellow-800"
+                                                }`}
+                                            >
+                                                {user.is_verified ? "Verified" : "Pending"}
+                                            </span>
                                                 <button
                                                     onClick={() => handleVerificationToggle(user.id, user.is_verified)}
                                                     className={`px-2 py-1 text-xs rounded-md transition-colors ${

@@ -60,7 +60,8 @@ const PropertyCard = ({ property, favorites }) => {
       }
     } catch (error) {
       console.error("Error updating favorite:", error);
-      toast.error("An error occurred. Please try again.");
+      const errorMessage = error?.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -255,10 +256,13 @@ const PropertiesShow = () => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${Backendurl}/api/properties`);
+        const queryParams = new URLSearchParams();
+        queryParams.append("verified", true);
+        console.log("queryParams:", queryParams.toString());
+        const response = await axios.get(`${Backendurl}/api/properties/search?${queryParams}`);
         
         if (response.data.success) {
-          const properties = response.data.data || [];
+          const properties = response?.data?.properties || [];
           console.log('Fetched properties:', properties); // Debug log
           setProperties(properties);
         } else {
@@ -279,7 +283,7 @@ const PropertiesShow = () => {
   }, []);
 
   const filteredProperties = activeCategory === 'all' 
-    ? properties 
+    ? properties?.slice(0, 6)
     : properties.filter(property => property.type?.toLowerCase() === activeCategory);
 
   const viewAllProperties = () => {

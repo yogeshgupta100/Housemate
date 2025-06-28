@@ -1,4 +1,4 @@
-import { Home, IndianRupee, Filter, Bed, Bath, Calendar, MapPin, Building, Star } from "lucide-react";
+import { Home, IndianRupee, Filter, Bed, Bath, Calendar, MapPin, Building, Star, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
 import React, { useRef, useEffect, useCallback } from "react";
 
@@ -14,13 +14,24 @@ const MIN_PRICE = 0;
 const MAX_PRICE = 50000000;
 const STEP = 50000;
 
-const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
+const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFilters(prev => ({
-      ...prev,
+    const updatedFilters = {
+      ...filters,
       [name]: type === 'checkbox' ? checked : value
-    }));
+    };
+    setFilters(updatedFilters);
+    onApplyFilters(updatedFilters);
+  };
+
+  const handleButtonChange = (name, value) => {
+    const updatedFilters = {
+      ...filters,
+      [name]: value
+    };
+    setFilters(updatedFilters);
+    onApplyFilters(updatedFilters);
   };
 
   const debounce = (func, wait) => {
@@ -37,33 +48,37 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
 
   const debouncedPriceUpdate = useCallback(
     debounce((value) => {
-      setFilters(prev => ({
-        ...prev,
+      const updatedFilters = {
+        ...filters,
         priceRange: [MIN_PRICE, value]
-      }));
-    }, 300),
-    []
+      };
+      setFilters(updatedFilters);
+      onApplyFilters(updatedFilters);
+    }, 500),
+    [filters, setFilters, onApplyFilters]
   );
 
   const handlePriceSlider = (e) => {
     const value = Number(e.target.value);
-
     document.getElementById('maxPriceDisplay').textContent = value.toLocaleString();
-    
     debouncedPriceUpdate(value);
   };
 
   const handleAmenityChange = (amenity) => {
-    setFilters(prev => ({
-      ...prev,
-      amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter(a => a !== amenity)
-        : [...prev.amenities, amenity]
-    }));
+    const updatedAmenities = filters.amenities.includes(amenity)
+      ? filters.amenities.filter(a => a !== amenity)
+      : [...filters.amenities, amenity];
+    
+    const updatedFilters = {
+      ...filters,
+      amenities: updatedAmenities
+    };
+    setFilters(updatedFilters);
+    onApplyFilters(updatedFilters);
   };
 
   const handleReset = () => {
-    setFilters({
+    const resetFilters = {
       propertyType: "",
       priceRange: [0, Number.MAX_SAFE_INTEGER],
       bedrooms: "0",
@@ -79,8 +94,14 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
       maxArea: "",
       floorNo: "",
       totalFloors: "",
-      verifiedOnly: false
-    });
+      verifiedOnly: false,
+      pgType: "",
+      sharingType: "",
+      hasBalcony: false,
+    };
+    setFilters(resetFilters);
+    onApplyFilters(resetFilters);
+    if (onReset) onReset();
   };
 
   const rangeRef = useRef(null);
@@ -91,10 +112,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
 
   const handleRangeChange = (e) => {
     const [min, max] = e.target.value.split(',').map(Number);
-    setFilters(prev => ({
-      ...prev,
+    const updatedFilters = {
+      ...filters,
       priceRange: [min, max]
-    }));
+    };
+    setFilters(updatedFilters);
+    onApplyFilters(updatedFilters);
   };
 
   return (
@@ -102,26 +125,28 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="bg-white p-6 pt-0 rounded-xl shadow-lg max-h-[80vh] overflow-y-auto"
+      className="bg-white rounded-xl shadow-lg"
     >
-      {}
-      <div className="flex justify-between items-center mb-6 pt-6 sticky top-0 bg-white h-full z-10">
-        <div className="flex items-center space-x-2 w-full">
-          <Filter className="w-5 h-5 text-blue-600" />
-          <h2 className="text-lg font-semibold">Filters</h2>
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 rounded-t-xl">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Filters</h2>
+          </div>
+          <button
+            onClick={handleReset}
+            className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          >
+            Reset All
+          </button>
         </div>
-        <button
-          onClick={handleReset}
-          className="text-sm text-blue-600 hover:text-blue-700"
-        >
-          Reset All
-        </button>
       </div>
 
-      <div className="space-y-6">
-        {}
-        <div className="filter-group">
-          <label className="filter-label">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Property Type */}
+        <div className="space-y-3">
+          <label className="flex items-center text-sm font-medium text-gray-700">
             <Home className="w-4 h-4 mr-2" />
             Property Type
           </label>
@@ -129,13 +154,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             {propertyTypes.map((type) => (
               <button
                 key={type}
-                onClick={() => handleChange({
-                  target: { name: "propertyType", value: type.toLowerCase() }
-                })}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-                  ${filters.propertyType === type.toLowerCase()
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                onClick={() => handleButtonChange("propertyType", type.toLowerCase())}
+                className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                  filters.propertyType === type.toLowerCase()
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                }`}
               >
                 {type}
               </button>
@@ -143,10 +167,11 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
+        {/* PG Specific Filters */}
         {filters.propertyType === "pg" && (
           <>
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className="space-y-3">
+              <label className="flex items-center text-sm font-medium text-gray-700">
                 <Home className="w-4 h-4 mr-2" />
                 PG Type
               </label>
@@ -154,13 +179,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
                 {pgTypes.map((type) => (
                   <button
                     key={type}
-                    onClick={() => handleChange({
-                      target: { name: "pgType", value: type.toLowerCase() }
-                    })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-                      ${filters.pgType === type.toLowerCase()
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    onClick={() => handleButtonChange("pgType", type.toLowerCase())}
+                    className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                      filters.pgType === type.toLowerCase()
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    }`}
                   >
                     {type}
                   </button>
@@ -168,8 +192,8 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               </div>
             </div>
 
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className="space-y-3">
+              <label className="flex items-center text-sm font-medium text-gray-700">
                 <Home className="w-4 h-4 mr-2" />
                 Room Capacity
               </label>
@@ -177,13 +201,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
                 {sharingTypes.map((type) => (
                   <button
                     key={type}
-                    onClick={() => handleChange({
-                      target: { name: "sharingType", value: type.toLowerCase() }
-                    })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-                      ${filters.sharingType === type.toLowerCase()
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    onClick={() => handleButtonChange("sharingType", type.toLowerCase())}
+                    className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                      filters.sharingType === type.toLowerCase()
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    }`}
                   >
                     {type}
                   </button>
@@ -191,8 +214,8 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               </div>
             </div>
 
-            <div className="filter-group">
-              <label className="flex items-center space-x-2">
+            <div className="space-y-3">
+              <label className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
                   name="hasBalcony"
@@ -206,13 +229,13 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </>
         )}
 
-        {}
-        <div className="filter-group">
-          <label className="filter-label">
+        {/* Price Range */}
+        <div className="space-y-3">
+          <label className="flex items-center text-sm font-medium text-gray-700">
             <IndianRupee className="w-4 h-4 mr-2" />
             Price Range
           </label>
-          <div className="flex flex-col gap-2">
+          <div className="space-y-3">
             <input
               type="range"
               min={MIN_PRICE}
@@ -220,7 +243,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               step={STEP}
               value={filters.priceRange[1]}
               onChange={handlePriceSlider}
-              className="w-full accent-blue-600"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
             />
             <div className="flex justify-between text-xs text-gray-500">
               <span>₹{MIN_PRICE.toLocaleString()}</span>
@@ -229,10 +252,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="filter-group">
-            <label className="filter-label">
+        {/* Bedrooms & Bathrooms */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <Bed className="w-4 h-4 mr-2" />
               Bedrooms
             </label>
@@ -240,7 +263,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               name="bedrooms"
               value={filters.bedrooms}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="0">Any</option>
               <option value="1">1+</option>
@@ -250,8 +273,8 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             </select>
           </div>
 
-          <div className="filter-group">
-            <label className="filter-label">
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <Bath className="w-4 h-4 mr-2" />
               Bathrooms
             </label>
@@ -259,7 +282,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               name="bathrooms"
               value={filters.bathrooms}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="0">Any</option>
               <option value="1">1+</option>
@@ -270,10 +293,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="filter-group">
-            <label className="filter-label">
+        {/* Area Range */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <Building className="w-4 h-4 mr-2" />
               Min Area (sq ft)
             </label>
@@ -282,13 +305,13 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               name="minArea"
               value={filters.minArea}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
               placeholder="Min area"
             />
           </div>
 
-          <div className="filter-group">
-            <label className="filter-label">
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <Building className="w-4 h-4 mr-2" />
               Max Area (sq ft)
             </label>
@@ -297,16 +320,16 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               name="maxArea"
               value={filters.maxArea}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
               placeholder="Max area"
             />
           </div>
         </div>
 
-        {}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="filter-group">
-            <label className="filter-label">
+        {/* Property Condition & Status */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <Star className="w-4 h-4 mr-2" />
               Condition
             </label>
@@ -314,7 +337,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               name="propertyCondition"
               value={filters.propertyCondition}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="">Any</option>
               {propertyConditions.map(condition => (
@@ -325,8 +348,8 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             </select>
           </div>
 
-          <div className="filter-group">
-            <label className="filter-label">
+          <div className="space-y-3">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <Calendar className="w-4 h-4 mr-2" />
               Status
             </label>
@@ -334,7 +357,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
               name="propertyStatus"
               value={filters.propertyStatus}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="">Any</option>
               {propertyStatuses.map(status => (
@@ -346,9 +369,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {}
-        <div className="filter-group">
-          <label className="filter-label">
+        {/* Furnishing */}
+        <div className="space-y-3">
+          <label className="flex items-center text-sm font-medium text-gray-700">
             <Home className="w-4 h-4 mr-2" />
             Furnishing
           </label>
@@ -356,13 +379,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             {furnishingTypes.map((type) => (
               <button
                 key={type}
-                onClick={() => handleChange({
-                  target: { name: "furnishing", value: type.toLowerCase() }
-                })}
-                className={`py-2 rounded-lg text-sm font-medium px-2 transition-all flex justify-center items-center
-                  ${filters.furnishing === type.toLowerCase()
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                onClick={() => handleButtonChange("furnishing", type.toLowerCase())}
+                className={`py-2 rounded-lg text-xs sm:text-sm font-medium px-1 sm:px-2 transition-all duration-200 flex justify-center items-center ${
+                  filters.furnishing === type.toLowerCase()
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                }`}
               >
                 {type}
               </button>
@@ -370,19 +392,19 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {}
-        <div className="filter-group">
-          <label className="filter-label">
+        {/* Amenities */}
+        <div className="space-y-3">
+          <label className="flex items-center text-sm font-medium text-gray-700">
             <Star className="w-4 h-4 mr-2" />
             Amenities
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               'Parking', 'Gym', 'Swimming Pool', 'Garden',
               'Security', 'Power Backup', 'Lift', 'Park',
               'Club House', 'Play Area', 'Sports Facility'
             ].map((amenity) => (
-              <label key={amenity} className="flex items-center space-x-2">
+              <label key={amenity} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
                   checked={filters.amenities.includes(amenity)}
@@ -395,9 +417,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
           </div>
         </div>
 
-        {}
-        <div className="filter-group">
-          <label className="flex items-center space-x-2">
+        {/* Verified Properties Only */}
+        <div className="space-y-3">
+          <label className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
             <input
               type="checkbox"
               name="verifiedOnly"
@@ -408,17 +430,29 @@ const FilterSection = ({ filters, setFilters, onApplyFilters }) => {
             <span className="text-sm font-medium text-gray-700">Verified Properties Only</span>
           </label>
         </div>
-
-        <div className="flex space-x-4 mt-8">
-          <button
-            onClick={() => onApplyFilters(filters)}
-            className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 
-              transition-colors font-medium"
-          >
-            Apply Filters
-          </button>
-        </div>
       </div>
+
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #2563eb;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #2563eb;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+      `}</style>
     </motion.div>
   );
 };
