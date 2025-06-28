@@ -37,8 +37,21 @@ export default function PanoramaViewer({ roomId, className = "w-full h-[500px]",
         console.log('Fetching scenes for roomId:', roomId);
         setLoading(true);
         setError(null);
+        
+        // Check if user is authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication required to view 360° tours');
+          setLoading(false);
+          return;
+        }
+
         // Fetch scenes for the given roomId
-        const response = await axios.get(`${Backendurl}/api/scenes/rooms/${roomId}`);
+        const response = await axios.get(`${Backendurl}/api/scenes/rooms/${roomId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         console.log('API Response:', response.data);
         
         if (response.data && response.data.success && response.data.data && response.data.data.length > 0) {
@@ -54,7 +67,17 @@ export default function PanoramaViewer({ roomId, className = "w-full h-[500px]",
       } catch (err) {
         console.error('Error fetching scenes:', err);
         console.error('Error details:', err.response?.data);
-        setError(err.response?.data?.message || 'Failed to load 360° view');
+        
+        // Handle different error cases
+        if (err.response?.status === 401) {
+          setError('Authentication required to view 360° tours');
+        } else if (err.response?.status === 403) {
+          setError('Access denied to 360° tours');
+        } else if (err.response?.status === 404) {
+          setError('No 360° views available for this room');
+        } else {
+          setError('Failed to load 360° view. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -170,7 +193,7 @@ export default function PanoramaViewer({ roomId, className = "w-full h-[500px]",
               console.log('Image aspect ratio:', aspectRatio);
               if (Math.abs(aspectRatio - 2) > 0.1) {
                 console.warn('Image may not be a valid 360° panorama - aspect ratio should be close to 2:1');
-                setError('Warning: Image may not be a valid 360° panorama. Expected 2:1 aspect ratio.');
+                // Don't set error for aspect ratio issues, just log a warning
               }
             };
             img.onerror = () => {
@@ -180,7 +203,7 @@ export default function PanoramaViewer({ roomId, className = "w-full h-[500px]",
           })
           .catch(error => {
             console.error('Error validating image:', error);
-            setError(`Failed to load panorama image: ${error.message}`);
+            // Don't set error for validation issues, just log
           });
       }
 
@@ -216,7 +239,7 @@ export default function PanoramaViewer({ roomId, className = "w-full h-[500px]",
             type: error.type,
             target: error.target
           });
-          setError(`Failed to load panorama image: ${error.message || 'Unknown error'}`);
+          // Don't set error for texture loading issues, just log
         }
       );
     };
@@ -270,15 +293,50 @@ export default function PanoramaViewer({ roomId, className = "w-full h-[500px]",
   }, [currentScene, scenes, staticScenes]);
 
   if (loading) {
-    return <div className={className}><div className="flex items-center justify-center h-full">Loading 360° view...</div></div>;
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-600 text-sm">Loading 360° view...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className={className}><div className="flex items-center justify-center h-full text-red-500">{error}</div></div>;
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-gray-400 mb-2">
+              <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 text-sm">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!scenes.length) {
-    return <div className={className}><div className="flex items-center justify-center h-full">No 360° views available</div></div>;
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-gray-400 mb-2">
+              <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 text-sm">No 360° views available</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -187,7 +187,7 @@ const Newsletter = () => {
       </form>
 
       <p className="mt-3 text-xs text-gray-500">
-        By subscribing, you agree to our <a href="#" className="underline hover:text-blue-600">Privacy Policy</a>.
+        By subscribing, you agree to our <a href="/privacy" className="underline hover:text-blue-600">Privacy Policy</a>.
       </p>
     </div>
   );
@@ -199,7 +199,6 @@ const companyLinks = [
   { name: 'Properties', href: '/properties' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact', href: '/contact' },
-  { name: 'AI Property Hub', href: '/ai-agent' },
 ];
 
 const helpLinks = [
@@ -212,7 +211,7 @@ const helpLinks = [
 const contactInfo = [
   { 
     icon: MapPin, 
-    text: 'sec 28 gurugram',
+    text: 'Sec 28 Gurugram',
     href: 'https://maps.google.com/?q=sec+28+gurugram' 
   },
   { 
@@ -244,6 +243,12 @@ const Footer = () => {
               <span className="ml-3 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
               HOUSEMATE
               </span>
+            </div>
+            
+            <div className="text-center lg:text-left mt-2">
+              <p className="text-sm text-gray-500 font-medium tracking-wider">
+                ————— YOUR NEXT HOME —————
+              </p>
             </div>
             
             <p className="text-gray-600 mt-4 text-center lg:text-left lg:mt-6 max-w-md mx-auto lg:mx-0 leading-relaxed">

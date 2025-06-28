@@ -460,7 +460,7 @@ const PropertyDetails = () => {
         </nav>
 
         <div className={`${isShow ? 'bg-gray-50' : 'bg-white shadow-lg'} rounded-xl overflow-hidden`}>
-          <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-8 flex" style={{ height: '400px', minHeight: '225px' }}>
+          <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-8 flex md:h-[400px] md:min-h-[225px] h-[200px] min-h-[200px]">
             <div className="flex-1 flex items-center justify-center">
               <div className="w-full max-w-full aspect-video flex items-center justify-center bg-black rounded-xl overflow-hidden relative group">
                 {mediaGallery[activeMediaIndex]?.type === "image" ? (
@@ -509,7 +509,7 @@ const PropertyDetails = () => {
             {/* Sidebar Thumbnails */}
             {mediaGallery.length > 1 && (
               <div
-                className={`w-40 flex flex-col gap-2 mx-4 overflow-y-auto`}
+                className={`hidden lg:flex w-40 flex-col gap-2 mx-4 overflow-y-auto`}
                 style={{ maxHeight: '400px', height: '400px' }}
               >
                 {mediaGallery.map((media, idx) => (
@@ -534,6 +534,59 @@ const PropertyDetails = () => {
               </div>
             )}
           </div>
+
+          {/* Mobile Thumbnails - Only visible on mobile */}
+          {mediaGallery.length > 1 && (
+            <div className="lg:hidden px-4 pb-4">
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {mediaGallery.map((media, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveMediaIndex(idx)}
+                    className={`flex-shrink-0 border-2 rounded-lg overflow-hidden ${activeMediaIndex === idx ? "border-blue-600" : "border-transparent"}`}
+                    style={{
+                      aspectRatio: '16/9',
+                      width: '120px',
+                      minWidth: '120px',
+                    }}
+                  >
+                    {media.type === "image" ? (
+                      <img src={media.url} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={media.url} className="w-full h-full object-cover" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Mobile Navigation Controls */}
+              {/* <div className="flex items-center justify-center gap-4 mt-3">
+                <button
+                  onClick={() => setActiveMediaIndex((prev) => prev === 0 ? mediaGallery.length - 1 : prev - 1)}
+                  className="bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 transition-colors"
+                  title="Previous"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <span className="text-sm text-gray-600 font-medium">
+                  {activeMediaIndex + 1} of {mediaGallery.length}
+                </span>
+                
+                <button
+                  onClick={() => setActiveMediaIndex((prev) => prev === mediaGallery.length - 1 ? 0 : prev + 1)}
+                  className="bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 transition-colors"
+                  title="Next"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div> */}
+            </div>
+          )}
 
           {/* Fullscreen Modal for Media */}
           <FullscreenMediaViewer
@@ -676,7 +729,7 @@ const PropertyDetails = () => {
                     </div>
                   </div>}
 
-                  {property?.listing_type !== "rent" && <div className="mb-6">
+                  {/* {property?.listing_type !== "rent" && <div className="mb-6">
                     <h2 className="text-xl font-semibold mb-4">
                       Contact Details
                     </h2>
@@ -684,7 +737,7 @@ const PropertyDetails = () => {
                       <Phone className="w-5 h-5 mr-2" />
                       {property.phone}
                     </div>
-                  </div>}
+                  </div>} */}
 
                   <button
                     onClick={() => setShowSchedule(true)}
@@ -940,7 +993,7 @@ const PropertyDetails = () => {
                       onClick={() => {
                         setOpenTermsAndConditions(true);
                       }}
-                      className="w-fit bg-blue-600 text-white p-3 rounded-lg 
+                      className="w-full md:w-fit bg-blue-600 text-white p-3 rounded-lg 
                       hover:bg-blue-700 transition-colors flex items-center 
                       justify-center gap-2"
                     >
@@ -1078,7 +1131,7 @@ const PropertyDetails = () => {
           </div>
         </div>
 
-        <div className="mt-8 p-6 bg-blue-50 rounded-xl">
+        {/* <div className="mt-8 p-6 bg-blue-50 rounded-xl">
           <div className="flex items-center gap-2 text-blue-600 mb-4">
             <Compass className="w-5 h-5" />
             <h3 className="text-lg font-semibold">Location</h3>
@@ -1095,10 +1148,10 @@ const PropertyDetails = () => {
             <MapPin className="w-4 h-4" />
             View on Google Maps
           </a>
-        </div>
+        </div> */}
 
-        <div className="p-4 border-b">
-          <h2 className="text-2xl font-semibold mb-4">360° Virtual Tour</h2>
+        <div className="mt-4 md:mt-10 border bg-white p-4 rounded-xl shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4 md:px-4">360° Virtual Tour</h2>
           
           {/* Property-level 360° scenes for all property types */}
           {property?.floorDetails?.length === 0 && <div className="mb-6">
@@ -1109,7 +1162,6 @@ const PropertyDetails = () => {
           {(property?.type === "pg" || property?.type === "rk" || property?.type === "flat") && property?.floorDetails && property.floorDetails.length > 0 && (
             <>
               <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Room 360° Tours</h3>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Room
