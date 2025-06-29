@@ -8,49 +8,87 @@ import { sendOTP as sendSMSOTP } from '../services/smsService.js';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-export const googleSignIn = async (req, res) => {
+export const googleLogin = async (req, res) => {
   const dbClient = await pool.connect();
   try {
-    const { accessToken, phone } = req.body;
-
+    const { accessToken } = req.body;
     if (!accessToken) {
-      return res.status(400).json({
-        success: false,
-        message: 'Google access token is required'
-      });
+      return res.status(400).json({ success: false, message: 'Google access token is required' });
     }
-
-    // Get user info from Google using access token
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
+      headers: { 'Authorization': `Bearer ${accessToken}` }
     });
-
     if (!userInfoResponse.ok) {
       throw new Error('Failed to fetch user info from Google');
     }
-
     const userInfo = await userInfoResponse.json();
-    const { email, given_name, family_name, picture, id: googleId } = userInfo;
-
+    const { email, id: googleId } = userInfo;
     if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required from Google account'
-      });
+      return res.status(400).json({ success: false, message: 'Email is required from Google account' });
     }
-
-    // Check if user exists
     let { rows: [user] } = await dbClient.query(
       'SELECT * FROM users WHERE email = $1 OR google_id = $2',
       [email, googleId]
     );
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account found. Please sign up first.' });
+    }
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          phone: user.phone,
+          user_type: user.user_type,
+          role_id: user.role_id,
+          profile_picture: user.profile_picture,
+          is_verified: user.is_verified
+        },
+        token
+      }
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ success: false, message: 'Google login failed' });
+  } finally {
+    dbClient.release();
+  }
+};
 
+export const googleSignup = async (req, res) => {
+  const dbClient = await pool.connect();
+  try {
+    const { accessToken, phone } = req.body;
+    if (!accessToken) {
+      return res.status(400).json({ success: false, message: 'Google access token is required' });
+    }
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    if (!userInfoResponse.ok) {
+      throw new Error('Failed to fetch user info from Google');
+    }
+    const userInfo = await userInfoResponse.json();
+    const { email, given_name, family_name, picture, id: googleId } = userInfo;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required from Google account' });
+    }
+    let { rows: [user] } = await dbClient.query(
+      'SELECT * FROM users WHERE email = $1 OR google_id = $2',
+      [email, googleId]
+    );
     if (!user) {
       // Create new user if doesn't exist
       const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
-      
       const { rows: [newUser] } = await dbClient.query(
         `INSERT INTO users (
           first_name, last_name, email, password, phone, 
@@ -70,7 +108,6 @@ export const googleSignIn = async (req, res) => {
           true // Google users are pre-verified
         ]
       );
-
       user = newUser;
     } else {
       // Update existing user with Google ID if not present
@@ -81,14 +118,12 @@ export const googleSignIn = async (req, res) => {
         );
       }
     }
-
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
-
     res.status(200).json({
       success: true,
       data: {
@@ -107,11 +142,8 @@ export const googleSignIn = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Google sign-in error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Google authentication failed'
-    });
+    console.error('Google signup error:', error);
+    res.status(500).json({ success: false, message: 'Google signup failed' });
   } finally {
     dbClient.release();
   }

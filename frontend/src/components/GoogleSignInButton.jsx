@@ -6,7 +6,7 @@ import { Loader } from 'lucide-react';
 import { Backendurl } from '../App.jsx';
 import getOAuthConfig from '../config/oauth.js';
 
-const GoogleSignInButton = ({ onSuccess, onError, className = '', children }) => {
+const GoogleSignInButton = ({ onSuccess, onError, className = '', children, endpoint = '/api/auth/google' }) => {
   const [loading, setLoading] = React.useState(false);
   const oauthConfig = getOAuthConfig();
 
@@ -14,7 +14,7 @@ const GoogleSignInButton = ({ onSuccess, onError, className = '', children }) =>
     onSuccess: async (response) => {
       setLoading(true);
       try {
-        const result = await axios.post(`${Backendurl}/api/auth/google`, {
+        const result = await axios.post(`${Backendurl}${endpoint}`, {
           accessToken: response.access_token
         });
 
