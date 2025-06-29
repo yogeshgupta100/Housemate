@@ -187,6 +187,7 @@ const Login = () => {
             <GoogleSignInButton
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
+              endpoint="/api/auth/google-login"
             />
 
             <div className="relative my-6">

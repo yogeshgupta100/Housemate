@@ -390,6 +390,7 @@ const Signup = () => {
                 <GoogleSignInButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
+                  endpoint="/api/auth/google-signup"
                 />
               </div>
             )}

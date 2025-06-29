@@ -11,7 +11,7 @@ router.post('/login', authController.login);
 router.post('/admin', authController.adminLogin);
 
 // Google OAuth routes
-router.post('/google', googleAuthController.googleSignIn);
+// router.post('/google', googleAuthController.googleSignIn);
 router.post('/verify-phone', protect, googleAuthController.verifyPhoneWithOTP);
 router.post('/verify-email', protect, googleAuthController.verifyEmailWithOTP);
 
@@ -30,5 +30,8 @@ router.get('/get-all-roles', roleController.getAllRoles);
 router.post('/assign', protect, roleController.assignRole);
 
 router.post('/reset-password', authController.resetPassword);
+
+router.post('/google-login', googleAuthController.googleLogin);
+router.post('/google-signup', googleAuthController.googleSignup);
 
 export default router;
