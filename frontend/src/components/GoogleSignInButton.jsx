@@ -1,46 +1,64 @@
-import React from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import { Loader } from 'lucide-react';
-import { Backendurl } from '../App.jsx';
-import getOAuthConfig from '../config/oauth.js';
+import React from "react";
+import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { Loader } from "lucide-react";
+import { Backendurl } from "../App.jsx";
+import getOAuthConfig from "../config/oauth.js";
 
-const GoogleSignInButton = ({ onSuccess, onError, className = '', children, endpoint = '/api/auth/google' }) => {
+const GoogleSignInButton = ({
+  onSuccess,
+  onError,
+  className = "",
+  children,
+  endpoint = "/api/auth/google",
+}) => {
   const [loading, setLoading] = React.useState(false);
   const oauthConfig = getOAuthConfig();
+
+  // Log the OAuth configuration for debugging
+  console.log("OAuth Config:", oauthConfig);
+  console.log("Current origin:", window.location.origin);
+  console.log(
+    "Environment redirect URI:",
+    import.meta.env.VITE_GOOGLE_REDIRECT_URI
+  );
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
       setLoading(true);
       try {
         const result = await axios.post(`${Backendurl}${endpoint}`, {
-          accessToken: response.access_token
+          accessToken: response.access_token,
         });
 
         if (result.data.success) {
           const { token, user } = result.data.data;
-          
+
           // Store token
-          localStorage.setItem('token', token);
-          localStorage.setItem('tokenExpiry', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
-          
+          localStorage.setItem("token", token);
+          localStorage.setItem(
+            "tokenExpiry",
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          );
+
           // Set axios default header
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          toast.success('Google sign-in successful!');
-          
+          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+          toast.success("Google sign-in successful!");
+
           if (onSuccess) {
             onSuccess(result.data.data);
           }
         } else {
-          throw new Error(result.data.message || 'Google sign-in failed');
+          throw new Error(result.data.message || "Google sign-in failed");
         }
       } catch (error) {
-        console.error('Google sign-in error:', error);
-        const errorMessage = error.response?.data?.message || 'Google sign-in failed';
+        console.error("Google sign-in error:", error);
+        const errorMessage =
+          error.response?.data?.message || "Google sign-in failed";
         toast.error(errorMessage);
-        
+
         if (onError) {
           onError(error);
         }
@@ -49,24 +67,33 @@ const GoogleSignInButton = ({ onSuccess, onError, className = '', children, endp
       }
     },
     onError: (error) => {
-      console.error('Google login error:', error);
-      
+      console.error("Google login error:", error);
+      console.error("Error details:", {
+        error: error.error,
+        error_description: error.error_description,
+        state: error.state,
+      });
+
       // Handle specific OAuth errors
-      if (error.error === 'redirect_uri_mismatch') {
-        toast.error('OAuth configuration error. Please contact support.');
-      } else if (error.error === 'popup_closed_by_user') {
-        toast.error('Sign-in was cancelled. Please try again.');
+      if (error.error === "redirect_uri_mismatch") {
+        toast.error("OAuth configuration error. Please contact support.");
+        console.error(
+          "Redirect URI mismatch. Expected:",
+          oauthConfig.redirectUri
+        );
+      } else if (error.error === "popup_closed_by_user") {
+        toast.error("Sign-in was cancelled. Please try again.");
       } else {
-        toast.error('Google sign-in failed. Please try again.');
+        toast.error("Google sign-in failed. Please try again.");
       }
-      
+
       if (onError) {
         onError(error);
       }
     },
-    flow: 'implicit',
+    flow: "implicit",
     ux_mode: oauthConfig.uxMode,
-    redirect_uri: oauthConfig.redirectUri
+    redirect_uri: oauthConfig.redirectUri,
   });
 
   return (
@@ -97,11 +124,11 @@ const GoogleSignInButton = ({ onSuccess, onError, className = '', children, endp
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {children || 'Continue with Google'}
+          {children || "Continue with Google"}
         </>
       )}
     </button>
   );
 };
 
-export default GoogleSignInButton; 
+export default GoogleSignInButton;
