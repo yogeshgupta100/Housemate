@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import axios from 'axios';
-import { Backendurl } from '../App';
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import axios from "axios";
+import { Backendurl } from "../App";
 
 const PropertyVirtualTour = ({ propertyId }) => {
   const [scenes, setScenes] = useState([]);
@@ -17,32 +17,39 @@ const PropertyVirtualTour = ({ propertyId }) => {
   const fetchPropertyScenes = async () => {
     try {
       setLoading(true);
-      
+
       // Check if user is authenticated
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
         setScenes([]);
         setLoading(false);
         return;
       }
 
-      const response = await axios.get(`${Backendurl}/api/scenes/properties/${propertyId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await axios.get(
+        `${Backendurl}/api/scenes/properties/${propertyId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
-      
+      );
+
       if (response.data.success) {
         setScenes(response.data.data);
       } else {
-        console.error('Failed to fetch property scenes:', response.data.message);
+        console.error(
+          "Failed to fetch property scenes:",
+          response.data.message
+        );
         setScenes([]);
       }
     } catch (error) {
-      console.error('Error fetching property scenes:', error);
+      console.error("Error fetching property scenes:", error);
       // Don't show toast for authentication errors
       if (error.response?.status !== 401 && error.response?.status !== 403) {
-        const errorMessage = error.response?.data?.message || 'Failed to load virtual tour';
+        const errorMessage =
+          error.response?.data?.message || "Failed to load virtual tour";
         toast.error(errorMessage);
       }
       setScenes([]);
@@ -53,7 +60,7 @@ const PropertyVirtualTour = ({ propertyId }) => {
 
   const handleSceneClick = (sceneId) => {
     // Navigate to the scene viewer
-    window.open(`/scene-viewer/${sceneId}`, '_blank');
+    window.open(`/scene-viewer/${sceneId}`, "_blank");
   };
 
   if (loading) {
@@ -69,12 +76,26 @@ const PropertyVirtualTour = ({ propertyId }) => {
     return (
       <div className="text-center py-8">
         <div className="text-gray-400 mb-4">
-          <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <svg
+            className="mx-auto h-12 w-12"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Virtual Tour Available</h3>
-        <p className="text-gray-500">This property doesn't have any 360° scenes uploaded yet.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No Virtual Tour Available
+        </h3>
+        <p className="text-gray-500">
+          This property doesn't have any 360° scenes uploaded yet.
+        </p>
       </div>
     );
   }
@@ -84,7 +105,7 @@ const PropertyVirtualTour = ({ propertyId }) => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Virtual Tour</h3>
         <span className="text-sm text-gray-500">
-          {scenes.length} scene{scenes.length !== 1 ? 's' : ''} available
+          {scenes.length} scene{scenes.length !== 1 ? "s" : ""} available
         </span>
       </div>
 
@@ -93,38 +114,69 @@ const PropertyVirtualTour = ({ propertyId }) => {
         {scenes[currentSceneIndex] && (
           <img
             src={scenes[currentSceneIndex].image_url}
-            alt={scenes[currentSceneIndex].name || `Scene ${currentSceneIndex + 1}`}
+            alt={
+              scenes[currentSceneIndex].name || `Scene ${currentSceneIndex + 1}`
+            }
             className="w-full h-full object-cover cursor-pointer"
             onClick={() => handleSceneClick(scenes[currentSceneIndex].id)}
           />
         )}
-        
+
         {/* Scene Navigation */}
         {scenes.length > 1 && (
           <>
             <button
-              onClick={() => setCurrentSceneIndex(prev => prev === 0 ? scenes.length - 1 : prev - 1)}
+              onClick={() =>
+                setCurrentSceneIndex((prev) =>
+                  prev === 0 ? scenes.length - 1 : prev - 1
+                )
+              }
               className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
             <button
-              onClick={() => setCurrentSceneIndex(prev => prev === scenes.length - 1 ? 0 : prev + 1)}
+              onClick={() =>
+                setCurrentSceneIndex((prev) =>
+                  prev === scenes.length - 1 ? 0 : prev + 1
+                )
+              }
               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </>
         )}
-        
+
         {/* Scene Info Overlay */}
         <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded">
           <span className="text-sm">
-            {scenes[currentSceneIndex]?.name || `Scene ${currentSceneIndex + 1}`}
+            {scenes[currentSceneIndex]?.name ||
+              `Scene ${currentSceneIndex + 1}`}
           </span>
         </div>
       </div>
@@ -138,8 +190,8 @@ const PropertyVirtualTour = ({ propertyId }) => {
               onClick={() => setCurrentSceneIndex(index)}
               className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
                 index === currentSceneIndex
-                  ? 'border-blue-500 ring-2 ring-blue-200'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? "border-blue-500 ring-2 ring-blue-200"
+                  : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <img
@@ -163,8 +215,18 @@ const PropertyVirtualTour = ({ propertyId }) => {
           onClick={() => handleSceneClick(scenes[currentSceneIndex]?.id)}
           className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
           Start Interactive Tour
         </button>
@@ -176,4 +238,4 @@ const PropertyVirtualTour = ({ propertyId }) => {
   );
 };
 
-export default PropertyVirtualTour; 
+export default PropertyVirtualTour;

@@ -1,4 +1,16 @@
-import { Home, IndianRupee, Filter, Bed, Bath, Calendar, MapPin, Building, Star, Check, X } from "lucide-react";
+import {
+  Home,
+  IndianRupee,
+  Filter,
+  Bed,
+  Bath,
+  Calendar,
+  MapPin,
+  Building,
+  Star,
+  Check,
+  X,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import axios from "axios";
@@ -16,7 +28,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     propertyStatuses: [],
     amenities: [],
     priceRange: { min: 0, max: 10000000 },
-    areaRange: { min: 0, max: 10000 }
+    areaRange: { min: 0, max: 10000 },
   });
   const [loading, setLoading] = useState(true);
 
@@ -25,23 +37,50 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     const fetchFilterOptions = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${Backendurl}/api/properties/filter-options`);
+        const response = await axios.get(
+          `${Backendurl}/api/properties/filter-options`
+        );
         if (response.data.success) {
           setFilterOptions(response.data.data);
         }
       } catch (error) {
-        console.error('Error fetching filter options:', error);
+        console.error("Error fetching filter options:", error);
         // Fallback to default options if API fails
         setFilterOptions({
-          types: ["house", "apartment", "office", "villa", "pg", "flat", "rk", "commercial", "residential plot", "commercial plot", "builder floor"],
+          types: [
+            "house",
+            "apartment",
+            "office",
+            "villa",
+            "pg",
+            "flat",
+            "rk",
+            "commercial",
+            "residential plot",
+            "commercial plot",
+            "builder floor",
+          ],
           listingTypes: ["rent", "sale"],
           pgTypes: ["boys", "girls", "co-living"],
           furnishingTypes: ["Furnished", "Semi-Furnished", "Unfurnished"],
           propertyConditions: ["new", "good", "average", "needs_repair"],
-          propertyStatuses: ["ready_to_move", "under_construction", "renovated"],
-          amenities: ["Parking", "Security", "Power Backup", "Lift", "Gym", "Swimming Pool", "Club House", "Garden"],
+          propertyStatuses: [
+            "ready_to_move",
+            "under_construction",
+            "renovated",
+          ],
+          amenities: [
+            "Parking",
+            "Security",
+            "Power Backup",
+            "Lift",
+            "Gym",
+            "Swimming Pool",
+            "Club House",
+            "Garden",
+          ],
           priceRange: { min: 0, max: 10000000 },
-          areaRange: { min: 0, max: 10000 }
+          areaRange: { min: 0, max: 10000 },
         });
       } finally {
         setLoading(false);
@@ -55,7 +94,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     const { name, value, type, checked } = e.target;
     const updatedFilters = {
       ...filters,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     };
     setFilters(updatedFilters);
     onApplyFilters(updatedFilters);
@@ -64,7 +103,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
   const handleButtonChange = (name, value) => {
     const updatedFilters = {
       ...filters,
-      [name]: value
+      [name]: value,
     };
     setFilters(updatedFilters);
     onApplyFilters(updatedFilters);
@@ -86,7 +125,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     debounce((minPrice, maxPrice) => {
       const updatedFilters = {
         ...filters,
-        priceRange: [minPrice, maxPrice]
+        priceRange: [minPrice, maxPrice],
       };
       setFilters(updatedFilters);
       onApplyFilters(updatedFilters);
@@ -98,7 +137,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     const value = Number(e.target.value);
     const currentMin = filters.priceRange[0];
     const currentMax = filters.priceRange[1];
-    
+
     if (isMin) {
       // Ensure min doesn't exceed max
       const newMin = Math.min(value, currentMax);
@@ -114,28 +153,28 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
     const value = Number(e.target.value) || 0;
     const currentMin = filters.priceRange[0];
     const currentMax = filters.priceRange[1];
-    
+
     if (isMin) {
       // Ensure min doesn't exceed max
       const newMin = Math.min(value, currentMax);
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
-        priceRange: [newMin, currentMax]
+        priceRange: [newMin, currentMax],
       }));
       debouncedPriceUpdate(newMin, currentMax);
     } else {
       // Ensure max doesn't go below min
       const newMax = Math.max(value, currentMin);
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
-        priceRange: [currentMin, newMax]
+        priceRange: [currentMin, newMax],
       }));
       debouncedPriceUpdate(currentMin, newMax);
     }
   };
 
   const formatPrice = (price) => {
-    if (price === 0 || price === Number.MAX_SAFE_INTEGER) return '';
+    if (price === 0 || price === Number.MAX_SAFE_INTEGER) return "";
     if (price >= 10000000) {
       return `${(price / 10000000).toFixed(1)}Cr`;
     } else if (price >= 100000) {
@@ -147,11 +186,11 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
 
   const parsePrice = (priceStr) => {
     if (!priceStr) return 0;
-    const cleanStr = priceStr.replace(/[^\d.]/g, '');
+    const cleanStr = priceStr.replace(/[^\d.]/g, "");
     const num = parseFloat(cleanStr);
-    if (priceStr.toLowerCase().includes('cr')) {
+    if (priceStr.toLowerCase().includes("cr")) {
       return num * 10000000;
-    } else if (priceStr.toLowerCase().includes('l')) {
+    } else if (priceStr.toLowerCase().includes("l")) {
       return num * 100000;
     }
     return num;
@@ -159,12 +198,12 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
 
   const handleAmenityChange = (amenity) => {
     const updatedAmenities = filters.amenities.includes(amenity)
-      ? filters.amenities.filter(a => a !== amenity)
+      ? filters.amenities.filter((a) => a !== amenity)
       : [...filters.amenities, amenity];
-    
+
     const updatedFilters = {
       ...filters,
-      amenities: updatedAmenities
+      amenities: updatedAmenities,
     };
     setFilters(updatedFilters);
     onApplyFilters(updatedFilters);
@@ -230,7 +269,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Filters</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+              Filters
+            </h2>
           </div>
           <button
             onClick={handleReset}
@@ -259,7 +300,7 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                 }`}
               >
-                {type === 'sale' ? 'Buy' : 'Rent'}
+                {type === "sale" ? "Buy" : "Rent"}
               </button>
             ))}
           </div>
@@ -322,7 +363,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
                 {sharingTypes.map((type) => (
                   <button
                     key={type}
-                    onClick={() => handleButtonChange("sharingType", type.toLowerCase())}
+                    onClick={() =>
+                      handleButtonChange("sharingType", type.toLowerCase())
+                    }
                     className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                       filters.sharingType === type.toLowerCase()
                         ? "bg-blue-600 text-white shadow-md"
@@ -344,7 +387,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
                   onChange={handleChange}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Room Has Balcony</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Room Has Balcony
+                </span>
               </label>
             </div>
           </>
@@ -356,11 +401,13 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
             <IndianRupee className="w-4 h-4 mr-2" />
             Price Range
           </label>
-          
+
           {/* Price Input Fields */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Min Price</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                Min Price
+              </label>
               <input
                 type="text"
                 value={formatPrice(filters.priceRange[0])}
@@ -373,7 +420,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Max Price</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                Max Price
+              </label>
               <input
                 type="text"
                 value={formatPrice(filters.priceRange[1])}
@@ -389,19 +438,25 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
 
           {/* Price Range Display */}
           <div className="text-center text-sm text-gray-600">
-            ₹{formatPrice(filters.priceRange[0])} - ₹{formatPrice(filters.priceRange[1])}
+            ₹{formatPrice(filters.priceRange[0])} - ₹
+            {formatPrice(filters.priceRange[1])}
           </div>
 
           {/* Dual Range Sliders */}
           <div className="relative space-y-4">
             {/* Min Price Slider */}
             <div>
-              <label className="block text-xs text-gray-500 mb-2">Min Price</label>
+              <label className="block text-xs text-gray-500 mb-2">
+                Min Price
+              </label>
               <input
                 type="range"
                 min={filterOptions.priceRange.min}
                 max={filterOptions.priceRange.max}
-                step={Math.max(1000, Math.floor(filterOptions.priceRange.max / 1000))}
+                step={Math.max(
+                  1000,
+                  Math.floor(filterOptions.priceRange.max / 1000)
+                )}
                 value={filters.priceRange[0]}
                 onChange={(e) => handlePriceSlider(e, true)}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -410,12 +465,17 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
 
             {/* Max Price Slider */}
             <div>
-              <label className="block text-xs text-gray-500 mb-2">Max Price</label>
+              <label className="block text-xs text-gray-500 mb-2">
+                Max Price
+              </label>
               <input
                 type="range"
                 min={filterOptions.priceRange.min}
                 max={filterOptions.priceRange.max}
-                step={Math.max(1000, Math.floor(filterOptions.priceRange.max / 1000))}
+                step={Math.max(
+                  1000,
+                  Math.floor(filterOptions.priceRange.max / 1000)
+                )}
                 value={filters.priceRange[1]}
                 onChange={(e) => handlePriceSlider(e, false)}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -433,7 +493,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => {
-                const newMin = Math.max(filterOptions.priceRange.min, filters.priceRange[1] - 5000000);
+                const newMin = Math.max(
+                  filterOptions.priceRange.min,
+                  filters.priceRange[1] - 5000000
+                );
                 handlePriceInputChange({ target: { value: newMin } }, true);
               }}
               className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -442,7 +505,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
             </button>
             <button
               onClick={() => {
-                const newMax = Math.min(filterOptions.priceRange.max, filters.priceRange[0] + 5000000);
+                const newMax = Math.min(
+                  filterOptions.priceRange.max,
+                  filters.priceRange[0] + 5000000
+                );
                 handlePriceInputChange({ target: { value: newMax } }, false);
               }}
               className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -540,9 +606,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
               className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="">Any</option>
-              {filterOptions.propertyConditions.map(condition => (
+              {filterOptions.propertyConditions.map((condition) => (
                 <option key={condition} value={condition}>
-                  {condition.charAt(0).toUpperCase() + condition.slice(1).replace('_', ' ')}
+                  {condition.charAt(0).toUpperCase() +
+                    condition.slice(1).replace("_", " ")}
                 </option>
               ))}
             </select>
@@ -560,9 +627,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
               className="w-full px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             >
               <option value="">Any</option>
-              {filterOptions.propertyStatuses.map(status => (
+              {filterOptions.propertyStatuses.map((status) => (
                 <option key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                  {status.charAt(0).toUpperCase() +
+                    status.slice(1).replace("_", " ")}
                 </option>
               ))}
             </select>
@@ -600,7 +668,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
             {filterOptions.amenities.map((amenity) => (
-              <label key={amenity} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+              <label
+                key={amenity}
+                className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              >
                 <input
                   type="checkbox"
                   checked={filters.amenities.includes(amenity)}
@@ -623,7 +694,9 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
               onChange={handleChange}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm font-medium text-gray-700">Verified Properties Only</span>
+            <span className="text-sm font-medium text-gray-700">
+              Verified Properties Only
+            </span>
           </label>
         </div>
       </div>
@@ -636,10 +709,10 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
           border-radius: 50%;
           background: #2563eb;
           cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           border: 2px solid white;
         }
-        
+
         .slider::-moz-range-thumb {
           height: 20px;
           width: 20px;
@@ -647,17 +720,29 @@ const FilterSection = ({ filters, setFilters, onApplyFilters, onReset }) => {
           background: #2563eb;
           cursor: pointer;
           border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .slider::-webkit-slider-track {
-          background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 50%, #d1d5db 50%, #d1d5db 100%);
+          background: linear-gradient(
+            to right,
+            #e5e7eb 0%,
+            #e5e7eb 50%,
+            #d1d5db 50%,
+            #d1d5db 100%
+          );
           border-radius: 8px;
           height: 8px;
         }
 
         .slider::-moz-range-track {
-          background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 50%, #d1d5db 50%, #d1d5db 100%);
+          background: linear-gradient(
+            to right,
+            #e5e7eb 0%,
+            #e5e7eb 50%,
+            #d1d5db 50%,
+            #d1d5db 100%
+          );
           border-radius: 8px;
           height: 8px;
           border: none;
