@@ -257,6 +257,7 @@ const PropertyListingForm = () => {
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoPreviewUrls, setVideoPreviewUrls] = useState([]);
   const [uploadingImages, setUploadingImages] = useState([]);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const locationInputRef = useRef(null);
 
@@ -289,12 +290,14 @@ const PropertyListingForm = () => {
         return value <= 0 ? "Area must be greater than 0" : "";
       case "title":
         return value.length < 5 ? "Title must be at least 5 characters" : "";
-      case "phone":
-        return !/^\d{10}$/.test(value)
-          ? "Enter valid 10-digit phone number"
-          : "";
+      // case "phone":
+      //   return !/^\d{10}$/.test(value)
+      //     ? "Enter valid 10-digit phone number"
+      //     : "";
       case "images":
-        return (!value || value.length === 0) ? "At least one image is required" : "";
+        return !value || value.length === 0
+          ? "At least one image is required"
+          : "";
       default:
         return "";
     }
@@ -398,7 +401,7 @@ const PropertyListingForm = () => {
         ...prev,
         contact: {
           name: user.name || "",
-          phone: user.phone || "",
+          phone: user?.phone || "",
           email: user.email || "",
         },
       }));
@@ -452,7 +455,7 @@ const PropertyListingForm = () => {
             minLeasePeriod: "12 months",
           },
           location: propertyData.location || "",
-          phone: propertyData.phone || "",
+          phone: user?.phone || "",
           region: propertyData.region || "",
           latitude: propertyData.latitude || "",
           longitude: propertyData.longitude || "",
@@ -510,7 +513,8 @@ const PropertyListingForm = () => {
         setPreviewUrls(propertyData.images || []);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.error || "Failed to load property details";
+      const errorMessage =
+        error.response?.data?.error || "Failed to load property details";
       __DEV__ && console.error("Error loading property:", errorMessage);
       setError(errorMessage);
     } finally {
@@ -623,31 +627,27 @@ const PropertyListingForm = () => {
         newUploadingImages.push({
           id: tempId,
           name: file.name,
-          progress: 0
+          progress: 0,
         });
       });
-      setUploadingImages(prev => [...prev, ...newUploadingImages]);
+      setUploadingImages((prev) => [...prev, ...newUploadingImages]);
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const tempId = newUploadingImages[i].id;
-        
-        setUploadingImages(prev => 
-          prev.map(img => 
-            img.id === tempId 
-              ? { ...img, progress: 25 }
-              : img
+
+        setUploadingImages((prev) =>
+          prev.map((img) =>
+            img.id === tempId ? { ...img, progress: 25 } : img
           )
         );
 
         const formData = new FormData();
         formData.append("pdf", file);
 
-        setUploadingImages(prev => 
-          prev.map(img => 
-            img.id === tempId 
-              ? { ...img, progress: 50 }
-              : img
+        setUploadingImages((prev) =>
+          prev.map((img) =>
+            img.id === tempId ? { ...img, progress: 50 } : img
           )
         );
 
@@ -662,20 +662,16 @@ const PropertyListingForm = () => {
           }
         );
 
-        setUploadingImages(prev => 
-          prev.map(img => 
-            img.id === tempId 
-              ? { ...img, progress: 75 }
-              : img
+        setUploadingImages((prev) =>
+          prev.map((img) =>
+            img.id === tempId ? { ...img, progress: 75 } : img
           )
         );
 
         if (response.data.success) {
           uploadedUrls.push(response.data.url);
-          
-          setUploadingImages(prev => 
-            prev.filter(img => img.id !== tempId)
-          );
+
+          setUploadingImages((prev) => prev.filter((img) => img.id !== tempId));
         }
       }
 
@@ -685,13 +681,14 @@ const PropertyListingForm = () => {
       }));
 
       setPreviewUrls((prev) => [...prev, ...uploadedUrls]);
-      
+
       setFieldErrors((prev) => ({
         ...prev,
         images: "",
       }));
     } catch (error) {
-      const errorMessage = error.response?.data?.error || "Failed to upload images";
+      const errorMessage =
+        error.response?.data?.error || "Failed to upload images";
       __DEV__ && console.error("Error uploading images:", errorMessage);
       toast.error(errorMessage);
       setUploadingImages([]);
@@ -760,7 +757,8 @@ const PropertyListingForm = () => {
       }));
       setVideoPreviewUrls((prev) => [...prev, ...uploadedUrls]);
     } catch (error) {
-      const errorMessage = error.response?.data?.error || "Failed to upload videos";
+      const errorMessage =
+        error.response?.data?.error || "Failed to upload videos";
       __DEV__ && console.error("Error uploading videos:", errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -832,7 +830,8 @@ const PropertyListingForm = () => {
         navigate("/dashboard/draft-properties");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.error || "Failed to save draft";
+      const errorMessage =
+        error.response?.data?.error || "Failed to save draft";
       __DEV__ && console.error("Error saving draft:", errorMessage);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -933,6 +932,7 @@ const PropertyListingForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setHasSubmitted(true);
     setLoading(true);
     setError(null);
 
@@ -946,42 +946,42 @@ const PropertyListingForm = () => {
     try {
       const formDataToSubmit = { ...formData };
 
-      if (formDataToSubmit.listingType === 'sale') {
+      if (formDataToSubmit.listingType === "sale") {
         formDataToSubmit.rent_type = null;
         formDataToSubmit.deposit = null;
         formDataToSubmit.availability = {
-          status: 'Available',
+          status: "Available",
           availableFrom: null,
-          minLeasePeriod: null
+          minLeasePeriod: null,
         };
       }
 
-      if (formDataToSubmit.type === 'pg') {
-        formDataToSubmit.propertyStatus = 'ready_to_move';
+      if (formDataToSubmit.type === "pg") {
+        formDataToSubmit.propertyStatus = "ready_to_move";
         formDataToSubmit.pg_type = formDataToSubmit.pgType;
       } else if (!formDataToSubmit.propertyStatus) {
-        formDataToSubmit.propertyStatus = 'ready_to_move';
+        formDataToSubmit.propertyStatus = "ready_to_move";
       }
 
-      if (formDataToSubmit.type === 'pg') {
-        formDataToSubmit.floorDetails = floorDetails.map(floor => ({
+      if (formDataToSubmit.type === "pg") {
+        formDataToSubmit.floorDetails = floorDetails.map((floor) => ({
           floorNumber: floor.floorNumber,
-          rooms: floor.rooms.map(room => ({
+          rooms: floor.rooms.map((room) => ({
             roomNumber: room.roomNumber,
             capacity: room.capacity,
             occupied: room.occupied,
             rent: room.rent_amount,
             availableFrom: room.availableFrom,
-            hasBalcony: room.hasBalcony
-          }))
+            hasBalcony: room.hasBalcony,
+          })),
         }));
       }
 
-      formDataToSubmit.phone = formDataToSubmit.phone;
-      formDataToSubmit.dial_code = formDataToSubmit.dialCode;
+      formDataToSubmit.phone = user?.phone || "";
+      formDataToSubmit.dial_code = formDataToSubmit.dialCode || "+91";
 
       // Map new fields for different property types
-      if (formDataToSubmit.type === 'office') {
+      if (formDataToSubmit.type === "office") {
         formDataToSubmit.office_area = formDataToSubmit.officeArea;
         formDataToSubmit.office_floors = formDataToSubmit.officeFloors;
         formDataToSubmit.office_capacity = formDataToSubmit.officeCapacity;
@@ -991,15 +991,23 @@ const PropertyListingForm = () => {
         formDataToSubmit.office_amenities = formDataToSubmit.officeAmenities;
       }
 
-      if (formDataToSubmit.type === 'commercial plot' || formDataToSubmit.type === 'residential plot') {
+      if (
+        formDataToSubmit.type === "commercial plot" ||
+        formDataToSubmit.type === "residential plot"
+      ) {
         formDataToSubmit.plot_area = formDataToSubmit.plotArea;
         formDataToSubmit.nearby_area = formDataToSubmit.nearbyArea;
         formDataToSubmit.under_committee = formDataToSubmit.underCommittee;
-        formDataToSubmit.passed_building_land = formDataToSubmit.passedBuildingLand;
-        formDataToSubmit.estimated_rental_income = formDataToSubmit.estimatedRentalIncome;
+        formDataToSubmit.passed_building_land =
+          formDataToSubmit.passedBuildingLand;
+        formDataToSubmit.estimated_rental_income =
+          formDataToSubmit.estimatedRentalIncome;
       }
 
-      if (formDataToSubmit.type === 'builder floor' || formDataToSubmit.type === 'house') {
+      if (
+        formDataToSubmit.type === "builder floor" ||
+        formDataToSubmit.type === "house"
+      ) {
         formDataToSubmit.builder_floors = formDataToSubmit.builderFloors;
         formDataToSubmit.house_area = formDataToSubmit.houseArea;
         formDataToSubmit.house_bedrooms = formDataToSubmit.houseBedrooms;
@@ -1076,7 +1084,8 @@ const PropertyListingForm = () => {
         toast.error(response.data.message || "Failed to save property");
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.error || "Failed to save property";
+      const errorMessage =
+        err.response?.data?.error || "Failed to save property";
       __DEV__ && console.error("Error saving property:", errorMessage);
       setError(errorMessage);
     } finally {
@@ -1112,6 +1121,12 @@ const PropertyListingForm = () => {
   };
 
   const selectStyles = {
+    ...inputStyles,
+    cursor: "pointer",
+    width: "fit-content",
+  };
+
+  const MinimumPeriodStyles = {
     ...inputStyles,
     cursor: "pointer",
   };
@@ -1227,6 +1242,109 @@ const PropertyListingForm = () => {
           <p className="text-red-700 mt-2">{error}</p>
         </div>
       </div>
+    );
+  }
+
+  if (!formData.type) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="min-h-screen bg-gray-50 pt-24 pb-12"
+      >
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {editId ? "Edit Property" : "List Your Property"}
+            </h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              {editId
+                ? "Update your property details below"
+                : "Fill in the details below to list your property. All fields marked with * are required."}
+            </p>
+          </div>
+          <form className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Property Classification
+              </h2>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    What would you like to do with your property? *
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {LISTING_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() =>
+                          handleChange({
+                            target: { name: "listingType", value: type },
+                          })
+                        }
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          formData.listingType === type
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-blue-200 hover:bg-blue-50/50"
+                        }`}
+                      >
+                        <div className="font-medium text-lg mb-1">
+                          {type === "rent" ? "For Rent" : "For Sale"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {type === "rent"
+                            ? "List your property for rental"
+                            : "List your property for sale"}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {formData.listingType && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Select Property Type *
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {PROPERTY_TYPES[formData.listingType].map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() =>
+                            handleChange({
+                              target: { name: "type", value: type },
+                            })
+                          }
+                          className={`p-3 rounded-lg border text-sm transition-all ${
+                            formData.type === type
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
+                              : "border-gray-200 hover:border-blue-200"
+                          }`}
+                        >
+                          {type
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-8 text-center">
+              <p className="text-lg font-semibold text-gray-700">
+                Please select a property type to continue filling the details.
+              </p>
+            </div>
+          </form>
+        </div>
+      </motion.div>
     );
   }
 
@@ -1452,7 +1570,7 @@ const PropertyListingForm = () => {
                       name="availability.minLeasePeriod"
                       value={formData.availability.minLeasePeriod}
                       onChange={handleChange}
-                      style={selectStyles}
+                      style={MinimumPeriodStyles}
                       className={getInputClassName()}
                       required
                     >
@@ -1468,85 +1586,87 @@ const PropertyListingForm = () => {
             )}
 
           {/* Sale-Specific Details */}
-          {formData.listingType === "sale" && 
-            !["commercial plot", "residential plot"].includes(formData.type) && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                Sale-Specific Details
-              </h2>
+          {formData.listingType === "sale" &&
+            !["commercial plot", "residential plot"].includes(
+              formData.type
+            ) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                  Sale-Specific Details
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Property Age (years) *
-                  </label>
-                  <input
-                    type="number"
-                    name="propertyAge"
-                    value={formData.propertyAge}
-                    onChange={handleChange}
-                    onWheel={(e) => e.target.blur()}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter property age"
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Age (years) *
+                    </label>
+                    <input
+                      type="number"
+                      name="propertyAge"
+                      value={formData.propertyAge}
+                      onChange={handleChange}
+                      onWheel={(e) => e.target.blur()}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter property age"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Property Condition *
-                  </label>
-                  <select
-                    name="propertyCondition"
-                    value={formData.propertyCondition}
-                    onChange={handleChange}
-                    style={selectStyles}
-                    className={getInputClassName()}
-                  >
-                    <option value="">Select condition</option>
-                    {PROPERTY_CONDITIONS.map((condition) => (
-                      <option key={condition} value={condition}>
-                        {condition
-                          .split("_")
-                          .map(
-                            (word) =>
-                              word.charAt(0).toUpperCase() + word.slice(1)
-                          )
-                          .join(" ")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Condition *
+                    </label>
+                    <select
+                      name="propertyCondition"
+                      value={formData.propertyCondition}
+                      onChange={handleChange}
+                      style={selectStyles}
+                      className={getInputClassName()}
+                    >
+                      <option value="">Select condition</option>
+                      {PROPERTY_CONDITIONS.map((condition) => (
+                        <option key={condition} value={condition}>
+                          {condition
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Property Status *
-                  </label>
-                  <select
-                    name="propertyStatus"
-                    value={formData.propertyStatus}
-                    onChange={handleChange}
-                    style={selectStyles}
-                    className={getInputClassName()}
-                  >
-                    <option value="">Select status</option>
-                    {PROPERTY_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status
-                          .split("_")
-                          .map(
-                            (word) =>
-                              word.charAt(0).toUpperCase() + word.slice(1)
-                          )
-                          .join(" ")}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Status *
+                    </label>
+                    <select
+                      name="propertyStatus"
+                      value={formData.propertyStatus}
+                      onChange={handleChange}
+                      style={selectStyles}
+                      className={getInputClassName()}
+                    >
+                      <option value="">Select status</option>
+                      {PROPERTY_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Office-Specific Details */}
           {formData.listingType === "sale" && formData.type === "office" && (
@@ -1670,17 +1790,26 @@ const PropertyListingForm = () => {
                     "IT Infrastructure",
                     "Fire Safety",
                     "24/7 Security",
-                    "Visitor Parking"
+                    "Visitor Parking",
                   ].map((amenity) => (
-                    <label key={amenity} className="flex items-center space-x-2">
+                    <label
+                      key={amenity}
+                      className="flex items-center space-x-2"
+                    >
                       <input
                         type="checkbox"
                         checked={formData.officeAmenities.includes(amenity)}
                         onChange={() => {
-                          const updatedAmenities = formData.officeAmenities.includes(amenity)
-                            ? formData.officeAmenities.filter(a => a !== amenity)
-                            : [...formData.officeAmenities, amenity];
-                          setFormData(prev => ({ ...prev, officeAmenities: updatedAmenities }));
+                          const updatedAmenities =
+                            formData.officeAmenities.includes(amenity)
+                              ? formData.officeAmenities.filter(
+                                  (a) => a !== amenity
+                                )
+                              : [...formData.officeAmenities, amenity];
+                          setFormData((prev) => ({
+                            ...prev,
+                            officeAmenities: updatedAmenities,
+                          }));
                         }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
@@ -1693,251 +1822,277 @@ const PropertyListingForm = () => {
           )}
 
           {/* Plot-Specific Details */}
-          {formData.listingType === "sale" && (formData.type === "commercial plot" || formData.type === "residential plot") && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                Plot-Specific Details
-              </h2>
+          {formData.listingType === "sale" &&
+            (formData.type === "commercial plot" ||
+              formData.type === "residential plot") && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                  Plot-Specific Details
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Area (sq ft) *
-                  </label>
-                  <input
-                    type="number"
-                    name="plotArea"
-                    value={formData.plotArea}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter plot area"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nearby Area
-                  </label>
-                  <input
-                    type="text"
-                    name="nearbyArea"
-                    value={formData.nearbyArea}
-                    onChange={handleChange}
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter nearby area details"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estimated Rental Income (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="estimatedRentalIncome"
-                    value={formData.estimatedRentalIncome}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter estimated rental income"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="underCommittee"
-                    checked={formData.underCommittee}
-                    onChange={(e) => setFormData(prev => ({ ...prev, underCommittee: e.target.checked }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label className="text-sm font-medium text-gray-700">
-                    Under Committee
-                  </label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="passedBuildingLand"
-                    checked={formData.passedBuildingLand}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passedBuildingLand: e.target.checked }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label className="text-sm font-medium text-gray-700">
-                    Passed Building Land
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Builder Floor/House-Specific Details */}
-          {formData.listingType === "sale" && (formData.type === "builder floor" || formData.type === "house") && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                {formData.type === "builder floor" ? "Builder Floor" : "House"}-Specific Details
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {formData.type === "builder floor" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Number of Floors *
+                      Area (sq ft) *
                     </label>
                     <input
                       type="number"
-                      name="builderFloors"
-                      value={formData.builderFloors}
+                      name="plotArea"
+                      value={formData.plotArea}
                       onChange={handleChange}
-                      min="1"
+                      min="0"
                       style={inputStyles}
                       className={getInputClassName()}
-                      placeholder="Enter number of floors"
+                      placeholder="Enter plot area"
                     />
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Area (sq ft) *
-                  </label>
-                  <input
-                    type="number"
-                    name="houseArea"
-                    value={formData.houseArea}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter area"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Bedrooms *
-                  </label>
-                  <input
-                    type="number"
-                    name="houseBedrooms"
-                    value={formData.houseBedrooms}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter number of bedrooms"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Bathrooms *
-                  </label>
-                  <input
-                    type="number"
-                    name="houseBathrooms"
-                    value={formData.houseBathrooms}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter number of bathrooms"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Balconies
-                  </label>
-                  <input
-                    type="number"
-                    name="houseBalcony"
-                    value={formData.houseBalcony}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter number of balconies"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Parking Spaces
-                  </label>
-                  <input
-                    type="number"
-                    name="houseParking"
-                    value={formData.houseParking}
-                    onChange={handleChange}
-                    min="0"
-                    style={inputStyles}
-                    className={getInputClassName()}
-                    placeholder="Enter number of parking spaces"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  House Amenities
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {[
-                    "Garden",
-                    "Swimming Pool",
-                    "Gym",
-                    "Security System",
-                    "Lift",
-                    "Power Backup",
-                    "Central AC",
-                    "Fireplace",
-                    "Home Theater",
-                    "Study Room",
-                    "Servant Quarter",
-                    "Pooja Room"
-                  ].map((amenity) => (
-                    <label key={amenity} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.houseAmenities.includes(amenity)}
-                        onChange={() => {
-                          const updatedAmenities = formData.houseAmenities.includes(amenity)
-                            ? formData.houseAmenities.filter(a => a !== amenity)
-                            : [...formData.houseAmenities, amenity];
-                          setFormData(prev => ({ ...prev, houseAmenities: updatedAmenities }));
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{amenity}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nearby Area
                     </label>
-                  ))}
+                    <input
+                      type="text"
+                      name="nearbyArea"
+                      value={formData.nearbyArea}
+                      onChange={handleChange}
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter nearby area details"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estimated Rental Income (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      name="estimatedRentalIncome"
+                      value={formData.estimatedRentalIncome}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter estimated rental income"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="underCommittee"
+                      checked={formData.underCommittee}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          underCommittee: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label className="text-sm font-medium text-gray-700">
+                      Under Committee
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="passedBuildingLand"
+                      checked={formData.passedBuildingLand}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          passedBuildingLand: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label className="text-sm font-medium text-gray-700">
+                      Passed Building Land
+                    </label>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location Details
-                </label>
-                <input
-                  type="text"
-                  name="houseLocation"
-                  value={formData.houseLocation}
-                  onChange={handleChange}
-                  style={inputStyles}
-                  className={getInputClassName()}
-                  placeholder="Enter specific location details"
-                />
+          {/* Builder Floor/House-Specific Details */}
+          {formData.listingType === "sale" &&
+            (formData.type === "builder floor" ||
+              formData.type === "house") && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                  {formData.type === "builder floor"
+                    ? "Builder Floor"
+                    : "House"}
+                  -Specific Details
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {formData.type === "builder floor" && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Number of Floors *
+                      </label>
+                      <input
+                        type="number"
+                        name="builderFloors"
+                        value={formData.builderFloors}
+                        onChange={handleChange}
+                        min="1"
+                        style={inputStyles}
+                        className={getInputClassName()}
+                        placeholder="Enter number of floors"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Area (sq ft) *
+                    </label>
+                    <input
+                      type="number"
+                      name="houseArea"
+                      value={formData.houseArea}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter area"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Bedrooms *
+                    </label>
+                    <input
+                      type="number"
+                      name="houseBedrooms"
+                      value={formData.houseBedrooms}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter number of bedrooms"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Bathrooms *
+                    </label>
+                    <input
+                      type="number"
+                      name="houseBathrooms"
+                      value={formData.houseBathrooms}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter number of bathrooms"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Balconies
+                    </label>
+                    <input
+                      type="number"
+                      name="houseBalcony"
+                      value={formData.houseBalcony}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter number of balconies"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Parking Spaces
+                    </label>
+                    <input
+                      type="number"
+                      name="houseParking"
+                      value={formData.houseParking}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                      placeholder="Enter number of parking spaces"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    House Amenities
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      "Garden",
+                      "Swimming Pool",
+                      "Gym",
+                      "Security System",
+                      "Lift",
+                      "Power Backup",
+                      "Central AC",
+                      "Fireplace",
+                      "Home Theater",
+                      "Study Room",
+                      "Servant Quarter",
+                      "Pooja Room",
+                    ].map((amenity) => (
+                      <label
+                        key={amenity}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.houseAmenities.includes(amenity)}
+                          onChange={() => {
+                            const updatedAmenities =
+                              formData.houseAmenities.includes(amenity)
+                                ? formData.houseAmenities.filter(
+                                    (a) => a !== amenity
+                                  )
+                                : [...formData.houseAmenities, amenity];
+                            setFormData((prev) => ({
+                              ...prev,
+                              houseAmenities: updatedAmenities,
+                            }));
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{amenity}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location Details
+                  </label>
+                  <input
+                    type="text"
+                    name="houseLocation"
+                    value={formData.houseLocation}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className={getInputClassName()}
+                    placeholder="Enter specific location details"
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
@@ -1999,25 +2154,28 @@ const PropertyListingForm = () => {
                   )}
 
                 {formData.listingType === "sale" && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Area (sq ft) *
-                      </label>
-                      <input
-                        type="number"
-                        name="sqft"
-                        value={formData.sqft}
-                        onChange={handleChange}
-                        min="0"
-                        style={inputStyles}
-                        className={getInputClassName()}
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Area (sq ft) *
+                    </label>
+                    <input
+                      type="number"
+                      name="sqft"
+                      value={formData.sqft}
+                      onChange={handleChange}
+                      min="0"
+                      style={inputStyles}
+                      className={getInputClassName()}
+                    />
+                  </div>
+                )}
 
                 {!formData.type?.includes("plot") &&
                   !["pg", "rk", "flat"].includes(formData.type) &&
-                  !(formData.listingType === "sale" && ["office", "commercial"].includes(formData.type)) && (
+                  !(
+                    formData.listingType === "sale" &&
+                    ["office", "commercial"].includes(formData.type)
+                  ) && (
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2054,7 +2212,7 @@ const PropertyListingForm = () => {
                   )}
               </div>
 
-              <div className="mt-6">
+              {/* <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Number *
                 </label>
@@ -2090,7 +2248,7 @@ const PropertyListingForm = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2340,7 +2498,10 @@ const PropertyListingForm = () => {
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {(formData.listingType === "sale" ? SALE_AMENITIES : RENT_AMENITIES).map((amenity) => (
+              {(formData.listingType === "sale"
+                ? SALE_AMENITIES
+                : RENT_AMENITIES
+              ).map((amenity) => (
                 <button
                   key={amenity}
                   type="button"
@@ -2369,13 +2530,14 @@ const PropertyListingForm = () => {
             </h2>
 
             <div className="space-y-4">
-              {(!formData.images || formData.images.length === 0) && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-600">
-                    At least one image is required to list your property
-                  </p>
-                </div>
-              )}
+              {(!formData.images || formData.images.length === 0) &&
+                !hasSubmitted && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm font-bold text-gray-700">
+                      At least one image is required to list your property
+                    </p>
+                  </div>
+                )}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {previewUrls.map((url, index) => (
                   <div
@@ -2396,7 +2558,7 @@ const PropertyListingForm = () => {
                     </button>
                   </div>
                 ))}
-                
+
                 {/* Show uploading images with progress */}
                 {uploadingImages.map((uploadingImage) => (
                   <div
@@ -2409,7 +2571,7 @@ const PropertyListingForm = () => {
                         {uploadingImage.name}
                       </p>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div 
+                        <div
                           className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
                           style={{ width: `${uploadingImage.progress}%` }}
                         ></div>
@@ -2420,7 +2582,9 @@ const PropertyListingForm = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleRemoveUploadingImage(uploadingImage.id)}
+                      onClick={() =>
+                        handleRemoveUploadingImage(uploadingImage.id)
+                      }
                       className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                       title="Cancel upload"
                     >
@@ -2428,21 +2592,27 @@ const PropertyListingForm = () => {
                     </button>
                   </div>
                 ))}
-                
-                <label className={`aspect-video flex flex-col items-center justify-center border-2 border-dashed rounded-lg transition-colors ${
-                  imageUploading 
-                    ? 'border-blue-300 bg-blue-50 cursor-not-allowed' 
-                    : 'border-gray-300 hover:border-blue-500 cursor-pointer'
-                }`}>
+
+                <label
+                  className={`aspect-video flex flex-col items-center justify-center border-2 border-dashed rounded-lg transition-colors ${
+                    imageUploading
+                      ? "border-blue-300 bg-blue-50 cursor-not-allowed"
+                      : "border-gray-300 hover:border-blue-500 cursor-pointer"
+                  }`}
+                >
                   {imageUploading ? (
                     <>
                       <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                      <span className="text-sm text-blue-600">Uploading...</span>
+                      <span className="text-sm text-blue-600">
+                        Uploading...
+                      </span>
                     </>
                   ) : (
                     <>
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-500">Upload Images</span>
+                      <span className="text-sm text-gray-500">
+                        Upload Images
+                      </span>
                     </>
                   )}
                   <input
@@ -2455,8 +2625,17 @@ const PropertyListingForm = () => {
                   />
                 </label>
               </div>
+              {hasSubmitted &&
+                (!formData.images || formData.images.length === 0) && (
+                  <p className="text-base font-bold text-gray-800">
+                    At least one image is required.
+                  </p>
+                )}
               <p className="text-sm text-gray-500">
-                You can upload up to 10 images. <span className="text-red-600 font-medium">At least one image is required.</span>
+                You can upload up to 10 images.{" "}
+                <span className="font-medium">
+                  At least one image is required.
+                </span>
               </p>
             </div>
           </div>
