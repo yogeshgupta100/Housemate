@@ -1316,6 +1316,110 @@ const Update = () => {
     return null;
   }
 
+  // Add this before the return statement
+  if (!formData.type) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="min-h-screen bg-gray-50 pt-24 pb-12"
+      >
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {id ? "Edit Property" : "List Your Property"}
+            </h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              {id
+                ? "Update your property details below"
+                : "Fill in the details below to list your property. All fields marked with * are required."}
+            </p>
+          </div>
+          <form className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                Property Classification
+              </h2>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    What would you like to do with your property? *
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {LISTING_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() =>
+                          handleChange({
+                            target: { name: "listingType", value: type },
+                          })
+                        }
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          formData.listingType === type
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-blue-200 hover:bg-blue-50/50"
+                        }`}
+                      >
+                        <div className="font-medium text-lg mb-1">
+                          {type === "rent" ? "For Rent" : "For Sale"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {type === "rent"
+                            ? "List your property for rental"
+                            : "List your property for sale"}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {formData.listingType && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Select Property Type *
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {PROPERTY_TYPES[formData.listingType].map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() =>
+                            handleChange({
+                              target: { name: "type", value: type },
+                            })
+                          }
+                          className={`p-3 rounded-lg border text-sm transition-all ${
+                            formData.type === type
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
+                              : "border-gray-200 hover:border-blue-200"
+                          }`}
+                        >
+                          {type
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-8 text-center">
+              <p className="text-lg font-semibold text-gray-700">
+                Please select a property type to continue filling the details.
+              </p>
+            </div>
+          </form>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -1633,85 +1737,87 @@ const Update = () => {
             )}
 
           {/* Sale-Specific Details Section */}
-          {formData.listingType === "sale" && 
-            !["commercial plot", "residential plot"].includes(formData.type) && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
-                Sale-Specific Details
-              </h2>
+          {formData.listingType === "sale" &&
+            !["commercial plot", "residential plot"].includes(
+              formData.type
+            ) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b">
+                  Sale-Specific Details
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Property Age (years) *
-                  </label>
-                  <input
-                    type="number"
-                    name="propertyAge"
-                    value={formData.propertyAge}
-                    onChange={handleChange}
-                    onWheel={(e) => e.currentTarget.blur()}
-                    min="0"
-                    style={inputStyles}
-                    className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter property age"
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Age (years) *
+                    </label>
+                    <input
+                      type="number"
+                      name="propertyAge"
+                      value={formData.propertyAge}
+                      onChange={handleChange}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      min="0"
+                      style={inputStyles}
+                      className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter property age"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Property Condition *
-                  </label>
-                  <select
-                    name="propertyCondition"
-                    value={formData.propertyCondition}
-                    onChange={handleChange}
-                    style={selectStyles}
-                    className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select condition</option>
-                    {PROPERTY_CONDITIONS.map((condition) => (
-                      <option key={condition} value={condition}>
-                        {condition
-                          .split("_")
-                          .map(
-                            (word) =>
-                              word.charAt(0).toUpperCase() + word.slice(1)
-                          )
-                          .join(" ")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Condition *
+                    </label>
+                    <select
+                      name="propertyCondition"
+                      value={formData.propertyCondition}
+                      onChange={handleChange}
+                      style={selectStyles}
+                      className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select condition</option>
+                      {PROPERTY_CONDITIONS.map((condition) => (
+                        <option key={condition} value={condition}>
+                          {condition
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Property Status *
-                  </label>
-                  <select
-                    name="propertyStatus"
-                    value={formData.propertyStatus}
-                    onChange={handleChange}
-                    style={selectStyles}
-                    className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select status</option>
-                    {PROPERTY_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status
-                          .split("_")
-                          .map(
-                            (word) =>
-                              word.charAt(0).toUpperCase() + word.slice(1)
-                          )
-                          .join(" ")}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Property Status *
+                    </label>
+                    <select
+                      name="propertyStatus"
+                      value={formData.propertyStatus}
+                      onChange={handleChange}
+                      style={selectStyles}
+                      className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select status</option>
+                      {PROPERTY_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Office-Specific Details */}
           {formData.listingType === "sale" && formData.type === "office" && (
@@ -1843,15 +1949,18 @@ const Update = () => {
                     >
                       <input
                         type="checkbox"
-                        checked={formData.officeAmenities && formData.officeAmenities.includes(amenity)}
+                        checked={
+                          formData.officeAmenities &&
+                          formData.officeAmenities.includes(amenity)
+                        }
                         onChange={() => {
-                          const currentAmenities = formData.officeAmenities || [];
-                          const updatedAmenities =
-                            currentAmenities.includes(amenity)
-                              ? currentAmenities.filter(
-                                  (a) => a !== amenity
-                                )
-                              : [...currentAmenities, amenity];
+                          const currentAmenities =
+                            formData.officeAmenities || [];
+                          const updatedAmenities = currentAmenities.includes(
+                            amenity
+                          )
+                            ? currentAmenities.filter((a) => a !== amenity)
+                            : [...currentAmenities, amenity];
                           setFormData((prev) => ({
                             ...prev,
                             officeAmenities: updatedAmenities,
@@ -2102,15 +2211,18 @@ const Update = () => {
                       >
                         <input
                           type="checkbox"
-                          checked={formData.houseAmenities && formData.houseAmenities.includes(amenity)}
+                          checked={
+                            formData.houseAmenities &&
+                            formData.houseAmenities.includes(amenity)
+                          }
                           onChange={() => {
-                            const currentAmenities = formData.houseAmenities || [];
-                            const updatedAmenities =
-                              currentAmenities.includes(amenity)
-                                ? currentAmenities.filter(
-                                    (a) => a !== amenity
-                                  )
-                                : [...currentAmenities, amenity];
+                            const currentAmenities =
+                              formData.houseAmenities || [];
+                            const updatedAmenities = currentAmenities.includes(
+                              amenity
+                            )
+                              ? currentAmenities.filter((a) => a !== amenity)
+                              : [...currentAmenities, amenity];
                             setFormData((prev) => ({
                               ...prev,
                               houseAmenities: updatedAmenities,
@@ -2223,7 +2335,10 @@ const Update = () => {
                 {formData.type &&
                   !formData.type.includes("plot") &&
                   !["pg", "rk", "flat"].includes(formData.type) &&
-                  !(formData.listingType === "sale" && ["office", "commercial"].includes(formData.type)) && (
+                  !(
+                    formData.listingType === "sale" &&
+                    ["office", "commercial"].includes(formData.type)
+                  ) && (
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2556,7 +2671,10 @@ const Update = () => {
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {(formData.listingType === "sale" ? SALE_AMENITIES : RENT_AMENITIES).map((amenity) => (
+              {(formData.listingType === "sale"
+                ? SALE_AMENITIES
+                : RENT_AMENITIES
+              ).map((amenity) => (
                 <button
                   key={amenity}
                   type="button"
@@ -2569,7 +2687,9 @@ const Update = () => {
                 >
                   <input
                     type="checkbox"
-                    checked={formData.amenities && formData.amenities.includes(amenity)}
+                    checked={
+                      formData.amenities && formData.amenities.includes(amenity)
+                    }
                     onChange={() => {}}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
