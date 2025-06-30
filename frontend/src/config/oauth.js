@@ -7,25 +7,28 @@ const getOAuthConfig = () => {
   // Check for environment-specific redirect URI
   const envRedirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
 
+  if (envRedirectUri) {
+    console.log("Using environment redirect URI:", envRedirectUri);
+    return {
+      redirectUri: envRedirectUri,
+      uxMode: "popup", // Use popup for both dev and prod to avoid redirect issues
+    };
+  }
+
   // Development environment
   if (isDevelopment) {
-    const devRedirectUri = envRedirectUri || "http://localhost:5173";
-    console.log("Using development redirect URI:", devRedirectUri);
+    console.log("Using development redirect URI: http://localhost:5173");
     return {
-      redirectUri: devRedirectUri,
+      redirectUri: "http://localhost:5173",
       uxMode: "popup", // Use popup for development
     };
   }
 
-  // Production environment - use the current origin as-is
-  const productionRedirectUri = currentOrigin;
-
+  // Production environment - use popup mode to avoid redirect issues
+  const productionRedirectUri = `${currentOrigin}/auth/callback`;
   console.log("Using production redirect URI:", productionRedirectUri);
-  console.log("Current origin:", currentOrigin);
-  console.log("Environment redirect URI:", envRedirectUri);
-
   return {
-    redirectUri: productionRedirectUri, // Use current origin in production
+    redirectUri: productionRedirectUri,
     uxMode: "popup", // Use popup for production to avoid COOP issues
   };
 };
