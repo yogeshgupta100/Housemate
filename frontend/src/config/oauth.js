@@ -17,14 +17,15 @@ const getOAuthConfig = () => {
     };
   }
 
-  // Production environment - use the domain root for simplicity
-  const productionRedirectUri = currentOrigin; // Just use the domain root
+  // Production environment - use the current origin as-is
+  const productionRedirectUri = currentOrigin;
+
   console.log("Using production redirect URI:", productionRedirectUri);
   console.log("Current origin:", currentOrigin);
   console.log("Environment redirect URI:", envRedirectUri);
 
   return {
-    redirectUri: productionRedirectUri, // Use domain root in production
+    redirectUri: productionRedirectUri, // Use current origin in production
     uxMode: "popup", // Use popup for production to avoid COOP issues
   };
 };
