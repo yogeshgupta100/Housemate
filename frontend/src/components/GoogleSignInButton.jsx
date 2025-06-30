@@ -16,14 +16,6 @@ const GoogleSignInButton = ({
   const [loading, setLoading] = React.useState(false);
   const oauthConfig = getOAuthConfig();
 
-  // Log the OAuth configuration for debugging
-  console.log("OAuth Config:", oauthConfig);
-  console.log("Current origin:", window.location.origin);
-  console.log(
-    "Environment redirect URI:",
-    import.meta.env.VITE_GOOGLE_REDIRECT_URI
-  );
-
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
       setLoading(true);
@@ -68,19 +60,10 @@ const GoogleSignInButton = ({
     },
     onError: (error) => {
       console.error("Google login error:", error);
-      console.error("Error details:", {
-        error: error.error,
-        error_description: error.error_description,
-        state: error.state,
-      });
 
       // Handle specific OAuth errors
       if (error.error === "redirect_uri_mismatch") {
         toast.error("OAuth configuration error. Please contact support.");
-        console.error(
-          "Redirect URI mismatch. Expected:",
-          oauthConfig.redirectUri
-        );
       } else if (error.error === "popup_closed_by_user") {
         toast.error("Sign-in was cancelled. Please try again.");
       } else {
