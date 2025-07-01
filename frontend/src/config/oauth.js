@@ -5,9 +5,14 @@ const getOAuthConfig = () => {
     currentOrigin.includes("localhost") || currentOrigin.includes("127.0.0.1");
 
   // Check for environment-specific redirect URI
-  const envRedirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+  let envRedirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
 
+  // Always ensure the redirectUri ends with /auth/callback
   if (envRedirectUri) {
+    if (!envRedirectUri.endsWith("/auth/callback")) {
+      // Remove trailing slash if present, then append /auth/callback
+      envRedirectUri = envRedirectUri.replace(/\/?$/, "") + "/auth/callback";
+    }
     console.log("Using environment redirect URI:", envRedirectUri);
     return {
       redirectUri: envRedirectUri,
@@ -17,9 +22,10 @@ const getOAuthConfig = () => {
 
   // Development environment
   if (isDevelopment) {
-    console.log("Using development redirect URI: http://localhost:5173");
+    const devRedirectUri = "http://localhost:5173/auth/callback";
+    console.log("Using development redirect URI:", devRedirectUri);
     return {
-      redirectUri: "http://localhost:5173",
+      redirectUri: devRedirectUri,
       uxMode: "popup", // Use popup for development
     };
   }
