@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Backendurl } from "../App";
 import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "./GoogleSignInButton";
 import VerificationModal from "./VerificationModal";
 import "./signup.css";
@@ -25,6 +26,7 @@ const Signup = () => {
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
     gender: "",
     companyName: "",
@@ -33,6 +35,7 @@ const Signup = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -40,6 +43,10 @@ const Signup = () => {
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
+  const from = location.state?.from?.pathname || "/properties";
 
   // useEffect(() => {
   //   const fetchRoles = async () => {
@@ -110,7 +117,8 @@ const Signup = () => {
       !formData.firstName ||
       !formData.lastName ||
       !formData.email ||
-      !formData.password
+      !formData.password ||
+      !formData.confirmPassword
     ) {
       toast.error("Please fill in all required fields");
       return false;
@@ -134,6 +142,11 @@ const Signup = () => {
 
     if (formData.password.length < 6) {
       toast.error("Password must be at least 6 characters long");
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
       return false;
     }
 
@@ -243,9 +256,18 @@ const Signup = () => {
       );
 
       if (response.data.success) {
-        localStorage.setItem("token", response.data.data.token);
-        toast.success("Account created successfully!");
-        navigate("/properties");
+        // Automatically log the user in after successful signup
+        const result = await login(formData.email, formData.password);
+
+        if (result.success) {
+          toast.success("Account created successfully!");
+          navigate(from);
+        } else {
+          toast.error(
+            "Account created but login failed. Please try logging in."
+          );
+          navigate("/login");
+        }
       }
     } catch (error) {
       console.error("Error signing up:", error);
@@ -258,9 +280,10 @@ const Signup = () => {
   };
 
   const handleGoogleSuccess = (data) => {
-    // Google sign-in successful, redirect to properties
+    // Use the AuthContext login function to properly authenticate
+    login(data.user.email, null, data.token);
     toast.success("Account created successfully with Google!");
-    navigate("/properties");
+    navigate(from);
   };
 
   const handleGoogleError = (error) => {
@@ -407,6 +430,44 @@ const Signup = () => {
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Password must be at least 6 characters long
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Confirm Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      id="confirmPassword"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-12 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showConfirmPassword ? (
+                        <FaEyeSlash size={20} />
+                      ) : (
+                        <FaEye size={20} />
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Please confirm your password
                   </p>
                 </div>
 

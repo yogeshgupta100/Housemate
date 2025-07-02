@@ -4,10 +4,10 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader } from "lucide-react";
 import { toast } from "react-toastify";
-import { useAuth } from '../context/AuthContext';
-import OTPInput from './OTPInput';
-import PasswordInput from './PasswordInput';
-import GoogleSignInButton from './GoogleSignInButton';
+import { useAuth } from "../context/AuthContext";
+import OTPInput from "./OTPInput";
+import PasswordInput from "./PasswordInput";
+import GoogleSignInButton from "./GoogleSignInButton";
 import { Backendurl } from "../App.jsx";
 
 const Login = () => {
@@ -25,9 +25,9 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -36,7 +36,7 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await axios.post(`${Backendurl}/api/otp/generate`, {
-        identifier: formData.identifier
+        identifier: formData.identifier,
       });
 
       if (response.data.success) {
@@ -63,7 +63,7 @@ const Login = () => {
     setLoading(true);
     try {
       const result = await login(formData.identifier, password);
-      
+
       if (result.success) {
         toast.success("Login successful!");
         const from = location.state?.from?.pathname || "/properties";
@@ -79,11 +79,16 @@ const Login = () => {
     }
   };
 
-  const handleGoogleSuccess = (data) => {
-    // Update auth context
-    login(data.user.email, null, data.token);
-    const from = location.state?.from?.pathname || "/properties";
-    navigate(from);
+  const handleGoogleSuccess = async (data) => {
+    // Use AuthContext login function to properly authenticate
+    const result = await login(data.user.email, null, data.token);
+
+    if (result.success) {
+      toast.success("Google sign-in successful!");
+      navigate(from);
+    } else {
+      toast.error(result.message || "Google sign-in failed");
+    }
   };
 
   const handleGoogleError = (error) => {
@@ -99,7 +104,7 @@ const Login = () => {
           exit={{ opacity: 0 }}
           className="w-full max-w-md"
         >
-          <OTPInput 
+          <OTPInput
             identifier={formData.identifier}
             onVerificationSuccess={handleOTPVerificationSuccess}
           />
@@ -142,13 +147,18 @@ const Login = () => {
                 HOUSEMATE
               </h2>
             </Link>
-            <h1 className="mt-6 text-2xl font-semibold text-gray-800">Welcome back</h1>
+            <h1 className="mt-6 text-2xl font-semibold text-gray-800">
+              Welcome back
+            </h1>
             <p className="mt-2 text-gray-600">Sign in to your account</p>
           </div>
 
           <form onSubmit={handleIdentifierSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="identifier"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email or Phone Number
               </label>
               <input
@@ -180,7 +190,9 @@ const Login = () => {
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -195,7 +207,9 @@ const Login = () => {
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Don't have an account?
+                </span>
               </div>
             </div>
 

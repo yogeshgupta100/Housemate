@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Loader } from "lucide-react";
 import { Backendurl } from "../App.jsx";
 import getOAuthConfig from "../config/oauth.js";
+import { useAuth } from "../context/AuthContext";
 
 const GoogleSignInButton = ({
   onSuccess,
@@ -15,6 +16,7 @@ const GoogleSignInButton = ({
 }) => {
   const [loading, setLoading] = React.useState(false);
   const oauthConfig = getOAuthConfig();
+  const { login } = useAuth();
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
@@ -27,20 +29,17 @@ const GoogleSignInButton = ({
         if (result.data.success) {
           const { token, user } = result.data.data;
 
-          // Store token
-          localStorage.setItem("token", token);
-          localStorage.setItem(
-            "tokenExpiry",
-            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          );
+          // Use AuthContext login function to properly authenticate
+          const loginResult = await login(user.email, null, token);
 
-          // Set axios default header
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          if (loginResult.success) {
+            toast.success("Google sign-in successful!");
 
-          toast.success("Google sign-in successful!");
-
-          if (onSuccess) {
-            onSuccess(result.data.data);
+            if (onSuccess) {
+              onSuccess(result.data.data);
+            }
+          } else {
+            throw new Error(loginResult.message || "Failed to authenticate");
           }
         } else {
           throw new Error(result.data.message || "Google sign-in failed");
