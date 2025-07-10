@@ -290,10 +290,16 @@ const PropertyListingForm = () => {
         return value <= 0 ? "Area must be greater than 0" : "";
       case "title":
         return value.length < 5 ? "Title must be at least 5 characters" : "";
-      // case "phone":
-      //   return !/^\d{10}$/.test(value)
-      //     ? "Enter valid 10-digit phone number"
-      //     : "";
+      case "address.state":
+        return !value.trim() ? "State is required" : "";
+      case "address.city":
+        return !value.trim() ? "City is required" : "";
+      case "address.pincode":
+        return !value.trim()
+          ? "Pincode is required"
+          : !/^\d{6}$/.test(value)
+          ? "Enter valid 6-digit pincode"
+          : "";
       case "images":
         return !value || value.length === 0
           ? "At least one image is required"
@@ -302,86 +308,6 @@ const PropertyListingForm = () => {
         return "";
     }
   };
-
-  useEffect(() => {
-    if (!locationInputRef.current || !window.google) return;
-
-    const autocomplete = new window.google.maps.places.Autocomplete(
-      locationInputRef.current,
-      {
-        componentRestrictions: { country: "IN" },
-        fields: ["address_components", "geometry", "formatted_address"],
-      }
-    );
-
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-
-      if (!place.geometry) {
-        toast.error("Please select a location from the suggestions");
-        return;
-      }
-
-      let street = "";
-      let city = "";
-      let state = "";
-      let pincode = "";
-      let country = "";
-      let region = "";
-
-      place.address_components.forEach((component) => {
-        const types = component.types;
-
-        if (types.includes("street_number")) {
-          street = component.long_name + " " + street;
-        }
-        if (types.includes("route")) {
-          street += component.long_name;
-        }
-        if (types.includes("locality")) {
-          city = component.long_name;
-        }
-        if (types.includes("administrative_area_level_1")) {
-          state = component.long_name;
-        }
-        if (types.includes("postal_code")) {
-          pincode = component.long_name;
-        }
-        if (types.includes("country")) {
-          country = component.long_name;
-        }
-        if (types.includes("sublocality_level_1")) {
-          region = component.long_name;
-        }
-        if (types.includes("administrative_area_level_2") && !region) {
-          region = component.long_name;
-        }
-      });
-
-      setFormData((prev) => ({
-        ...prev,
-        location: place.formatted_address,
-        region,
-        coordinates: {
-          latitude: place.geometry.location.lat(),
-          longitude: place.geometry.location.lng(),
-        },
-        address: {
-          street: street.trim(),
-          city,
-          state,
-          pincode,
-          country,
-        },
-      }));
-    });
-
-    return () => {
-      if (autocomplete) {
-        google.maps.event.clearInstanceListeners(autocomplete);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -945,6 +871,17 @@ const PropertyListingForm = () => {
 
     try {
       const formDataToSubmit = { ...formData };
+
+      // Combine address fields into location string for database compatibility
+      const addressParts = [
+        formDataToSubmit.address.street,
+        formDataToSubmit.address.city,
+        formDataToSubmit.address.state,
+        formDataToSubmit.address.pincode,
+        formDataToSubmit.address.country,
+      ].filter((part) => part && part.trim());
+
+      formDataToSubmit.location = addressParts.join(", ");
 
       if (formDataToSubmit.listingType === "sale") {
         formDataToSubmit.rent_type = null;
@@ -2100,23 +2037,107 @@ const PropertyListingForm = () => {
             </h2>
 
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Property Location *
-                </label>
-                <input
-                  ref={locationInputRef}
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  style={inputStyles}
-                  className={getInputClassName()}
-                  placeholder="Search for location"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Start typing and select from the dropdown suggestions
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State *
+                  </label>
+                  <input
+                    type="text"
+                    name="address.state"
+                    value={formData.address.state}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className={getInputClassName(fieldErrors["address.state"])}
+                    placeholder="Enter state"
+                    required
+                  />
+                  {fieldErrors["address.state"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors["address.state"]}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    name="address.city"
+                    value={formData.address.city}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className={getInputClassName(fieldErrors["address.city"])}
+                    placeholder="Enter city"
+                    required
+                  />
+                  {fieldErrors["address.city"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors["address.city"]}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pincode *
+                  </label>
+                  <input
+                    type="text"
+                    name="address.pincode"
+                    value={formData.address.pincode}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className={getInputClassName(
+                      fieldErrors["address.pincode"]
+                    )}
+                    placeholder="Enter 6-digit pincode"
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    required
+                  />
+                  {fieldErrors["address.pincode"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors["address.pincode"]}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    name="address.street"
+                    value={formData.address.street}
+                    onChange={handleChange}
+                    style={inputStyles}
+                    className={getInputClassName()}
+                    placeholder="Enter street address (optional)"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-700">
+                    Full Address
+                  </span>
+                  <span className="text-sm text-blue-600">
+                    {[
+                      formData.address.street,
+                      formData.address.city,
+                      formData.address.state,
+                      formData.address.pincode,
+                      formData.address.country,
+                    ]
+                      .filter((part) => part && part.trim())
+                      .join(", ")}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -2212,7 +2233,7 @@ const PropertyListingForm = () => {
                   )}
               </div>
 
-              {/* <div className="mt-6">
+              <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Number *
                 </label>
@@ -2248,7 +2269,7 @@ const PropertyListingForm = () => {
                     )}
                   </div>
                 </div>
-              </div> */}
+              </div>
 
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
