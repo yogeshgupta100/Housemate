@@ -18,6 +18,7 @@ import otpRoutes from "./routes/otpRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import sceneRoutes from "./routes/sceneRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import transactionRoutes from "./routes/transactionRoutes.js";
 
 dotenv.config();
 
@@ -104,6 +105,7 @@ const routes = [
   { path: "/api/upload", router: uploadRoutes },
   { path: "/api/scenes", router: sceneRoutes },
   { path: "/api/payments", router: paymentRoutes },
+  { path: "/api/transactions", router: transactionRoutes },
 ];
 
 routes.forEach((route) => {

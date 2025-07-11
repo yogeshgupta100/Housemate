@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { User, Receipt, Home, Menu, X , Heart} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
+import { User, Receipt, Home, Menu, X, Heart, Building } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 const Sidebar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -12,10 +12,19 @@ const Sidebar = () => {
   };
 
   const navigation = [
-    { name: 'Profile', href: '/customer-panel/profile', icon: User },
-    { name: 'Favorites', href: '/customer-panel/favorites', icon: Heart },
-    { name: 'Transactions', href: '/customer-panel/transactions', icon: Receipt },
-    { name: 'My Properties', href: '/customer-panel/properties', icon: Home },
+    { name: "Profile", href: "/customer-panel/profile", icon: User },
+    { name: "Favorites", href: "/customer-panel/favorites", icon: Heart },
+    {
+      name: "Transactions",
+      href: "/customer-panel/transactions",
+      icon: Receipt,
+    },
+    { name: "My Properties", href: "/customer-panel/properties", icon: Home },
+    {
+      name: "My Rented Properties",
+      href: "/customer-panel/rented-properties",
+      icon: Building,
+    },
   ];
 
   return (
@@ -44,8 +53,8 @@ const Sidebar = () => {
                   className={({ isActive }) =>
                     `flex items-center py-3 px-6 ${
                       isActive
-                        ? 'bg-blue-700 text-white'
-                        : 'text-blue-300 hover:bg-blue-800 hover:text-white'
+                        ? "bg-blue-700 text-white"
+                        : "text-blue-300 hover:bg-blue-800 hover:text-white"
                     } transition-colors duration-200`
                   }
                 >
@@ -62,8 +71,8 @@ const Sidebar = () => {
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium">{user?.data?.first_name}</p>
-              <p className="text-xs text-blue-300">{user?.data?.email}</p>
+              <p className="text-sm font-medium">{user?.first_name}</p>
+              <p className="text-xs text-blue-300">{user?.email}</p>
             </div>
           </div>
         </div>
@@ -85,8 +94,8 @@ const Sidebar = () => {
                     className={({ isActive }) =>
                       `flex items-center py-3 px-6 ${
                         isActive
-                          ? 'bg-blue-700 text-white'
-                          : 'text-blue-300 hover:bg-blue-800 hover:text-white'
+                          ? "bg-blue-700 text-white"
+                          : "text-blue-300 hover:bg-blue-800 hover:text-white"
                       } transition-colors duration-200`
                     }
                   >

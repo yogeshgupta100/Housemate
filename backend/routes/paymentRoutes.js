@@ -12,6 +12,7 @@ router.use(protect);
 
 // Razorpay payment routes
 router.post("/create-order", paymentController.createPaymentOrder);
+router.post("/create-split-order", paymentController.createSplitPaymentOrder);
 router.post("/verify", paymentController.verifyPayment);
 
 // Payment history and details

@@ -20,6 +20,7 @@ const PaymentModel = {
         payment_receipt_url,
         payment_notes,
         processed_by,
+        split_details,
       } = data;
 
       const { rows } = await client.query(
@@ -27,8 +28,8 @@ const PaymentModel = {
           transaction_id, user_id, property_id, amount, currency,
           payment_method, payment_status, razorpay_order_id,
           razorpay_payment_id, razorpay_signature, payment_receipt_url,
-          payment_notes, processed_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          payment_notes, processed_by, split_details
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
           transaction_id,
@@ -44,6 +45,7 @@ const PaymentModel = {
           payment_receipt_url,
           payment_notes,
           processed_by,
+          split_details ? JSON.stringify(split_details) : null,
         ]
       );
 

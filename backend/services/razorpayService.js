@@ -1,6 +1,7 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import PaymentModel from "../models/Payment.js";
+import pool from "../config/postgres.js";
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -9,7 +10,60 @@ const razorpay = new Razorpay({
 });
 
 class RazorpayService {
-  // Create a new order
+  // Create a new order with split payment
+  async createOrderWithSplit(
+    amount,
+    baseAmount,
+    commissionAmount,
+    currency = "INR",
+    receipt = null
+  ) {
+    try {
+      const options = {
+        amount: Math.round(amount * 100), // Razorpay expects amount in paise
+        currency: currency,
+        receipt: receipt || `receipt_${Date.now()}`,
+        notes: {
+          source: "housemate_platform",
+          base_amount: baseAmount,
+          commission_amount: commissionAmount,
+        },
+        // Split payment configuration
+        transfers: [
+          {
+            account: process.env.ADMIN_RAZORPAY_ACCOUNT_ID, // Admin's Razorpay account
+            amount: Math.round(commissionAmount * 100),
+            currency: currency,
+            notes: {
+              type: "commission",
+              description: "Platform commission",
+            },
+          },
+        ],
+      };
+
+      const order = await razorpay.orders.create(options);
+      return {
+        success: true,
+        order: {
+          id: order.id,
+          amount: order.amount,
+          currency: order.currency,
+          receipt: order.receipt,
+          baseAmount: baseAmount,
+          commissionAmount: commissionAmount,
+        },
+      };
+    } catch (error) {
+      console.error("Razorpay split order creation error:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  // Create a new order (existing method)
   async createOrder(amount, currency = "INR", receipt = null) {
     try {
       const options = {
@@ -56,7 +110,191 @@ class RazorpayService {
     }
   }
 
-  // Process payment for a transaction
+  // Get property owner's bank details
+  async getPropertyOwnerBankDetails(propertyId) {
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query(
+        `SELECT u.bank_details, u.first_name, u.last_name, u.email
+         FROM properties p
+         JOIN users u ON p.user_id = u.id
+         WHERE p.id = $1`,
+        [propertyId]
+      );
+
+      if (rows.length === 0) {
+        throw new Error("Property owner not found");
+      }
+
+      const owner = rows[0];
+      if (!owner.bank_details) {
+        throw new Error("Property owner bank details not found");
+      }
+
+      // Validate bank details
+      const validation = this.validateBankDetails(owner.bank_details);
+      if (!validation.isValid) {
+        throw new Error(`Invalid bank details: ${validation.error}`);
+      }
+
+      return owner.bank_details;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Calculate commission amount (configurable percentage)
+  calculateCommission(baseAmount, commissionPercentage = 5) {
+    return (baseAmount * commissionPercentage) / 100;
+  }
+
+  // Validate bank details
+  validateBankDetails(bankDetails) {
+    if (!bankDetails) {
+      return { isValid: false, error: "Bank details not found" };
+    }
+
+    const requiredFields = [
+      "account_number",
+      "bank_name",
+      "ifsc_code",
+      "account_holder_name",
+    ];
+
+    for (const field of requiredFields) {
+      if (!bankDetails[field] || bankDetails[field].trim() === "") {
+        return {
+          isValid: false,
+          error: `Missing required bank detail: ${field.replace("_", " ")}`,
+        };
+      }
+    }
+
+    // Validate IFSC code format (4 letters + 7 alphanumeric)
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+    if (!ifscRegex.test(bankDetails.ifsc_code.toUpperCase())) {
+      return {
+        isValid: false,
+        error: "Invalid IFSC code format",
+      };
+    }
+
+    // Validate account number (should be numeric and reasonable length)
+    if (!/^\d{9,18}$/.test(bankDetails.account_number)) {
+      return {
+        isValid: false,
+        error: "Invalid account number format",
+      };
+    }
+
+    return { isValid: true };
+  }
+
+  // Process split payment for a transaction
+  async processSplitPayment(transactionId, totalAmount, userData) {
+    try {
+      // Get transaction details to determine base amount
+      const client = await pool.connect();
+      let transaction;
+
+      try {
+        const { rows } = await client.query(
+          `SELECT t.*, p.price as property_price, p.deposit as property_deposit
+           FROM transactions t
+           JOIN properties p ON t.property_id = p.id
+           WHERE t.id = $1`,
+          [transactionId]
+        );
+
+        if (rows.length === 0) {
+          throw new Error("Transaction not found");
+        }
+
+        transaction = rows[0];
+      } finally {
+        client.release();
+      }
+
+      // Calculate base amount (rent or deposit)
+      const baseAmount =
+        transaction.rent_amount ||
+        transaction.deposit_amount ||
+        transaction.property_price ||
+        0;
+
+      // Calculate commission amount
+      const commissionAmount = this.calculateCommission(baseAmount);
+
+      // Verify total amount matches
+      const expectedTotal = baseAmount + commissionAmount;
+      if (Math.abs(totalAmount - expectedTotal) > 1) {
+        // Allow 1 rupee difference for rounding
+        throw new Error(
+          `Total amount mismatch. Expected: ${expectedTotal}, Received: ${totalAmount}`
+        );
+      }
+
+      // Get property owner's bank details
+      const ownerBankDetails = await this.getPropertyOwnerBankDetails(
+        userData.propertyId
+      );
+
+      // Create Razorpay order with split payment
+      const orderResult = await this.createOrderWithSplit(
+        totalAmount,
+        baseAmount,
+        commissionAmount,
+        "INR",
+        `txn_${transactionId}`
+      );
+
+      if (!orderResult.success) {
+        throw new Error(orderResult.error);
+      }
+
+      // Create payment record in database with split details
+      const paymentData = {
+        transaction_id: transactionId,
+        user_id: userData.userId,
+        property_id: userData.propertyId,
+        amount: totalAmount,
+        currency: "INR",
+        payment_method: "razorpay",
+        payment_status: "pending",
+        razorpay_order_id: orderResult.order.id,
+        payment_notes: `Split payment for transaction ${transactionId}. Base: ${baseAmount}, Commission: ${commissionAmount}`,
+        // Add split payment details
+        split_details: {
+          base_amount: baseAmount,
+          commission_amount: commissionAmount,
+          owner_bank_details: ownerBankDetails,
+          admin_account_id: process.env.ADMIN_RAZORPAY_ACCOUNT_ID,
+        },
+      };
+
+      const payment = await PaymentModel.create(paymentData);
+
+      return {
+        success: true,
+        order: orderResult.order,
+        payment: payment,
+        key_id: process.env.RAZORPAY_KEY_ID,
+        splitDetails: {
+          baseAmount,
+          commissionAmount,
+          ownerBankDetails,
+        },
+      };
+    } catch (error) {
+      console.error("Split payment processing error:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  // Process payment for a transaction (existing method - for backward compatibility)
   async processPayment(transactionId, amount, userData) {
     try {
       // Create Razorpay order
@@ -107,7 +345,10 @@ class RazorpayService {
     signature,
     paymentRecordId
   ) {
+    const client = await pool.connect();
     try {
+      await client.query("BEGIN");
+
       // Verify payment signature
       const isValidSignature = this.verifyPaymentSignature(
         orderId,
@@ -139,12 +380,48 @@ class RazorpayService {
         additionalData
       );
 
+      // Update transaction status to 'active' and increase room occupancy
+      const {
+        rows: [transaction],
+      } = await client.query(
+        `SELECT t.*, r.id as room_id, r.occupied, r.capacity
+         FROM transactions t
+         JOIN rooms r ON t.room_id = r.id
+         WHERE t.id = $1`,
+        [updatedPayment.transaction_id]
+      );
+
+      if (transaction) {
+        // Update transaction status to 'active'
+        await client.query(
+          `UPDATE transactions 
+           SET status = 'active', updated_at = CURRENT_TIMESTAMP
+           WHERE id = $1`,
+          [updatedPayment.transaction_id]
+        );
+
+        // Increase room occupancy by 1 (but don't exceed capacity)
+        await client.query(
+          `UPDATE rooms 
+           SET occupied = LEAST(capacity, occupied + 1), updated_at = CURRENT_TIMESTAMP
+           WHERE id = $1`,
+          [transaction.room_id]
+        );
+
+        console.log(
+          `Transaction ${updatedPayment.transaction_id} activated and room ${transaction.room_id} occupancy updated`
+        );
+      }
+
+      await client.query("COMMIT");
+
       return {
         success: true,
         payment: updatedPayment,
         razorpayPayment: payment,
       };
     } catch (error) {
+      await client.query("ROLLBACK");
       console.error("Payment verification error:", error);
 
       // Update payment status to failed
@@ -160,6 +437,8 @@ class RazorpayService {
         success: false,
         error: error.message,
       };
+    } finally {
+      client.release();
     }
   }
 
@@ -247,7 +526,10 @@ class RazorpayService {
 
   // Handle payment captured webhook
   async handlePaymentCaptured(paymentEntity) {
+    const client = await pool.connect();
     try {
+      await client.query("BEGIN");
+
       // Find payment record by Razorpay payment ID
       const payments = await PaymentModel.findByRazorpayPaymentId(
         paymentEntity.id
@@ -267,16 +549,54 @@ class RazorpayService {
         payment_receipt_url: paymentEntity.receipt || null,
       });
 
+      // Update transaction status to 'active' and increase room occupancy
+      const {
+        rows: [transaction],
+      } = await client.query(
+        `SELECT t.*, r.id as room_id, r.occupied, r.capacity
+         FROM transactions t
+         JOIN rooms r ON t.room_id = r.id
+         WHERE t.id = $1`,
+        [payment.transaction_id]
+      );
+
+      if (transaction) {
+        // Update transaction status to 'active'
+        await client.query(
+          `UPDATE transactions 
+           SET status = 'active', updated_at = CURRENT_TIMESTAMP
+           WHERE id = $1`,
+          [payment.transaction_id]
+        );
+
+        // Increase room occupancy by 1 (but don't exceed capacity)
+        await client.query(
+          `UPDATE rooms 
+           SET occupied = LEAST(capacity, occupied + 1), updated_at = CURRENT_TIMESTAMP
+           WHERE id = $1`,
+          [transaction.room_id]
+        );
+
+        console.log(
+          `Transaction ${payment.transaction_id} activated and room ${transaction.room_id} occupancy updated`
+        );
+      }
+
+      await client.query("COMMIT");
+
       return {
         success: true,
-        message: "Payment captured successfully",
+        message: "Payment captured and transaction activated successfully",
       };
     } catch (error) {
+      await client.query("ROLLBACK");
       console.error("Payment captured webhook error:", error);
       return {
         success: false,
         error: error.message,
       };
+    } finally {
+      client.release();
     }
   }
 

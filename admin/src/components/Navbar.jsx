@@ -1,46 +1,55 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Home, 
-  List, 
-  PlusSquare, 
-  Calendar, 
-  Menu, 
-  X, 
-  LogOut, 
-  LayoutDashboard, 
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Home,
+  List,
+  PlusSquare,
+  Calendar,
+  Menu,
+  X,
+  LogOut,
+  LayoutDashboard,
   Database,
   Users as UsersIcon,
-  CheckCircle2
-} from 'lucide-react';
+  CheckCircle2,
+} from "lucide-react";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
+
   const isActive = (path) => {
     return location.pathname === path;
   };
-  
+
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('isAdmin');
-    navigate('/login');
+    localStorage.removeItem("token");
+    localStorage.removeItem("isAdmin");
+    navigate("/login");
   };
-  
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/list', label: 'Properties', icon: List },
-    { path: '/add', label: 'Add Property', icon: PlusSquare },
-    { path: '/appointments', label: 'Appointments', icon: Calendar },
-    { path: '/users', label: 'Users', icon: UsersIcon },
-    { path: '/availability-requests', label: 'Make it Available', icon: CheckCircle2 },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/list", label: "Properties", icon: List },
+    { path: "/add", label: "Add Property", icon: PlusSquare },
+    { path: "/appointments", label: "Appointments", icon: Calendar },
+    { path: "/users", label: "Users", icon: UsersIcon },
+    {
+      path: "/availability-requests",
+      label: "Make it Available",
+      icon: CheckCircle2,
+    },
+    {
+      path: "/active-transactions",
+      label: "Active Transactions",
+      icon: Database,
+    },
   ];
 
   return (
@@ -52,9 +61,11 @@ const Navbar = () => {
             <div className="p-2 bg-blue-100 rounded-lg">
               <Home className="h-5 w-5 text-blue-600" />
             </div>
-            <span className="ml-2 text-xl font-bold text-gray-900">Admin Panel</span>
+            <span className="ml-2 text-xl font-bold text-gray-900">
+              Admin Panel
+            </span>
           </Link>
-          
+
           {}
           <nav className="hidden md:flex space-x-1">
             {navItems.map((item) => (
@@ -63,8 +74,8 @@ const Navbar = () => {
                 to={item.path}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive(item.path)
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-center">
@@ -73,7 +84,7 @@ const Navbar = () => {
                 </div>
               </Link>
             ))}
-            
+
             <button
               onClick={handleLogout}
               className="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors ml-2"
@@ -84,7 +95,7 @@ const Navbar = () => {
               </div>
             </button>
           </nav>
-          
+
           {}
           <div className="md:hidden">
             <button
@@ -100,12 +111,12 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      
+
       {}
       {isMenuOpen && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
+          animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           className="md:hidden bg-white border-t border-gray-100 shadow-lg"
         >
@@ -116,8 +127,8 @@ const Navbar = () => {
                 to={item.path}
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
                   isActive(item.path)
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-50"
                 }`}
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -127,7 +138,7 @@ const Navbar = () => {
                 </div>
               </Link>
             ))}
-            
+
             <button
               onClick={handleLogout}
               className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"

@@ -258,6 +258,7 @@ const PropertyListingForm = () => {
   const [videoPreviewUrls, setVideoPreviewUrls] = useState([]);
   const [uploadingImages, setUploadingImages] = useState([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [bankDetailsMissing, setBankDetailsMissing] = useState(false);
 
   const locationInputRef = useRef(null);
 
@@ -322,7 +323,26 @@ const PropertyListingForm = () => {
       return;
     }
 
+    // Check if user has bank details
     if (user) {
+      const bankDetails = user.bank_details;
+
+      // Check if bank details exist and have all required fields
+      const hasBankDetails =
+        bankDetails &&
+        bankDetails.account_number &&
+        bankDetails.bank_name &&
+        bankDetails.ifsc_code &&
+        bankDetails.account_holder_name;
+
+      if (!hasBankDetails) {
+        setBankDetailsMissing(true);
+        setError(
+          "Please complete your profile with bank details before listing a property. This is required for payment processing."
+        );
+        return;
+      }
+
       setFormData((prev) => ({
         ...prev,
         contact: {
@@ -1009,6 +1029,13 @@ const PropertyListingForm = () => {
           toast.error(
             error.response?.data?.message || "Failed to save property"
           );
+
+          // Handle bank details missing error
+          if (error.response?.data?.code === "BANK_DETAILS_MISSING") {
+            setBankDetailsMissing(true);
+            setError(error.response.data.message);
+            return;
+          }
         }
       }
 
@@ -1177,6 +1204,60 @@ const PropertyListingForm = () => {
             Access Restricted
           </h2>
           <p className="text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (bankDetailsMissing) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-12">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Complete Your Profile
+            </h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Before you can list a property, please complete your profile with
+              bank details.
+            </p>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-yellow-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-yellow-800">
+                  Bank Details Required
+                </h3>
+                <div className="mt-2 text-yellow-700">
+                  <p className="text-sm">{error}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => navigate("/customer-panel/profile")}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                  >
+                    Complete Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

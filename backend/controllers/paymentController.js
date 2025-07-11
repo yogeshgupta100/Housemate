@@ -3,7 +3,71 @@ import PaymentModel from "../models/Payment.js";
 import TransactionModel from "../models/Transaction.js";
 import pool from "../config/postgres.js";
 
-// Create payment order for Razorpay
+// Create split payment order for Razorpay
+export const createSplitPaymentOrder = async (req, res) => {
+  try {
+    const { transactionId, totalAmount } = req.body;
+    const userId = req.user.id;
+
+    if (!transactionId || !totalAmount) {
+      return res.status(400).json({
+        success: false,
+        message: "Transaction ID and total amount are required",
+      });
+    }
+
+    // Verify transaction exists and belongs to user
+    const transaction = await TransactionModel.getById(transactionId);
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found",
+      });
+    }
+
+    if (transaction.user_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // Process split payment through Razorpay
+    const result = await razorpayService.processSplitPayment(
+      transactionId,
+      totalAmount,
+      {
+        userId: userId,
+        propertyId: transaction.property_id,
+      }
+    );
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        order: result.order,
+        payment: result.payment,
+        key_id: result.key_id,
+        splitDetails: result.splitDetails,
+      },
+    });
+  } catch (error) {
+    console.error("Create split payment order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create split payment order",
+    });
+  }
+};
+
+// Create payment order for Razorpay (existing method - for backward compatibility)
 export const createPaymentOrder = async (req, res) => {
   try {
     const { transactionId, amount } = req.body;
@@ -125,7 +189,10 @@ export const verifyPayment = async (req, res) => {
 
 // Admin: Add cash payment
 export const addCashPayment = async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+
     const { transactionId, amount, notes } = req.body;
     const adminId = req.user.id;
 
@@ -169,19 +236,56 @@ export const addCashPayment = async (req, res) => {
 
     const payment = await PaymentModel.create(paymentData);
 
+    // Update transaction status to 'active' and increase room occupancy
+    const {
+      rows: [roomData],
+    } = await client.query(
+      `SELECT r.id as room_id, r.occupied, r.capacity
+       FROM rooms r
+       WHERE r.id = $1`,
+      [transaction.room_id]
+    );
+
+    if (roomData) {
+      // Update transaction status to 'active'
+      await client.query(
+        `UPDATE transactions 
+         SET status = 'active', updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [transactionId]
+      );
+
+      // Increase room occupancy by 1 (but don't exceed capacity)
+      await client.query(
+        `UPDATE rooms 
+         SET occupied = LEAST(capacity, occupied + 1), updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [roomData.room_id]
+      );
+
+      console.log(
+        `Transaction ${transactionId} activated and room ${roomData.room_id} occupancy updated via cash payment`
+      );
+    }
+
+    await client.query("COMMIT");
+
     res.status(201).json({
       success: true,
-      message: "Cash payment added successfully",
+      message: "Cash payment added and transaction activated successfully",
       data: {
         payment: payment,
       },
     });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Add cash payment error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to add cash payment",
     });
+  } finally {
+    client.release();
   }
 };
 

@@ -64,7 +64,7 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     setIsDropdownOpen(false);
-    navigate('/login');
+    navigate("/login");
   };
 
   const getInitials = (name) => {
@@ -89,14 +89,19 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
-            <div
-              className="p-1 sm:p-2 rounded-lg"
-            >
-              <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
+          <Link
+            to="/"
+            className="flex items-center space-x-2 sm:space-x-3 group"
+          >
+            <div className="p-1 sm:p-2 rounded-lg">
+              <img
+                src={logo}
+                alt="HOUSEMATE logo"
+                className="w-6 h-6 sm:w-8 sm:h-8"
+              />
             </div>
             <span className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:from-indigo-600 group-hover:to-blue-600 transition-all duration-300">
-            HOUSEMATE
+              HOUSEMATE
             </span>
           </Link>
 
@@ -115,7 +120,7 @@ const Navbar = () => {
                   >
                     <div className="relative">
                       <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-xs lg:text-sm shadow-md hover:shadow-lg transition-shadow">
-                        {getInitials(user?.data?.first_name)}
+                        {getInitials(user?.first_name)}
                       </div>
                       <div className="absolute bottom-0 right-0 w-2 h-2 lg:w-3 lg:h-3 bg-green-400 border-2 border-white rounded-full"></div>
                     </div>
@@ -138,10 +143,10 @@ const Navbar = () => {
                       >
                         <div className="px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-semibold text-gray-900">
-                            {user?.data?.first_name}
+                            {user?.first_name}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
-                            {user?.data?.email}
+                            {user?.email}
                           </p>
                         </div>
                         <Link
@@ -163,9 +168,9 @@ const Navbar = () => {
                         >
                           My Wallet
                         </Link> */}
-                        
+
                         <div className="border-t border-gray-100 my-1"></div>
-                        
+
                         <motion.button
                           whileHover={{ x: 5 }}
                           onClick={handleLogout}
@@ -231,7 +236,7 @@ const Navbar = () => {
               <MobileNavLinks
                 setMobileMenuOpen={setIsMobileMenuOpen}
                 isLoggedIn={isLoggedIn}
-                user={user?.data}
+                user={user}
                 handleLogout={handleLogout}
                 currentPath={location.pathname}
               />
@@ -258,15 +263,17 @@ const NavLinks = ({ currentPath }) => {
     <div className="flex space-x-2 lg:space-x-4 items-center">
       <div className="flex space-x-1 lg:space-x-2">
         {navLinks.map(({ name, path, icon: Icon }) => {
-          const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
+          const isActive =
+            path === "/" ? currentPath === path : currentPath.startsWith(path);
           return (
             <Link
               key={name}
               to={path}
               className={`relative font-medium transition-colors duration-200 flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-2 rounded-md
-                ${isActive
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-700 hover:text-blue-600 hover:bg-blue-50/50"
+                ${
+                  isActive
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-blue-50/50"
                 }
               `}
             >
@@ -287,9 +294,11 @@ const NavLinks = ({ currentPath }) => {
         <Link
           to="/list-property"
           className={`px-2 lg:px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-1 lg:gap-2 shadow-sm hover:shadow-md text-sm lg:text-base
-            ${isListPropertyActive 
-              ? "bg-blue-700 text-white"
-              : "bg-blue-600 text-white hover:bg-blue-700"}`}
+            ${
+              isListPropertyActive
+                ? "bg-blue-700 text-white"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
         >
           <Building className="w-4 h-4" />
           <span className="hidden sm:inline">List Property</span>
@@ -331,7 +340,7 @@ const MobileNavLinks = ({
         >
           Home
         </Link>
-        
+
         {isLoggedIn && (
           <>
             <Link
@@ -369,17 +378,19 @@ const MobileNavLinks = ({
             </Link>
           </>
         )}
-        
+
         {navLinks.map(({ name, path, icon: Icon }) => {
-          const isActive = path === "/" ? currentPath === path : currentPath.startsWith(path);
+          const isActive =
+            path === "/" ? currentPath === path : currentPath.startsWith(path);
           return (
             <motion.div key={name} whileTap={{ scale: 0.97 }}>
               <Link
                 to={path}
                 className={`flex items-center gap-3 px-4 py-3 mx-3 rounded-lg transition-colors
-                  ${isActive
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                  ${
+                    isActive
+                      ? "bg-blue-50 text-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                   }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -395,9 +406,10 @@ const MobileNavLinks = ({
           <Link
             to="/list-property"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium
-              ${isListPropertyActive
-                ? "bg-blue-600 text-white"
-                : "bg-blue-600 text-white hover:bg-blue-700"
+              ${
+                isListPropertyActive
+                  ? "bg-blue-600 text-white"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -411,11 +423,15 @@ const MobileNavLinks = ({
             <div className="space-y-3 px-3">
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
-                  {user?.data?.first_name ? user.data.first_name[0].toUpperCase() : "U"}
+                  {user?.first_name ? user.first_name[0].toUpperCase() : "U"}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{user?.data?.first_name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.data?.email}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user?.first_name}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.email}
+                  </p>
                 </div>
               </div>
               <motion.button

@@ -221,7 +221,7 @@ const PropertiesShow = () => {
     const checkFavoriteStatus = async () => {
       try {
         const response = await axios.get(
-          `${Backendurl}/api/favorites/check/${user?.data?.id}`,
+          `${Backendurl}/api/favorites/check/${user?.id}`,
           {
             headers: {
               "Content-Type": "application/json",

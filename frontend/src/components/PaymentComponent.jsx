@@ -7,6 +7,7 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
+  Info,
 } from "lucide-react";
 import { Backendurl } from "../App.jsx";
 import { useAuth } from "../context/AuthContext";
@@ -17,11 +18,14 @@ const PaymentComponent = ({
   propertyTitle,
   onPaymentSuccess,
   onPaymentCancel,
+  enableSplitPayment = true, // New prop to enable/disable split payment
 }) => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
   const [orderDetails, setOrderDetails] = useState(null);
   const [paymentRecordId, setPaymentRecordId] = useState(null);
+  const [splitDetails, setSplitDetails] = useState(null);
+  const [showSplitDetails, setShowSplitDetails] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -78,8 +82,48 @@ const PaymentComponent = ({
     }
   };
 
+  const createSplitPaymentOrder = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${Backendurl}/api/payments/create-split-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            transactionId: transactionId,
+            totalAmount: amount,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrderDetails(data.data.order);
+        setPaymentRecordId(data.data.payment.id);
+        setSplitDetails(data.data.splitDetails);
+        return data.data;
+      } else {
+        throw new Error(data.message || "Failed to create split payment order");
+      }
+    } catch (error) {
+      console.error("Create split payment order error:", error);
+      toast.error(error.message || "Failed to create split payment order");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRazorpayPayment = async () => {
-    const orderData = await createPaymentOrder();
+    const orderData = enableSplitPayment
+      ? await createSplitPaymentOrder()
+      : await createPaymentOrder();
+
     if (!orderData) return;
 
     const options = {
@@ -159,29 +203,58 @@ const PaymentComponent = ({
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Payment Details
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment</h2>
         <p className="text-gray-600">{propertyTitle}</p>
+        <div className="text-3xl font-bold text-blue-600 mt-2">
+          {formatCurrency(amount)}
+        </div>
       </div>
 
-      <div className="mb-6">
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700 font-medium">Amount:</span>
-            <span className="text-2xl font-bold text-green-600">
-              {formatCurrency(amount)}
-            </span>
+      {enableSplitPayment && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Info className="w-4 h-4 text-blue-600 mr-2" />
+              <span className="text-sm font-medium text-blue-800">
+                Split Payment Enabled
+              </span>
+            </div>
+            <button
+              onClick={() => setShowSplitDetails(!showSplitDetails)}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              {showSplitDetails ? "Hide" : "Show"} Details
+            </button>
           </div>
+
+          {showSplitDetails && splitDetails && (
+            <div className="mt-3 text-sm text-blue-700">
+              <div className="flex justify-between">
+                <span>Base Amount:</span>
+                <span>{formatCurrency(splitDetails.baseAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Commission (5%):</span>
+                <span>{formatCurrency(splitDetails.commissionAmount)}</span>
+              </div>
+              <div className="border-t border-blue-200 mt-2 pt-2">
+                <div className="flex justify-between font-medium">
+                  <span>Total:</span>
+                  <span>{formatCurrency(amount)}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      )}
 
-        <div className="mb-6">
+      <div className="space-y-4">
+        <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Select Payment Method
+            Payment Method
           </h3>
-
           <div className="space-y-3">
             <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
               <input

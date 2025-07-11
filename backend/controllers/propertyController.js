@@ -1,13 +1,30 @@
-import propertyService from '../services/propertyService.js';
-import Property from '../models/propertymodel.js';
-import aiService from '../services/aiService.js';
-import pool from '../config/postgres.js';
-import Scene from '../models/Scene.js';
+import propertyService from "../services/propertyService.js";
+import Property from "../models/propertymodel.js";
+import aiService from "../services/aiService.js";
+import pool from "../config/postgres.js";
+import Scene from "../models/Scene.js";
+import razorpayService from "../services/razorpayService.js";
 
 export const getAllProperties = async (req, res) => {
   try {
-    const { type, minPrice, maxPrice, location, status, page = 1, limit = 10 } = req.query;
-    console.log('Frontend Properties Query params:', { type, minPrice, maxPrice, location, status, page, limit });
+    const {
+      type,
+      minPrice,
+      maxPrice,
+      location,
+      status,
+      page = 1,
+      limit = 10,
+    } = req.query;
+    console.log("Frontend Properties Query params:", {
+      type,
+      minPrice,
+      maxPrice,
+      location,
+      status,
+      page,
+      limit,
+    });
 
     // Build filters object
     const filters = {};
@@ -24,9 +41,9 @@ export const getAllProperties = async (req, res) => {
 
     if (location) {
       filters.$or = [
-        { location: { $regex: location, $options: 'i' } },
-        { city: { $regex: location, $options: 'i' } },
-        { state: { $regex: location, $options: 'i' } }
+        { location: { $regex: location, $options: "i" } },
+        { city: { $regex: location, $options: "i" } },
+        { state: { $regex: location, $options: "i" } },
       ];
     }
 
@@ -36,17 +53,21 @@ export const getAllProperties = async (req, res) => {
 
     // For non-admin requests, only show verified properties
     if (!req.user?.isAdmin) {
-      filters.verification_status = 'verified';
+      filters.verification_status = "verified";
     }
 
     // Use propertyService to get properties with room availability
-    const properties = await propertyService.getAllProperties(filters, parseInt(page), parseInt(limit));
+    const properties = await propertyService.getAllProperties(
+      filters,
+      parseInt(page),
+      parseInt(limit)
+    );
 
-    console.log('Query result:', properties.length, 'properties found');
+    console.log("Query result:", properties.length, "properties found");
 
     res.json({
       success: true,
-      data: properties
+      data: properties,
     });
   } catch (error) {
     console.error("Error in getAllProperties:", error);
@@ -54,7 +75,7 @@ export const getAllProperties = async (req, res) => {
       success: false,
       message: "Error fetching properties",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
@@ -69,7 +90,7 @@ export const getPropertyById = async (req, res) => {
     try {
       scenes = await Scene.getByPropertyId(id);
     } catch (sceneError) {
-      console.error('Error fetching property scenes:', sceneError);
+      console.error("Error fetching property scenes:", sceneError);
       // Don't fail the entire request if scenes fail to load
     }
 
@@ -77,20 +98,49 @@ export const getPropertyById = async (req, res) => {
       success: true,
       property: {
         ...property,
-        scenes: scenes
-      }
+        scenes: scenes,
+      },
     });
   } catch (error) {
-    console.error('Error fetching property:', error);
-    res.status(error.message.includes('not found') ? 404 : 500).json({ 
-      success: false, 
-      message: error.message 
+    console.error("Error fetching property:", error);
+    res.status(error.message.includes("not found") ? 404 : 500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
 
 export const createProperty = async (req, res) => {
   try {
+    // Get user ID from the authenticated request
+    const userId = req.user.id; // This comes from the auth middleware
+
+    // Check if user has bank details before allowing property listing
+    const { rows: userRows } = await pool.query(
+      `SELECT bank_details FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = userRows[0];
+    const bankDetails = user.bank_details;
+
+    // Validate bank details using the service
+    const validation = razorpayService.validateBankDetails(bankDetails);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: `Please complete your profile with valid bank details before listing a property. ${validation.error}`,
+        code: "BANK_DETAILS_MISSING",
+      });
+    }
+
     // Get images array from request body (now contains S3 URLs)
     const images = req.body.images || [];
     const amenities = req.body.amenities || [];
@@ -99,26 +149,32 @@ export const createProperty = async (req, res) => {
     let coordinates = null;
     try {
       if (req.body.coordinates) {
-        coordinates = typeof req.body.coordinates === 'string' 
-          ? JSON.parse(req.body.coordinates) 
-          : req.body.coordinates;
-        
+        coordinates =
+          typeof req.body.coordinates === "string"
+            ? JSON.parse(req.body.coordinates)
+            : req.body.coordinates;
+
         // Ensure coordinates are numbers
         coordinates.latitude = parseFloat(coordinates.latitude);
         coordinates.longitude = parseFloat(coordinates.longitude);
-        
+
         // Validate coordinate ranges
-        if (isNaN(coordinates.latitude) || isNaN(coordinates.longitude) ||
-            coordinates.latitude < -90 || coordinates.latitude > 90 ||
-            coordinates.longitude < -180 || coordinates.longitude > 180) {
-          throw new Error('Invalid coordinate values');
+        if (
+          isNaN(coordinates.latitude) ||
+          isNaN(coordinates.longitude) ||
+          coordinates.latitude < -90 ||
+          coordinates.latitude > 90 ||
+          coordinates.longitude < -180 ||
+          coordinates.longitude > 180
+        ) {
+          throw new Error("Invalid coordinate values");
         }
       }
     } catch (error) {
-      console.error('Error parsing coordinates:', error);
+      console.error("Error parsing coordinates:", error);
       return res.status(400).json({
         success: false,
-        message: 'Invalid coordinates format or values'
+        message: "Invalid coordinates format or values",
       });
     }
 
@@ -126,15 +182,16 @@ export const createProperty = async (req, res) => {
     let address = null;
     try {
       if (req.body.address) {
-        address = typeof req.body.address === 'string' 
-          ? JSON.parse(req.body.address) 
-          : req.body.address;
+        address =
+          typeof req.body.address === "string"
+            ? JSON.parse(req.body.address)
+            : req.body.address;
       }
     } catch (error) {
-      console.error('Error parsing address:', error);
+      console.error("Error parsing address:", error);
       return res.status(400).json({
         success: false,
-        message: 'Invalid address format'
+        message: "Invalid address format",
       });
     }
 
@@ -142,15 +199,16 @@ export const createProperty = async (req, res) => {
     let availability = null;
     try {
       if (req.body.availability) {
-        availability = typeof req.body.availability === 'string'
-          ? JSON.parse(req.body.availability)
-          : req.body.availability;
+        availability =
+          typeof req.body.availability === "string"
+            ? JSON.parse(req.body.availability)
+            : req.body.availability;
       }
     } catch (error) {
-      console.error('Error parsing availability:', error);
+      console.error("Error parsing availability:", error);
       return res.status(400).json({
         success: false,
-        message: 'Invalid availability format'
+        message: "Invalid availability format",
       });
     }
 
@@ -158,23 +216,21 @@ export const createProperty = async (req, res) => {
     let floorDetails = null;
     try {
       if (req.body.floorDetails) {
-        floorDetails = typeof req.body.floorDetails === 'string'
-          ? JSON.parse(req.body.floorDetails)
-          : req.body.floorDetails;
+        floorDetails =
+          typeof req.body.floorDetails === "string"
+            ? JSON.parse(req.body.floorDetails)
+            : req.body.floorDetails;
       }
     } catch (error) {
-      console.error('Error parsing floor details:', error);
+      console.error("Error parsing floor details:", error);
       return res.status(400).json({
         success: false,
-        message: 'Invalid floor details format'
+        message: "Invalid floor details format",
       });
     }
 
-    // Get user ID from the authenticated request
-    const userId = req.user.id; // This comes from the auth middleware
-
     // Handle PG type before normalizing data
-    if (req.body.type === 'pg') {
+    if (req.body.type === "pg") {
       req.body.pg_type = req.body.pgType || req.body.pg_type;
     }
 
@@ -184,18 +240,18 @@ export const createProperty = async (req, res) => {
     if (floorDetails && Array.isArray(floorDetails)) {
       for (const floor of floorDetails) {
         const floorResult = await pool.query(
-          'INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id',
+          "INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id",
           [property.id, floor.floorNumber]
         );
         const floorId = floorResult.rows[0].id;
 
         if (floor.rooms && Array.isArray(floor.rooms)) {
           for (const room of floor.rooms) {
-            console.log('Inserting room:', JSON.stringify(room));
+            console.log("Inserting room:", JSON.stringify(room));
             // Use rent if available, otherwise use rent_amount
             const rentAmount = room.rent || room.rent_amount;
             if (rentAmount === undefined || rentAmount === null) {
-              throw new Error('Each room must have a rent amount');
+              throw new Error("Each room must have a rent amount");
             }
             await pool.query(
               `INSERT INTO rooms (
@@ -209,7 +265,7 @@ export const createProperty = async (req, res) => {
                 room.occupied || 0,
                 rentAmount,
                 room.availableFrom,
-                room.hasBalcony || false
+                room.hasBalcony || false,
               ]
             );
           }
@@ -217,30 +273,32 @@ export const createProperty = async (req, res) => {
       }
     }
 
-    const { rows: [{ min }] } = await pool.query(
+    const {
+      rows: [{ min }],
+    } = await pool.query(
       `SELECT MIN(rent_amount) as min FROM rooms WHERE floor_id IN (
         SELECT id FROM floors WHERE property_id = $1
       )`,
       [property.id]
     );
     if (min !== null && min !== undefined) {
-      await pool.query(
-        'UPDATE properties SET price = $1 WHERE id = $2',
-        [min, property.id]
-      );
+      await pool.query("UPDATE properties SET price = $1 WHERE id = $2", [
+        min,
+        property.id,
+      ]);
       property.price = min;
     }
 
     res.status(201).json({
       success: true,
       data: property,
-      message: 'Property created successfully'
+      message: "Property created successfully",
     });
   } catch (error) {
-    console.error('Property creation error:', error);
+    console.error("Property creation error:", error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to create property'
+      message: error.message || "Failed to create property",
     });
   }
 };
@@ -253,7 +311,7 @@ export const updateProperty = async (req, res) => {
     // Transform frontend data to match database schema
     const transformedData = {
       title: updateData.title,
-      subtitle: updateData.subtitle || '',
+      subtitle: updateData.subtitle || "",
       description: updateData.description,
       slug: updateData.slug,
       listing_type: updateData.listingType || updateData.listing_type,
@@ -261,14 +319,17 @@ export const updateProperty = async (req, res) => {
       price: updateData.price ? Number(updateData.price) : 0,
       rent_type: updateData.rentType || updateData.rent_type,
       deposit: updateData.deposit ? Number(updateData.deposit) : 0,
-      property_age: updateData.propertyAge ? Number(updateData.propertyAge) : null,
-      property_condition: updateData.propertyCondition || updateData.property_condition,
+      property_age: updateData.propertyAge
+        ? Number(updateData.propertyAge)
+        : null,
+      property_condition:
+        updateData.propertyCondition || updateData.property_condition,
       property_status: updateData.propertyStatus || updateData.property_status,
       location: updateData.location,
       region: updateData.region,
       latitude: updateData.latitude,
       longitude: updateData.longitude,
-      street: updateData.street || '',
+      street: updateData.street || "",
       city: updateData.city,
       state: updateData.state,
       pincode: updateData.pincode,
@@ -276,11 +337,15 @@ export const updateProperty = async (req, res) => {
       floor_area: updateData.floorArea ? Number(updateData.floorArea) : 0,
       sqft: updateData.sqft ? Number(updateData.sqft) : 0,
       floor_no: updateData.floorNo ? Number(updateData.floorNo) : null,
-      total_floors: updateData.totalFloors ? Number(updateData.totalFloors) : null,
+      total_floors: updateData.totalFloors
+        ? Number(updateData.totalFloors)
+        : null,
       beds: updateData.beds ? Number(updateData.beds) : 0,
       baths: updateData.baths ? Number(updateData.baths) : 0,
       furnishing: updateData.furnishing,
-      amenities: Array.isArray(updateData.amenities) ? updateData.amenities : [],
+      amenities: Array.isArray(updateData.amenities)
+        ? updateData.amenities
+        : [],
       balcony: updateData.balcony === true,
       central_ac: updateData.centralAc === true,
       power_backup: updateData.powerBackup === true,
@@ -292,39 +357,47 @@ export const updateProperty = async (req, res) => {
       lift: updateData.lift === true,
       images: Array.isArray(updateData.images) ? updateData.images : [],
       videos: Array.isArray(updateData.videos) ? updateData.videos : [],
-      status: updateData.status || 'available',
+      status: updateData.status || "available",
       featured: updateData.featured === true,
       phone: updateData.phone,
       dial_code: updateData.dialCode || updateData.dial_code,
-      pg_type: updateData.type === 'pg' ? (updateData.pgType || updateData.pg_type) : null,
-      verification_status: updateData.verification_status || 'unverified',
-      availability: updateData.availability ? (typeof updateData.availability === 'string' ? updateData.availability : JSON.stringify(updateData.availability)) : null,
-      updated_by: updateData.updated_by
+      pg_type:
+        updateData.type === "pg"
+          ? updateData.pgType || updateData.pg_type
+          : null,
+      verification_status: updateData.verification_status || "unverified",
+      availability: updateData.availability
+        ? typeof updateData.availability === "string"
+          ? updateData.availability
+          : JSON.stringify(updateData.availability)
+        : null,
+      updated_by: updateData.updated_by,
     };
 
     // Handle floor details
     let floorDetails = null;
     try {
       if (updateData.floorDetails) {
-        floorDetails = typeof updateData.floorDetails === 'string'
-          ? JSON.parse(updateData.floorDetails)
-          : updateData.floorDetails;
+        floorDetails =
+          typeof updateData.floorDetails === "string"
+            ? JSON.parse(updateData.floorDetails)
+            : updateData.floorDetails;
       }
     } catch (error) {
-      console.error('Error parsing floor details:', error);
+      console.error("Error parsing floor details:", error);
       return res.status(400).json({
         success: false,
-        message: 'Invalid floor details format'
+        message: "Invalid floor details format",
       });
     }
 
     // Update the property
     const property = await propertyService.updateProperty(id, transformedData);
-    
+
     if (!property) {
       return res.status(404).json({
         success: false,
-        message: 'Property not found'
+        message: "Property not found",
       });
     }
 
@@ -332,11 +405,11 @@ export const updateProperty = async (req, res) => {
     if (floorDetails && Array.isArray(floorDetails)) {
       const client = await pool.connect();
       try {
-        await client.query('BEGIN');
+        await client.query("BEGIN");
 
         // Get existing floors and rooms for this property
         const { rows: existingFloors } = await client.query(
-          'SELECT id, floor_number FROM floors WHERE property_id = $1 ORDER BY floor_number',
+          "SELECT id, floor_number FROM floors WHERE property_id = $1 ORDER BY floor_number",
           [id]
         );
 
@@ -350,20 +423,24 @@ export const updateProperty = async (req, res) => {
         );
 
         // Create maps for easy lookup
-        const existingFloorMap = new Map(existingFloors.map(f => [f.floor_number, f]));
-        const existingRoomMap = new Map(existingRooms.map(r => [`${r.floor_number}-${r.room_number}`, r]));
+        const existingFloorMap = new Map(
+          existingFloors.map((f) => [f.floor_number, f])
+        );
+        const existingRoomMap = new Map(
+          existingRooms.map((r) => [`${r.floor_number}-${r.room_number}`, r])
+        );
 
         // Process each floor in the new floor details
         for (const floor of floorDetails) {
           let floorId;
-          
+
           // Check if floor already exists
           if (existingFloorMap.has(floor.floorNumber)) {
             floorId = existingFloorMap.get(floor.floorNumber).id;
           } else {
             // Create new floor
             const floorResult = await client.query(
-              'INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id',
+              "INSERT INTO floors (property_id, floor_number) VALUES ($1, $2) RETURNING id",
               [id, floor.floorNumber]
             );
             floorId = floorResult.rows[0].id;
@@ -374,11 +451,11 @@ export const updateProperty = async (req, res) => {
             for (const room of floor.rooms) {
               const rentAmount = room.rent || room.rent_amount;
               if (rentAmount === undefined || rentAmount === null) {
-                throw new Error('Each room must have a rent amount');
+                throw new Error("Each room must have a rent amount");
               }
 
               const roomKey = `${floor.floorNumber}-${room.roomNumber}`;
-              
+
               // Check if room already exists
               if (existingRoomMap.has(roomKey)) {
                 // Update existing room
@@ -403,7 +480,7 @@ export const updateProperty = async (req, res) => {
                     room.roomType || null,
                     room.area || null,
                     room.description || null,
-                    existingRoomMap.get(roomKey).id
+                    existingRoomMap.get(roomKey).id,
                   ]
                 );
               } else {
@@ -424,7 +501,7 @@ export const updateProperty = async (req, res) => {
                     room.hasBalcony || false,
                     room.roomType || null,
                     room.area || null,
-                    room.description || null
+                    room.description || null,
                   ]
                 );
               }
@@ -434,15 +511,15 @@ export const updateProperty = async (req, res) => {
 
         // Delete rooms that are no longer in the new floor details
         const newRoomKeys = new Set();
-        floorDetails.forEach(floor => {
+        floorDetails.forEach((floor) => {
           if (floor.rooms) {
-            floor.rooms.forEach(room => {
+            floor.rooms.forEach((room) => {
               newRoomKeys.add(`${floor.floorNumber}-${room.roomNumber}`);
             });
           }
         });
 
-        const roomsToDelete = existingRooms.filter(room => {
+        const roomsToDelete = existingRooms.filter((room) => {
           const roomKey = `${room.floor_number}-${room.room_number}`;
           return !newRoomKeys.has(roomKey);
         });
@@ -451,25 +528,27 @@ export const updateProperty = async (req, res) => {
         for (const room of roomsToDelete) {
           // Check if room has any related records
           const { rows: relatedRecords } = await client.query(
-            'SELECT COUNT(*) as count FROM room_availability_requests WHERE room_id = $1',
+            "SELECT COUNT(*) as count FROM room_availability_requests WHERE room_id = $1",
             [room.id]
           );
-          
-          if (relatedRecords[0].count === '0') {
-            await client.query('DELETE FROM rooms WHERE id = $1', [room.id]);
+
+          if (relatedRecords[0].count === "0") {
+            await client.query("DELETE FROM rooms WHERE id = $1", [room.id]);
           } else {
             // If room has related records, just mark it as unavailable instead of deleting
             await client.query(
-              'UPDATE rooms SET occupied = capacity, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+              "UPDATE rooms SET occupied = capacity, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
               [room.id]
             );
           }
         }
 
         // Delete floors that are no longer needed
-        const newFloorNumbers = new Set(floorDetails.map(f => f.floorNumber));
-        const floorsToDelete = existingFloors.filter(floor => !newFloorNumbers.has(floor.floor_number));
-        
+        const newFloorNumbers = new Set(floorDetails.map((f) => f.floorNumber));
+        const floorsToDelete = existingFloors.filter(
+          (floor) => !newFloorNumbers.has(floor.floor_number)
+        );
+
         for (const floor of floorsToDelete) {
           // Check if floor has any rooms with related records
           const { rows: roomsWithRecords } = await client.query(
@@ -478,30 +557,32 @@ export const updateProperty = async (req, res) => {
              WHERE r.floor_id = $1`,
             [floor.id]
           );
-          
-          if (roomsWithRecords[0].count === '0') {
-            await client.query('DELETE FROM floors WHERE id = $1', [floor.id]);
+
+          if (roomsWithRecords[0].count === "0") {
+            await client.query("DELETE FROM floors WHERE id = $1", [floor.id]);
           }
         }
 
-        await client.query('COMMIT');
+        await client.query("COMMIT");
 
         // Update the property price based on minimum room rent
-        const { rows: [{ min }] } = await pool.query(
+        const {
+          rows: [{ min }],
+        } = await pool.query(
           `SELECT MIN(rent_amount) as min FROM rooms WHERE floor_id IN (
             SELECT id FROM floors WHERE property_id = $1
           )`,
           [id]
         );
         if (min !== null && min !== undefined) {
-          await pool.query(
-            'UPDATE properties SET price = $1 WHERE id = $2',
-            [min, id]
-          );
+          await pool.query("UPDATE properties SET price = $1 WHERE id = $2", [
+            min,
+            id,
+          ]);
           property.price = min;
         }
       } catch (error) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         throw error;
       } finally {
         client.release();
@@ -511,7 +592,7 @@ export const updateProperty = async (req, res) => {
     // Directly update verification_status in the database
     if (updateData.verification_status) {
       await pool.query(
-        'UPDATE properties SET verification_status = $1 WHERE id = $2',
+        "UPDATE properties SET verification_status = $1 WHERE id = $2",
         [updateData.verification_status, id]
       );
     }
@@ -522,13 +603,13 @@ export const updateProperty = async (req, res) => {
     res.status(200).json({
       success: true,
       data: updatedProperty,
-      message: 'Property updated successfully'
+      message: "Property updated successfully",
     });
   } catch (error) {
-    console.error('Error updating property:', error);
+    console.error("Error updating property:", error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to update property'
+      message: error.message || "Failed to update property",
     });
   }
 };
@@ -538,242 +619,277 @@ export const deleteProperty = async (req, res) => {
     const property = await propertyService.deleteProperty(req.params.id);
     res.status(200).json({
       success: true,
-      message: 'Property deleted successfully',
-      property
+      message: "Property deleted successfully",
+      property,
     });
   } catch (error) {
-    console.error('Error deleting property:', error);
-    res.status(error.message.includes('not found') ? 404 : 400).json({
+    console.error("Error deleting property:", error);
+    res.status(error.message.includes("not found") ? 404 : 400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
 
 export const searchProperties = async (req, res) => {
-    const client = await pool.connect();
-    try {
-        const { search, ...filters } = req.query;
-        const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+  const client = await pool.connect();
+  try {
+    const { search, ...filters } = req.query;
+    const baseUrl = process.env.BACKEND_URL || "http://localhost:4000";
 
-        // Validate PG type if provided
-        if (filters.pg_type) {
-            const validPGTypes = ['boys', 'girls', 'co-living'];
-            if (!validPGTypes.includes(filters.pg_type.toLowerCase())) {
-                throw new Error('Invalid PG type. Must be one of: boys, girls, co-living');
-            }
+    // Validate PG type if provided
+    if (filters.pg_type) {
+      const validPGTypes = ["boys", "girls", "co-living"];
+      if (!validPGTypes.includes(filters.pg_type.toLowerCase())) {
+        throw new Error(
+          "Invalid PG type. Must be one of: boys, girls, co-living"
+        );
+      }
+    }
+
+    // Build the WHERE clause
+    let whereClause = "WHERE p.status = $1 AND p.verification_status = $2";
+    const queryParams = ["available", "verified"];
+    let paramIndex = 3;
+
+    // Add search condition
+    if (search) {
+      whereClause += ` AND (LOWER(p.city) = LOWER($${paramIndex}) OR LOWER(p.state) = LOWER($${paramIndex}))`;
+      queryParams.push(search);
+      paramIndex++;
+    }
+
+    // Add other filters
+    if (filters.type) {
+      whereClause += ` AND p.type = $${paramIndex}`;
+      queryParams.push(filters.type);
+      paramIndex++;
+    }
+
+    if (filters.listing_type) {
+      whereClause += ` AND p.listing_type = $${paramIndex}`;
+      queryParams.push(filters.listing_type);
+      paramIndex++;
+    }
+
+    if (filters.beds) {
+      const beds = parseInt(filters.beds);
+      if (isNaN(beds) || beds < 0) {
+        throw new Error("Invalid number of beds");
+      }
+      whereClause += ` AND p.beds = $${paramIndex}`;
+      queryParams.push(beds);
+      paramIndex++;
+    }
+
+    if (filters.baths) {
+      const baths = parseInt(filters.baths);
+      if (isNaN(baths) || baths < 0) {
+        throw new Error("Invalid number of baths");
+      }
+      whereClause += ` AND p.baths = $${paramIndex}`;
+      queryParams.push(baths);
+      paramIndex++;
+    }
+
+    if (filters.minPrice) {
+      const minPrice = parseInt(filters.minPrice);
+      if (isNaN(minPrice) || minPrice < 0) {
+        throw new Error("Invalid minimum price");
+      }
+      whereClause += ` AND p.price >= $${paramIndex}`;
+      queryParams.push(minPrice);
+      paramIndex++;
+    }
+
+    if (filters.maxPrice) {
+      const maxPrice = parseInt(filters.maxPrice);
+      if (isNaN(maxPrice) || maxPrice < 0) {
+        throw new Error("Invalid maximum price");
+      }
+      if (filters.minPrice && maxPrice < parseInt(filters.minPrice)) {
+        throw new Error("Maximum price cannot be less than minimum price");
+      }
+      whereClause += ` AND p.price <= $${paramIndex}`;
+      queryParams.push(maxPrice);
+      paramIndex++;
+    }
+
+    if (filters.minArea) {
+      const minArea = parseInt(filters.minArea);
+      if (isNaN(minArea) || minArea < 0) {
+        throw new Error("Invalid minimum area");
+      }
+      whereClause += ` AND p.area >= $${paramIndex}`;
+      queryParams.push(minArea);
+      paramIndex++;
+    }
+
+    if (filters.maxArea) {
+      const maxArea = parseInt(filters.maxArea);
+      if (isNaN(maxArea) || maxArea < 0) {
+        throw new Error("Invalid maximum area");
+      }
+      if (filters.minArea && maxArea < parseInt(filters.minArea)) {
+        throw new Error("Maximum area cannot be less than minimum area");
+      }
+      whereClause += ` AND p.area <= $${paramIndex}`;
+      queryParams.push(maxArea);
+      paramIndex++;
+    }
+
+    if (filters.furnishing) {
+      const validFurnishing = ["Furnished", "Semi-Furnished", "Unfurnished"];
+      if (!validFurnishing.includes(filters.furnishing)) {
+        throw new Error(
+          "Invalid furnishing type. Must be one of: Furnished, Semi-Furnished, Unfurnished"
+        );
+      }
+      whereClause += ` AND p.furnishing = $${paramIndex}`;
+      queryParams.push(filters.furnishing);
+      paramIndex++;
+    }
+
+    if (filters.amenities && !Array.isArray(filters.amenities)) {
+      filters.amenities = [filters.amenities];
+    }
+
+    if (filters.amenities && filters.amenities.length > 0) {
+      const validAmenities = [
+        "parking",
+        "security",
+        "power_backup",
+        "lift",
+        "garden",
+        "gym",
+        "swimming_pool",
+      ];
+      const invalidAmenities = filters.amenities.filter(
+        (amenity) => !validAmenities.includes(amenity)
+      );
+      if (invalidAmenities.length > 0) {
+        throw new Error(`Invalid amenities: ${invalidAmenities.join(", ")}`);
+      }
+      whereClause += ` AND p.amenities && $${paramIndex}::text[]`;
+      queryParams.push(filters.amenities);
+      paramIndex++;
+    }
+
+    if (filters.type === "pg") {
+      whereClause = whereClause.replace(
+        "WHERE",
+        "LEFT JOIN floors f ON p.id = f.property_id LEFT JOIN rooms r ON f.id = r.floor_id WHERE"
+      );
+
+      if (filters.pg_type) {
+        whereClause += ` AND p.pg_type = $${paramIndex}`;
+        queryParams.push(filters.pg_type.toLowerCase());
+        paramIndex++;
+      }
+
+      if (filters.room_capacity) {
+        let capacity;
+        const validCapacities = ["single", "double", "triple", "quad"];
+        if (validCapacities.includes(filters.room_capacity.toLowerCase())) {
+          switch (filters.room_capacity.toLowerCase()) {
+            case "single":
+              capacity = 1;
+              break;
+            case "double":
+              capacity = 2;
+              break;
+            case "triple":
+              capacity = 3;
+              break;
+            case "quad":
+              capacity = 4;
+              break;
+          }
+        } else {
+          capacity = parseInt(filters.room_capacity);
+          if (isNaN(capacity) || capacity < 1 || capacity > 10) {
+            throw new Error(
+              "Invalid room capacity. Must be one of: single, double, triple, quad, or a number between 1-10"
+            );
+          }
         }
+        whereClause += ` AND r.capacity = $${paramIndex}`;
+        queryParams.push(capacity);
+        paramIndex++;
+      }
 
-        // Build the WHERE clause
-        let whereClause = 'WHERE p.status = $1 AND p.verification_status = $2';
-        const queryParams = ['available', 'verified'];
-        let paramIndex = 3;
-
-        // Add search condition
-        if (search) {
-            whereClause += ` AND (LOWER(p.city) = LOWER($${paramIndex}) OR LOWER(p.state) = LOWER($${paramIndex}))`;
-            queryParams.push(search);
-            paramIndex++;
+      if (filters.room_has_balcony) {
+        if (
+          filters.room_has_balcony !== "true" &&
+          filters.room_has_balcony !== "false"
+        ) {
+          throw new Error("Invalid balcony value. Must be true or false");
         }
+        const hasBalcony = filters.room_has_balcony === "true";
+        whereClause += ` AND r.has_balcony = $${paramIndex}`;
+        queryParams.push(hasBalcony);
+        paramIndex++;
+      }
+    }
 
-        // Add other filters
-        if (filters.type) {
-            whereClause += ` AND p.type = $${paramIndex}`;
-            queryParams.push(filters.type);
-            paramIndex++;
-        }
-
-        if (filters.listing_type) {
-            whereClause += ` AND p.listing_type = $${paramIndex}`;
-            queryParams.push(filters.listing_type);
-            paramIndex++;
-        }
-
-        if (filters.beds) {
-            const beds = parseInt(filters.beds);
-            if (isNaN(beds) || beds < 0) {
-                throw new Error('Invalid number of beds');
-            }
-            whereClause += ` AND p.beds = $${paramIndex}`;
-            queryParams.push(beds);
-            paramIndex++;
-        }
-
-        if (filters.baths) {
-            const baths = parseInt(filters.baths);
-            if (isNaN(baths) || baths < 0) {
-                throw new Error('Invalid number of baths');
-            }
-            whereClause += ` AND p.baths = $${paramIndex}`;
-            queryParams.push(baths);
-            paramIndex++;
-        }
-
-        if (filters.minPrice) {
-            const minPrice = parseInt(filters.minPrice);
-            if (isNaN(minPrice) || minPrice < 0) {
-                throw new Error('Invalid minimum price');
-            }
-            whereClause += ` AND p.price >= $${paramIndex}`;
-            queryParams.push(minPrice);
-            paramIndex++;
-        }
-
-        if (filters.maxPrice) {
-            const maxPrice = parseInt(filters.maxPrice);
-            if (isNaN(maxPrice) || maxPrice < 0) {
-                throw new Error('Invalid maximum price');
-            }
-            if (filters.minPrice && maxPrice < parseInt(filters.minPrice)) {
-                throw new Error('Maximum price cannot be less than minimum price');
-            }
-            whereClause += ` AND p.price <= $${paramIndex}`;
-            queryParams.push(maxPrice);
-            paramIndex++;
-        }
-
-        if (filters.minArea) {
-            const minArea = parseInt(filters.minArea);
-            if (isNaN(minArea) || minArea < 0) {
-                throw new Error('Invalid minimum area');
-            }
-            whereClause += ` AND p.area >= $${paramIndex}`;
-            queryParams.push(minArea);
-            paramIndex++;
-        }
-
-        if (filters.maxArea) {
-            const maxArea = parseInt(filters.maxArea);
-            if (isNaN(maxArea) || maxArea < 0) {
-                throw new Error('Invalid maximum area');
-            }
-            if (filters.minArea && maxArea < parseInt(filters.minArea)) {
-                throw new Error('Maximum area cannot be less than minimum area');
-            }
-            whereClause += ` AND p.area <= $${paramIndex}`;
-            queryParams.push(maxArea);
-            paramIndex++;
-        }
-
-        if (filters.furnishing) {
-            const validFurnishing = ['Furnished', 'Semi-Furnished', 'Unfurnished'];
-            if (!validFurnishing.includes(filters.furnishing)) {
-                throw new Error('Invalid furnishing type. Must be one of: Furnished, Semi-Furnished, Unfurnished');
-            }
-            whereClause += ` AND p.furnishing = $${paramIndex}`;
-            queryParams.push(filters.furnishing);
-            paramIndex++;
-        }
-
-        if (filters.amenities && !Array.isArray(filters.amenities)) {
-            filters.amenities = [filters.amenities];
-        }
-
-        if (filters.amenities && filters.amenities.length > 0) {
-            const validAmenities = ['parking', 'security', 'power_backup', 'lift', 'garden', 'gym', 'swimming_pool'];
-            const invalidAmenities = filters.amenities.filter(amenity => !validAmenities.includes(amenity));
-            if (invalidAmenities.length > 0) {
-                throw new Error(`Invalid amenities: ${invalidAmenities.join(', ')}`);
-            }
-            whereClause += ` AND p.amenities && $${paramIndex}::text[]`;
-            queryParams.push(filters.amenities);
-            paramIndex++;
-        }
-
-        if (filters.type === 'pg') {
-            whereClause = whereClause.replace('WHERE', 'LEFT JOIN floors f ON p.id = f.property_id LEFT JOIN rooms r ON f.id = r.floor_id WHERE');
-
-            if (filters.pg_type) {
-                whereClause += ` AND p.pg_type = $${paramIndex}`;
-                queryParams.push(filters.pg_type.toLowerCase());
-                paramIndex++;
-            }
-
-            if (filters.room_capacity) {
-                let capacity;
-                const validCapacities = ['single', 'double', 'triple', 'quad'];
-                if (validCapacities.includes(filters.room_capacity.toLowerCase())) {
-                    switch(filters.room_capacity.toLowerCase()) {
-                        case 'single': capacity = 1; break;
-                        case 'double': capacity = 2; break;
-                        case 'triple': capacity = 3; break;
-                        case 'quad': capacity = 4; break;
-                    }
-                } else {
-                    capacity = parseInt(filters.room_capacity);
-                    if (isNaN(capacity) || capacity < 1 || capacity > 10) {
-                        throw new Error('Invalid room capacity. Must be one of: single, double, triple, quad, or a number between 1-10');
-                    }
-                }
-                whereClause += ` AND r.capacity = $${paramIndex}`;
-                queryParams.push(capacity);
-                paramIndex++;
-            }
-
-            if (filters.room_has_balcony) {
-                if (filters.room_has_balcony !== 'true' && filters.room_has_balcony !== 'false') {
-                    throw new Error('Invalid balcony value. Must be true or false');
-                }
-                const hasBalcony = filters.room_has_balcony === 'true';
-                whereClause += ` AND r.has_balcony = $${paramIndex}`;
-                queryParams.push(hasBalcony);
-                paramIndex++;
-            }
-        }
-
-        // Get properties
-        const { rows: properties } = await client.query(
-            `SELECT DISTINCT p.* FROM properties p 
+    // Get properties
+    const { rows: properties } = await client.query(
+      `SELECT DISTINCT p.* FROM properties p 
             ${whereClause}
             ORDER BY p.created_at DESC`,
-            queryParams
-        );
+      queryParams
+    );
 
-        // Add full URLs to images
-        const propertiesWithFullUrls = properties.map(property => ({
-            ...property,
-            images: property.images.map(image => 
-                image.startsWith('http') ? image : `${baseUrl}${image}`
-            )
-        }));
+    // Add full URLs to images
+    const propertiesWithFullUrls = properties.map((property) => ({
+      ...property,
+      images: property.images.map((image) =>
+        image.startsWith("http") ? image : `${baseUrl}${image}`
+      ),
+    }));
 
-        res.json({
-            success: true,
-            properties: propertiesWithFullUrls
-        });
-    } catch (error) {
-        // Handle specific error types
-        if (error.message.includes('Invalid')) {
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-        }
-
-        // Handle database errors
-        if (error.code === '22P02') { // Invalid text representation
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid parameter type provided'
-            });
-        }
-
-        if (error.code === '42703') { // Undefined column
-            return res.status(500).json({
-                success: false,
-                message: 'Database schema error. Please contact support.'
-            });
-        }
-
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            message: 'Failed to search properties',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-        });
-    } finally {
-        client.release();
+    res.json({
+      success: true,
+      properties: propertiesWithFullUrls,
+    });
+  } catch (error) {
+    // Handle specific error types
+    if (error.message.includes("Invalid")) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
     }
+
+    // Handle database errors
+    if (error.code === "22P02") {
+      // Invalid text representation
+      return res.status(400).json({
+        success: false,
+        message: "Invalid parameter type provided",
+      });
+    }
+
+    if (error.code === "42703") {
+      // Undefined column
+      return res.status(500).json({
+        success: false,
+        message: "Database schema error. Please contact support.",
+      });
+    }
+
+    // Handle other errors
+    res.status(500).json({
+      success: false,
+      message: "Failed to search properties",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
+  } finally {
+    client.release();
+  }
 };
 
 export const getLocationSuggestions = async (req, res) => {
@@ -803,145 +919,153 @@ export const getLocationSuggestions = async (req, res) => {
       );
 
       // Format the results
-      const locations = rows.map(row => ({
-        area: row.area || '',
-        city: row.city || '',
-        state: row.state || '',
-        country: row.country || 'India'
+      const locations = rows.map((row) => ({
+        area: row.area || "",
+        city: row.city || "",
+        state: row.state || "",
+        country: row.country || "India",
       }));
 
-      res.json({ 
+      res.json({
         success: true,
-        locations 
+        locations,
       });
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Error in getLocationSuggestions:', error);
-    res.status(500).json({ 
+    console.error("Error in getLocationSuggestions:", error);
+    res.status(500).json({
       success: false,
-      locations: [], 
-      error: error.message 
+      locations: [],
+      error: error.message,
     });
   }
 };
 
 export const getLocationTrends = async (req, res) => {
-    try {
-        const { city } = req.params;
-        const { limit = 5 } = req.query;
+  try {
+    const { city } = req.params;
+    const { limit = 5 } = req.query;
 
-        if (!city) {
-            return res.status(400).json({ success: false, message: 'City parameter is required' });
-        }
-
-        // Get location trends from our database
-        const locations = await Property.aggregate([
-            { $match: { 'address.city': { $regex: new RegExp(city, 'i') }, status: 'Active' } },
-            { $group: { 
-                _id: '$address.city', 
-                count: { $sum: 1 },
-                avgPrice: { $avg: '$price' },
-                minPrice: { $min: '$price' },
-                maxPrice: { $max: '$price' }
-            }},
-            { $sort: { count: -1 } },
-            { $limit: Math.min(parseInt(limit), 5) }
-        ]);
-
-        // Analyze the location trends using AI
-        const analysis = await aiService.analyzeLocationTrends(
-            locations,
-            city
-        );
-
-        res.json({
-            success: true,
-            locations,
-            analysis
-        });
-    } catch (error) {
-        console.error('Error getting location trends:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to get location trends',
-            error: error.message
-        });
+    if (!city) {
+      return res
+        .status(400)
+        .json({ success: false, message: "City parameter is required" });
     }
+
+    // Get location trends from our database
+    const locations = await Property.aggregate([
+      {
+        $match: {
+          "address.city": { $regex: new RegExp(city, "i") },
+          status: "Active",
+        },
+      },
+      {
+        $group: {
+          _id: "$address.city",
+          count: { $sum: 1 },
+          avgPrice: { $avg: "$price" },
+          minPrice: { $min: "$price" },
+          maxPrice: { $max: "$price" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: Math.min(parseInt(limit), 5) },
+    ]);
+
+    // Analyze the location trends using AI
+    const analysis = await aiService.analyzeLocationTrends(locations, city);
+
+    res.json({
+      success: true,
+      locations,
+      analysis,
+    });
+  } catch (error) {
+    console.error("Error getting location trends:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get location trends",
+      error: error.message,
+    });
+  }
 };
 
 export const getFeaturedProperties = async (req, res) => {
-    try {
-        const limit = parseInt(req.query.limit) || 6;
-        
-        const properties = await Property.find({ 
-            status: 'Active',
-            isFeatured: true 
-        })
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .select('-__v');
-        
-        res.json({
-            success: true,
-            properties
-        });
-    } catch (error) {
-        console.error('Error fetching featured properties:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch featured properties',
-            error: error.message
-        });
-    }
+  try {
+    const limit = parseInt(req.query.limit) || 6;
+
+    const properties = await Property.find({
+      status: "Active",
+      isFeatured: true,
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select("-__v");
+
+    res.json({
+      success: true,
+      properties,
+    });
+  } catch (error) {
+    console.error("Error fetching featured properties:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch featured properties",
+      error: error.message,
+    });
+  }
 };
 
 export const getPropertiesByCategory = async (req, res) => {
-    try {
-        const { category } = req.params;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-        
-        if (!category) {
-            return res.status(400).json({ success: false, message: 'Category is required' });
-        }
-        
-        // Build filter
-        const filter = { 
-            status: 'Active',
-            type: category
-        };
-        
-        // Execute query with pagination
-        const properties = await Property.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .select('-__v');
-            
-        // Get total count for pagination
-        const total = await Property.countDocuments(filter);
-        
-        res.json({
-            success: true,
-            properties,
-            pagination: {
-                total,
-                page,
-                limit,
-                pages: Math.ceil(total / limit)
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching properties by category:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch properties by category',
-            error: error.message
-        });
+  try {
+    const { category } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    if (!category) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Category is required" });
     }
+
+    // Build filter
+    const filter = {
+      status: "Active",
+      type: category,
+    };
+
+    // Execute query with pagination
+    const properties = await Property.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select("-__v");
+
+    // Get total count for pagination
+    const total = await Property.countDocuments(filter);
+
+    res.json({
+      success: true,
+      properties,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching properties by category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch properties by category",
+      error: error.message,
+    });
+  }
 };
 
 export const searchPropertiesByCoordinates = async (req, res) => {
@@ -950,14 +1074,15 @@ export const searchPropertiesByCoordinates = async (req, res) => {
 
     let lat, lng;
     try {
-      const coords = typeof coordinates === 'string' ? JSON.parse(coordinates) : coordinates;
+      const coords =
+        typeof coordinates === "string" ? JSON.parse(coordinates) : coordinates;
       lat = parseFloat(coords.latitude);
       lng = parseFloat(coords.longitude);
     } catch (error) {
-      console.error('Error parsing coordinates:', error);
+      console.error("Error parsing coordinates:", error);
       return res.status(400).json({
         success: false,
-        message: 'Invalid coordinates format'
+        message: "Invalid coordinates format",
       });
     }
 
@@ -965,7 +1090,7 @@ export const searchPropertiesByCoordinates = async (req, res) => {
     if (isNaN(lat) || isNaN(lng)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid coordinates values'
+        message: "Invalid coordinates values",
       });
     }
 
@@ -978,31 +1103,31 @@ export const searchPropertiesByCoordinates = async (req, res) => {
         $near: {
           $geometry: {
             type: "Point",
-            coordinates: [lng, lat]
+            coordinates: [lng, lat],
           },
-          $maxDistance: radiusInKm * 1000 // Convert km to meters
-        }
-      }
+          $maxDistance: radiusInKm * 1000, // Convert km to meters
+        },
+      },
     }).limit(20);
 
     if (properties.length === 0 && (city || state)) {
       const textQuery = {
-        $or: []
+        $or: [],
       };
 
       if (city) {
         textQuery.$or.push({
-          'address.city': {
-            $regex: new RegExp(city, 'i')
-          }
+          "address.city": {
+            $regex: new RegExp(city, "i"),
+          },
         });
       }
 
       if (state) {
         textQuery.$or.push({
-          'address.state': {
-            $regex: new RegExp(state, 'i')
-          }
+          "address.state": {
+            $regex: new RegExp(state, "i"),
+          },
         });
       }
 
@@ -1012,14 +1137,13 @@ export const searchPropertiesByCoordinates = async (req, res) => {
     res.json({
       success: true,
       properties,
-      count: properties.length
+      count: properties.length,
     });
-
   } catch (error) {
-    console.error('Search properties error:', error);
+    console.error("Search properties error:", error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -1038,17 +1162,17 @@ export const getPropertiesByUser = async (req, res) => {
       res.status(200).json({
         success: true,
         data: {
-          properties
-        }
+          properties,
+        },
       });
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Error in getPropertiesByUser:', error);
+    console.error("Error in getPropertiesByUser:", error);
     res.status(500).json({
       success: false,
-      message: `Failed to fetch user properties: ${error.message}`
+      message: `Failed to fetch user properties: ${error.message}`,
     });
   }
 };
@@ -1060,90 +1184,96 @@ export const getFilterOptions = async (req, res) => {
     try {
       // Get unique property types
       const { rows: types } = await client.query(
-        'SELECT DISTINCT type FROM properties WHERE type IS NOT NULL ORDER BY type'
+        "SELECT DISTINCT type FROM properties WHERE type IS NOT NULL ORDER BY type"
       );
 
       // Get unique listing types (rent/sale)
       const { rows: listingTypes } = await client.query(
-        'SELECT DISTINCT listing_type FROM properties WHERE listing_type IS NOT NULL ORDER BY listing_type'
+        "SELECT DISTINCT listing_type FROM properties WHERE listing_type IS NOT NULL ORDER BY listing_type"
       );
 
       // Get unique PG types
       const { rows: pgTypes } = await client.query(
-        'SELECT DISTINCT pg_type FROM properties WHERE pg_type IS NOT NULL ORDER BY pg_type'
+        "SELECT DISTINCT pg_type FROM properties WHERE pg_type IS NOT NULL ORDER BY pg_type"
       );
 
       // Get unique furnishing types
       const { rows: furnishingTypes } = await client.query(
-        'SELECT DISTINCT furnishing FROM properties WHERE furnishing IS NOT NULL ORDER BY furnishing'
+        "SELECT DISTINCT furnishing FROM properties WHERE furnishing IS NOT NULL ORDER BY furnishing"
       );
 
       // Get unique property conditions
       const { rows: propertyConditions } = await client.query(
-        'SELECT DISTINCT property_condition FROM properties WHERE property_condition IS NOT NULL ORDER BY property_condition'
+        "SELECT DISTINCT property_condition FROM properties WHERE property_condition IS NOT NULL ORDER BY property_condition"
       );
 
       // Get unique property statuses
       const { rows: propertyStatuses } = await client.query(
-        'SELECT DISTINCT property_status FROM properties WHERE property_status IS NOT NULL ORDER BY property_status'
+        "SELECT DISTINCT property_status FROM properties WHERE property_status IS NOT NULL ORDER BY property_status"
       );
 
       // Get all unique amenities from the database
       const { rows: amenitiesResult } = await client.query(
-        'SELECT DISTINCT unnest(amenities) as amenity FROM properties WHERE amenities IS NOT NULL AND array_length(amenities, 1) > 0'
+        "SELECT DISTINCT unnest(amenities) as amenity FROM properties WHERE amenities IS NOT NULL AND array_length(amenities, 1) > 0"
       );
 
       // Get price ranges
-      const { rows: [{ min_price, max_price }] } = await client.query(
-        'SELECT MIN(price) as min_price, MAX(price) as max_price FROM properties WHERE price > 0'
+      const {
+        rows: [{ min_price, max_price }],
+      } = await client.query(
+        "SELECT MIN(price) as min_price, MAX(price) as max_price FROM properties WHERE price > 0"
       );
 
       // Get area ranges
-      const { rows: [{ min_area, max_area }] } = await client.query(
-        'SELECT MIN(sqft) as min_area, MAX(sqft) as max_area FROM properties WHERE sqft > 0'
+      const {
+        rows: [{ min_area, max_area }],
+      } = await client.query(
+        "SELECT MIN(sqft) as min_area, MAX(sqft) as max_area FROM properties WHERE sqft > 0"
       );
 
       res.status(200).json({
         success: true,
         data: {
-          types: types.map(t => t.type),
-          listingTypes: listingTypes.map(lt => lt.listing_type),
-          pgTypes: pgTypes.map(pt => pt.pg_type),
-          furnishingTypes: furnishingTypes.map(ft => ft.furnishing),
-          propertyConditions: propertyConditions.map(pc => pc.property_condition),
-          propertyStatuses: propertyStatuses.map(ps => ps.property_status),
-          amenities: amenitiesResult.map(a => a.amenity).filter(Boolean),
+          types: types.map((t) => t.type),
+          listingTypes: listingTypes.map((lt) => lt.listing_type),
+          pgTypes: pgTypes.map((pt) => pt.pg_type),
+          furnishingTypes: furnishingTypes.map((ft) => ft.furnishing),
+          propertyConditions: propertyConditions.map(
+            (pc) => pc.property_condition
+          ),
+          propertyStatuses: propertyStatuses.map((ps) => ps.property_status),
+          amenities: amenitiesResult.map((a) => a.amenity).filter(Boolean),
           priceRange: {
             min: min_price || 0,
-            max: max_price || 10000000
+            max: max_price || 10000000,
           },
           areaRange: {
             min: min_area || 0,
-            max: max_area || 10000
-          }
-        }
+            max: max_area || 10000,
+          },
+        },
       });
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Error in getFilterOptions:', error);
+    console.error("Error in getFilterOptions:", error);
     res.status(500).json({
       success: false,
-      message: `Failed to fetch filter options: ${error.message}`
+      message: `Failed to fetch filter options: ${error.message}`,
     });
   }
 };
 
 function normalizePropertyData(input, userId) {
   let coordinates = input.coordinates;
-  if (typeof coordinates === 'string') coordinates = JSON.parse(coordinates);
+  if (typeof coordinates === "string") coordinates = JSON.parse(coordinates);
   let address = input.address;
-  if (typeof address === 'string') address = JSON.parse(address);
+  if (typeof address === "string") address = JSON.parse(address);
 
   // Handle price based on listing type
   let price = 0;
-  if (input.listingType === 'sale') {
+  if (input.listingType === "sale") {
     price = input.price ? Number(input.price) : 0;
   } else {
     price = input.price ? Number(input.price) : 0;
@@ -1151,34 +1281,40 @@ function normalizePropertyData(input, userId) {
 
   return {
     id: input.id,
-    title: input.title || '',
-    subtitle: input.subtitle || '',
-    description: input.description || '',
-    slug: input.slug || '',
-    listing_type: input.listingType || 'rent',
-    type: input.type || '',
+    title: input.title || "",
+    subtitle: input.subtitle || "",
+    description: input.description || "",
+    slug: input.slug || "",
+    listing_type: input.listingType || "rent",
+    type: input.type || "",
     price: price,
-    rent_type: input.listingType === 'sale' ? null : (input.rentType || 'monthly'),
-    deposit: input.listingType === 'sale' ? null : (input.deposit ? Number(input.deposit) : 0),
+    rent_type:
+      input.listingType === "sale" ? null : input.rentType || "monthly",
+    deposit:
+      input.listingType === "sale"
+        ? null
+        : input.deposit
+        ? Number(input.deposit)
+        : 0,
     property_age: input.propertyAge ? Number(input.propertyAge) : null,
     property_condition: input.propertyCondition || null,
     property_status: input.propertyStatus || null,
-    location: input.location || '',
+    location: input.location || "",
     region: input.region || null,
     latitude: coordinates?.latitude || 0,
     longitude: coordinates?.longitude || 0,
-    street: address?.street || '',
-    city: address?.city || '',
-    state: address?.state || '',
-    pincode: address?.pincode || '',
-    country: address?.country || 'India',
+    street: address?.street || "",
+    city: address?.city || "",
+    state: address?.state || "",
+    pincode: address?.pincode || "",
+    country: address?.country || "India",
     floor_area: input.floorArea ? Number(input.floorArea) : 0,
     sqft: input.sqft ? Number(input.sqft) : 0,
     floor_no: input.floorNo ? Number(input.floorNo) : null,
     total_floors: input.totalFloors ? Number(input.totalFloors) : null,
     beds: input.beds ? Number(input.beds) : 0,
     baths: input.baths ? Number(input.baths) : 0,
-    furnishing: input.furnishing || 'Unfurnished',
+    furnishing: input.furnishing || "Unfurnished",
     amenities: Array.isArray(input.amenities) ? input.amenities : [],
     balcony: input.balcony === true,
     central_ac: input.centralAc === true,
@@ -1196,13 +1332,17 @@ function normalizePropertyData(input, userId) {
     office_cabins: input.officeCabins ? Number(input.officeCabins) : null,
     meeting_rooms: input.meetingRooms ? Number(input.meetingRooms) : null,
     head_cabins: input.headCabins ? Number(input.headCabins) : null,
-    office_amenities: Array.isArray(input.officeAmenities) ? input.officeAmenities : [],
+    office_amenities: Array.isArray(input.officeAmenities)
+      ? input.officeAmenities
+      : [],
     // New Plot-specific fields
     plot_area: input.plotArea ? Number(input.plotArea) : null,
     nearby_area: input.nearbyArea || null,
     under_committee: input.underCommittee === true,
     passed_building_land: input.passedBuildingLand === true,
-    estimated_rental_income: input.estimatedRentalIncome ? Number(input.estimatedRentalIncome) : null,
+    estimated_rental_income: input.estimatedRentalIncome
+      ? Number(input.estimatedRentalIncome)
+      : null,
     // New Builder Floor/House-specific fields
     builder_floors: input.builderFloors ? Number(input.builderFloors) : null,
     house_area: input.houseArea ? Number(input.houseArea) : null,
@@ -1210,19 +1350,25 @@ function normalizePropertyData(input, userId) {
     house_bathrooms: input.houseBathrooms ? Number(input.houseBathrooms) : null,
     house_balcony: input.houseBalcony ? Number(input.houseBalcony) : null,
     house_parking: input.houseParking ? Number(input.houseParking) : null,
-    house_amenities: Array.isArray(input.houseAmenities) ? input.houseAmenities : [],
+    house_amenities: Array.isArray(input.houseAmenities)
+      ? input.houseAmenities
+      : [],
     house_location: input.houseLocation || null,
     images: Array.isArray(input.images) ? input.images : [],
     videos: Array.isArray(input.videos) ? input.videos : [],
-    status: 'available',
+    status: "available",
     featured: input.featured === true,
     user_id: userId,
     created_by: userId,
-    phone: input.phone || '',
-    dial_code: input.dialCode || '+91',
-    pg_type: input.type === 'pg' ? (input.pg_type || input.pgType) : null,
-    verification_status: input.verification_status || 'unverified',
-    availability: input.availability ? (typeof input.availability === 'string' ? input.availability : JSON.stringify(input.availability)) : null
+    phone: input.phone || "",
+    dial_code: input.dialCode || "+91",
+    pg_type: input.type === "pg" ? input.pg_type || input.pgType : null,
+    verification_status: input.verification_status || "unverified",
+    availability: input.availability
+      ? typeof input.availability === "string"
+        ? input.availability
+        : JSON.stringify(input.availability)
+      : null,
   };
 }
 
@@ -1271,16 +1417,18 @@ export const getPropertyRoomStatus = async (req, res) => {
 
       // Process tenants array
       let tenantNames = [];
-      let rentStatus = 'N/A';
+      let rentStatus = "N/A";
 
       // Filter out null entries from tenants array (rooms with no transactions)
-      const validTenants = room.tenants.filter(t => t.transactionId !== null);
-      
+      const validTenants = room.tenants.filter((t) => t.transactionId !== null);
+
       if (validTenants.length > 0) {
         // Get tenant names
-        tenantNames = validTenants.map(tenant => {
-          const name = `${tenant.firstName || ''} ${tenant.lastName || ''}`.trim();
-          return name || tenant.email || 'Occupied';
+        tenantNames = validTenants.map((tenant) => {
+          const name = `${tenant.firstName || ""} ${
+            tenant.lastName || ""
+          }`.trim();
+          return name || tenant.email || "Occupied";
         });
 
         // Get rent status from the first tenant (most recent transaction)
@@ -1292,19 +1440,19 @@ export const getPropertyRoomStatus = async (req, res) => {
         roomId: room.room_id,
         status: tenantNames,
         rentStatus,
-        description: room.description || '',
+        description: room.description || "",
       });
     }
 
     // Convert grouped to array of floors
     const result = Object.entries(grouped).map(([floor, rooms]) => ({
       floor,
-      rooms
+      rooms,
     }));
 
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error in getPropertyRoomStatus:', error);
+    console.error("Error in getPropertyRoomStatus:", error);
     res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
@@ -1329,23 +1477,23 @@ export const checkDuplicateProperty = async (req, res) => {
         return res.json({
           success: false,
           isDuplicate: true,
-          message: 'A property with the same title and location already exists'
+          message: "A property with the same title and location already exists",
         });
       }
 
       return res.json({
         success: true,
         isDuplicate: false,
-        message: 'No duplicate property found'
+        message: "No duplicate property found",
       });
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Error checking duplicate property:', error);
+    console.error("Error checking duplicate property:", error);
     res.status(500).json({
       success: false,
-      message: 'Error checking for duplicate property'
+      message: "Error checking for duplicate property",
     });
   }
 };
@@ -1354,20 +1502,26 @@ export const updateRoomDescription = async (req, res) => {
   const { roomId } = req.params;
   const { description } = req.body;
   const client = await pool.connect();
-  
+
   try {
     // First verify the room exists and get its details
-    const { rows: [room] } = await client.query(
-      'SELECT r.*, f.property_id FROM rooms r JOIN floors f ON r.floor_id = f.id WHERE r.id = $1',
+    const {
+      rows: [room],
+    } = await client.query(
+      "SELECT r.*, f.property_id FROM rooms r JOIN floors f ON r.floor_id = f.id WHERE r.id = $1",
       [roomId]
     );
 
     if (!room) {
-      return res.status(404).json({ success: false, message: 'Room not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Room not found" });
     }
 
     // Update the room description
-    const { rows: [updatedRoom] } = await client.query(
+    const {
+      rows: [updatedRoom],
+    } = await client.query(
       `UPDATE rooms 
        SET description = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2
@@ -1382,14 +1536,14 @@ export const updateRoomDescription = async (req, res) => {
        WHERE room_id = $2 AND status IN ('active', 'pending')`,
       [description, roomId]
     );
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       data: updatedRoom,
-      message: 'Room description updated successfully'
+      message: "Room description updated successfully",
     });
   } catch (error) {
-    console.error('Error updating room description:', error);
+    console.error("Error updating room description:", error);
     res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
@@ -1400,20 +1554,26 @@ export const updateRoomOccupancy = async (req, res) => {
   const { roomId } = req.params;
   const { increment } = req.body; // true for increment, false for decrement
   const client = await pool.connect();
-  
+
   try {
     // First verify the room exists and get its details
-    const { rows: [room] } = await client.query(
-      'SELECT r.*, f.property_id FROM rooms r JOIN floors f ON r.floor_id = f.id WHERE r.id = $1',
+    const {
+      rows: [room],
+    } = await client.query(
+      "SELECT r.*, f.property_id FROM rooms r JOIN floors f ON r.floor_id = f.id WHERE r.id = $1",
       [roomId]
     );
 
     if (!room) {
-      return res.status(404).json({ success: false, message: 'Room not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Room not found" });
     }
 
     // Update the room occupancy by incrementing or decrementing
-    const { rows: [updatedRoom] } = await client.query(
+    const {
+      rows: [updatedRoom],
+    } = await client.query(
       `UPDATE rooms 
        SET occupied = CASE 
          WHEN $1 = true THEN occupied + 1
@@ -1424,14 +1584,14 @@ export const updateRoomOccupancy = async (req, res) => {
        RETURNING *`,
       [increment, roomId]
     );
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       data: updatedRoom,
-      message: `Room occupancy ${increment ? 'increased' : 'decreased'}`
+      message: `Room occupancy ${increment ? "increased" : "decreased"}`,
     });
   } catch (error) {
-    console.error('Error updating room occupancy:', error);
+    console.error("Error updating room occupancy:", error);
     res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
@@ -1441,7 +1601,13 @@ export const updateRoomOccupancy = async (req, res) => {
 export const getAllPropertiesForAdmin = async (req, res) => {
   try {
     const { type, minPrice, maxPrice, location, status } = req.query;
-    console.log('Admin Properties Query params:', { type, minPrice, maxPrice, location, status });
+    console.log("Admin Properties Query params:", {
+      type,
+      minPrice,
+      maxPrice,
+      location,
+      status,
+    });
 
     // First check if the tables exist
     const tableCheck = await pool.query(`
@@ -1452,7 +1618,7 @@ export const getAllPropertiesForAdmin = async (req, res) => {
     `);
 
     if (!tableCheck.rows[0].exists) {
-      throw new Error('Properties table does not exist');
+      throw new Error("Properties table does not exist");
     }
 
     let query = `
@@ -1539,17 +1705,17 @@ export const getAllPropertiesForAdmin = async (req, res) => {
 
     query += ` ORDER BY created_at DESC`;
 
-    console.log('Executing query:', query);
-    console.log('With params:', queryParams);
+    console.log("Executing query:", query);
+    console.log("With params:", queryParams);
 
     const result = await pool.query(query, queryParams);
-    console.log('Query result:', result.rows.length, 'properties found');
+    console.log("Query result:", result.rows.length, "properties found");
 
     const properties = result.rows.map(normalizePropertyData);
 
     res.json({
       success: true,
-      data: properties
+      data: properties,
     });
   } catch (error) {
     console.error("Error in getAllPropertiesForAdmin:", error);
@@ -1557,7 +1723,7 @@ export const getAllPropertiesForAdmin = async (req, res) => {
       success: false,
       message: "Error fetching properties",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
@@ -1565,37 +1731,39 @@ export const getAllPropertiesForAdmin = async (req, res) => {
 export const mapPropertyToUser = async (req, res) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     const { property_id, user_id } = req.body;
 
     // Check if property exists
-    const { rows: [property] } = await client.query(
-      'SELECT * FROM properties WHERE id = $1',
-      [property_id]
-    );
+    const {
+      rows: [property],
+    } = await client.query("SELECT * FROM properties WHERE id = $1", [
+      property_id,
+    ]);
 
     if (!property) {
       return res.status(404).json({
         success: false,
-        message: 'Property not found'
+        message: "Property not found",
       });
     }
 
     // Check if user exists
-    const { rows: [user] } = await client.query(
-      'SELECT * FROM users WHERE id = $1',
-      [user_id]
-    );
+    const {
+      rows: [user],
+    } = await client.query("SELECT * FROM users WHERE id = $1", [user_id]);
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     // Update property with user_id
-    const { rows: [updatedProperty] } = await client.query(
+    const {
+      rows: [updatedProperty],
+    } = await client.query(
       `UPDATE properties 
        SET user_id = $1, 
            updated_at = CURRENT_TIMESTAMP 
@@ -1604,18 +1772,18 @@ export const mapPropertyToUser = async (req, res) => {
       [user_id, property_id]
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     res.status(200).json({
       success: true,
-      message: 'Property mapped to user successfully',
-      property: updatedProperty
+      message: "Property mapped to user successfully",
+      property: updatedProperty,
     });
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error mapping property to user:', error);
+    await client.query("ROLLBACK");
+    console.error("Error mapping property to user:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to map property to user'
+      message: error.message || "Failed to map property to user",
     });
   } finally {
     client.release();

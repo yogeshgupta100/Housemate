@@ -16,17 +16,18 @@ import Appointments from "./pages/Appointments";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
 import PropertyDetailsPage from "./pages/PropertyDetailsPage";
-import AvailabilityRequests from './components/AvailabilityRequests';
+import AvailabilityRequests from "./components/AvailabilityRequests";
 import AvailabilityRequestDetails from "./components/AvailabilityRequestDetails";
+import ActiveTransactions from "./components/ActiveTransactions";
 
-export const backendurl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+export const backendurl =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 }
+  exit: { opacity: 0, y: -20 },
 };
-
 
 const App = () => {
   return (
@@ -57,8 +58,18 @@ const App = () => {
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/users/:userId" element={<UserDetails />} />
-                <Route path="/availability-requests" element={<AvailabilityRequests />} />
-                <Route path="/availability-requests/:id" element={<AvailabilityRequestDetails />} />
+                <Route
+                  path="/availability-requests"
+                  element={<AvailabilityRequests />}
+                />
+                <Route
+                  path="/availability-requests/:id"
+                  element={<AvailabilityRequestDetails />}
+                />
+                <Route
+                  path="/active-transactions"
+                  element={<ActiveTransactions />}
+                />
               </Route>
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -66,13 +77,13 @@ const App = () => {
           </motion.div>
         </AnimatePresence>
 
-        <Toaster 
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 3000,
             style: {
-              background: '#333',
-              color: '#fff',
+              background: "#333",
+              color: "#fff",
             },
           }}
         />

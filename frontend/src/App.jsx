@@ -36,6 +36,7 @@ import RoomAvailabilityRequestsPage from "./pages/admin/RoomAvailabilityRequests
 import SceneViewer from "./pages/SceneViewer";
 import AuthCallback from "./pages/AuthCallback";
 import GoogleOAuthProviderWrapper from "./components/GoogleOAuthProvider";
+import PaymentPage from "./pages/PaymentPage";
 
 export const Backendurl =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -89,6 +90,14 @@ const AppContent = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/ai-property-hub" element={<AIPropertyHub />} />
         <Route path="/features" element={<FeaturesDetail />} />
+        <Route
+          path="/payment/:transactionId"
+          element={
+            <ProtectedRoute>
+              <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/customer-panel/*" element={<CustomerPanel />} />
 

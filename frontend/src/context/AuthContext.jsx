@@ -12,38 +12,37 @@ export const AuthProvider = ({ children }) => {
 
   const setTokenWithExpiry = (token) => {
     if (!token) {
-      console.error('No token provided to setTokenWithExpiry');
+      console.error("No token provided to setTokenWithExpiry");
       return;
     }
 
     try {
-      const expiresIn = 24 * 60 * 60 * 1000; 
+      const expiresIn = 24 * 60 * 60 * 1000;
       const expiryTime = new Date().getTime() + expiresIn;
-      
+
       localStorage.setItem("token", token);
       localStorage.setItem("tokenExpiry", expiryTime.toString());
-      
+
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      console.log('Token set successfully:', token);
+      console.log("Token set successfully:", token);
     } catch (error) {
-      console.error('Error setting token:', error);
+      console.error("Error setting token:", error);
     }
   };
 
   const isTokenExpired = () => {
     const token = localStorage.getItem("token");
     const expiryTime = localStorage.getItem("tokenExpiry");
-    
+
     if (!token || !expiryTime) return true;
-    
+
     const now = new Date().getTime();
     const isExpired = now > parseInt(expiryTime);
-    console.log('Token expiry check:', { now, expiryTime, isExpired });
     return isExpired;
   };
 
   const clearToken = () => {
-    console.log('Clearing token');
+    console.log("Clearing token");
     localStorage.removeItem("token");
     localStorage.removeItem("tokenExpiry");
     delete axios.defaults.headers.common["Authorization"];
@@ -53,11 +52,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.get(`${Backendurl}/api/auth/me`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (response.data) {
-        setUser(response.data);
+      if (response.data.success) {
+        setUser(response.data.data); // Fix: use response.data.data instead of response.data
         setIsLoggedIn(true);
         return true;
       }
@@ -72,13 +71,11 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         const token = localStorage.getItem("token");
-        console.log('Initializing auth with token:', token);
-        
+
         if (token && !isTokenExpired()) {
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           await fetchUserData(token);
         } else {
-          console.log('No valid token found or token expired');
           clearToken();
           setUser(null);
           setIsLoggedIn(false);
@@ -100,58 +97,58 @@ export const AuthProvider = ({ children }) => {
     try {
       if (token) {
         // Google authentication - token is already provided
-        console.log('Google login with token:', token);
+        console.log("Google login with token:", token);
         setTokenWithExpiry(token);
         const userDataFetched = await fetchUserData(token);
-        
+
         if (userDataFetched) {
           return { success: true };
         } else {
           clearToken();
           return {
             success: false,
-            message: "Failed to fetch user data"
+            message: "Failed to fetch user data",
           };
         }
       }
 
       // Regular email/password authentication
-      console.log('Login attempt with:', { identifier });
+      console.log("Login attempt with:", { identifier });
       const response = await axios.post(`${Backendurl}/api/auth/login`, {
         identifier,
-        password
+        password,
       });
 
-      console.log('Login response:', response.data);
+      console.log("Login response:", response.data);
 
       if (response.data.success) {
         const { token: responseToken, user } = response.data.data;
-        console.log('Login successful, token received:', responseToken);
-        
+        console.log("Login successful, token received:", responseToken);
+
         setTokenWithExpiry(responseToken);
         const userDataFetched = await fetchUserData(responseToken);
-        
+
         if (userDataFetched) {
           return { success: true };
         } else {
           clearToken();
           return {
             success: false,
-            message: "Failed to fetch user data"
+            message: "Failed to fetch user data",
           };
         }
       } else {
-        console.log('Login failed:', response.data.message);
+        console.log("Login failed:", response.data.message);
         return {
           success: false,
-          message: response.data.message || "Login failed"
+          message: response.data.message || "Login failed",
         };
       }
     } catch (error) {
       console.error("Login error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || "Login failed"
+        message: error.response?.data?.message || "Login failed",
       };
     }
   };
@@ -168,11 +165,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ isLoggedIn, user, loading, login, logout, updateUser }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
-
