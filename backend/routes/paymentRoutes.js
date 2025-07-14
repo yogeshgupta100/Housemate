@@ -21,6 +21,7 @@ router.get("/payment/:paymentId", paymentController.getPaymentDetails);
 
 // Admin routes
 router.post("/cash-payment", paymentController.addCashPayment);
+router.post("/transfer-to-owner", paymentController.transferToOwner);
 router.get("/all-payments", paymentController.getAllPayments);
 router.post("/refund", paymentController.refundPayment);
 

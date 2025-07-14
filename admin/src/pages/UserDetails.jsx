@@ -72,7 +72,7 @@ const UserDetails = () => {
   }
 
   return (
-    <div className="min-h-screen pt-32 px-4 bg-gray-50">
+    <div className="min-h-screen pt-24 px-4 bg-gray-50 pb-36 md:pb-8">
       <div className="max-w-7xl mx-auto">
         <button
           onClick={() => navigate("/users")}
@@ -187,14 +187,14 @@ const UserDetails = () => {
                     <p className="text-sm text-gray-500">Verification Status</p>
                     <span
                       className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.verification_status === "verified"
+                        user.is_verified === true
                           ? "bg-green-100 text-green-800"
-                          : user.verification_status === "rejected"
+                          : user.is_verified === false
                           ? "bg-red-100 text-red-800"
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {user.verification_status || "Pending"}
+                      {user.is_verified ? "Verified" : "Pending"}
                     </span>
                   </div>
                   <div>

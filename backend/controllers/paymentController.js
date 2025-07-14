@@ -196,8 +196,10 @@ export const addCashPayment = async (req, res) => {
     const { transactionId, amount, notes } = req.body;
     const adminId = req.user.id;
 
+    console.log("admin", req.user);
+
     // Check if user is admin
-    if (req.user.role_id !== 1) {
+    if (req.user.role_id !== 4) {
       // Assuming role_id 1 is admin
       return res.status(403).json({
         success: false,
@@ -289,6 +291,112 @@ export const addCashPayment = async (req, res) => {
   }
 };
 
+// Admin: Transfer owner's portion after successful payment
+export const transferToOwner = async (req, res) => {
+  try {
+    const { paymentId, amount } = req.body;
+    const adminId = req.user.id;
+
+    // Check if user is admin
+    if (req.user.role_id !== 4) {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required",
+      });
+    }
+
+    if (!paymentId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID and amount are required",
+      });
+    }
+
+    // Get payment details with split information
+    const payment = await PaymentModel.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (payment.payment_status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Payment must be completed before transferring to owner",
+      });
+    }
+
+    // Get owner's bank details from split_details
+    const splitDetails = payment.split_details;
+    if (!splitDetails || !splitDetails.owner_bank_details) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner bank details not found in payment",
+      });
+    }
+
+    const ownerBankDetails = splitDetails.owner_bank_details;
+
+    // Create a payout to the owner's bank account
+    const payoutData = {
+      account_number: ownerBankDetails.account_number,
+      fund_account: {
+        account_type: "bank_account",
+        bank_account: {
+          name: ownerBankDetails.account_holder_name,
+          ifsc: ownerBankDetails.ifsc_code,
+          account_number: ownerBankDetails.account_number,
+        },
+        contact: {
+          name: ownerBankDetails.account_holder_name,
+          email: ownerBankDetails.email || "owner@housemate.com",
+          contact: ownerBankDetails.phone || "+919999999999",
+        },
+      },
+      amount: Math.round(amount * 100), // Convert to paise
+      currency: "INR",
+      mode: "IMPS",
+      purpose: "payout",
+      queue_if_low_balance: true,
+      reference_id: `owner_payout_${paymentId}_${Date.now()}`,
+      narration: `Rent payment for transaction ${payment.transaction_id}`,
+    };
+
+    // Create payout using Razorpay
+    const payout = await razorpayService.createPayout(payoutData);
+
+    // Update payment record with payout information
+    await PaymentModel.updateStatus(paymentId, "completed", {
+      owner_payout_id: payout.id,
+      owner_payout_amount: amount,
+      owner_payout_status: payout.status,
+      payment_notes: `${payment.payment_notes}. Owner payout initiated: ${payout.id}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Owner payout initiated successfully",
+      data: {
+        payout: payout,
+        ownerBankDetails: {
+          account_holder_name: ownerBankDetails.account_holder_name,
+          bank_name: ownerBankDetails.bank_name,
+          account_number: ownerBankDetails.account_number,
+          ifsc_code: ownerBankDetails.ifsc_code,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Transfer to owner error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to transfer to owner",
+    });
+  }
+};
+
 // Get payment history for user
 export const getUserPayments = async (req, res) => {
   try {
@@ -325,7 +433,7 @@ export const getUserPayments = async (req, res) => {
 export const getAllPayments = async (req, res) => {
   try {
     // Check if user is admin
-    if (req.user.role_id !== 1) {
+    if (req.user.role_id !== 4) {
       return res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -389,7 +497,7 @@ export const getPaymentDetails = async (req, res) => {
     }
 
     // Check if user has access to this payment
-    if (payment.user_id !== userId && req.user.role_id !== 1) {
+    if (payment.user_id !== userId && req.user.role_id !== 4) {
       return res.status(403).json({
         success: false,
         message: "Access denied",
@@ -452,7 +560,7 @@ export const refundPayment = async (req, res) => {
     const { paymentId, amount, reason } = req.body;
 
     // Check if user is admin
-    if (req.user.role_id !== 1) {
+    if (req.user.role_id !== 4) {
       return res.status(403).json({
         success: false,
         message: "Admin access required",

@@ -26,6 +26,7 @@ const PaymentManagement = () => {
   });
   const [showCashPaymentModal, setShowCashPaymentModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [cashPaymentData, setCashPaymentData] = useState({
     transactionId: "",
@@ -35,6 +36,9 @@ const PaymentManagement = () => {
   const [refundData, setRefundData] = useState({
     amount: "",
     reason: "",
+  });
+  const [transferData, setTransferData] = useState({
+    amount: "",
   });
 
   useEffect(() => {
@@ -141,6 +145,39 @@ const PaymentManagement = () => {
     } catch (error) {
       console.error("Refund payment error:", error);
       toast.error(error.message || "Failed to refund payment");
+    }
+  };
+
+  const handleTransferToOwner = async () => {
+    try {
+      const response = await fetch(
+        `${Backendurl}/api/payments/transfer-to-owner`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            paymentId: selectedPayment.id,
+            amount: transferData.amount,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Transfer to owner initiated successfully");
+        setShowTransferModal(false);
+        setTransferData({ amount: "" });
+        setSelectedPayment(null);
+        fetchPayments();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Transfer to owner error:", error);
+      toast.error(error.message || "Failed to transfer to owner");
     }
   };
 
@@ -428,18 +465,38 @@ const PaymentManagement = () => {
                       {formatDate(payment.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {payment.payment_method === "razorpay" &&
-                        payment.payment_status === "completed" && (
-                          <button
-                            onClick={() => {
-                              setSelectedPayment(payment);
-                              setShowRefundModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Refund
-                          </button>
-                        )}
+                      <div className="flex space-x-2">
+                        {payment.payment_status === "completed" &&
+                          payment.payment_method === "razorpay" && (
+                            <button
+                              onClick={() => {
+                                setSelectedPayment(payment);
+                                setTransferData({
+                                  amount:
+                                    payment.split_details?.base_amount ||
+                                    payment.amount * 0.98,
+                                });
+                                setShowTransferModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                              Transfer to Owner
+                            </button>
+                          )}
+                        {payment.payment_method === "razorpay" &&
+                          payment.payment_status === "completed" && (
+                            <button
+                              onClick={() => {
+                                setSelectedPayment(payment);
+                                setRefundData({ amount: "", reason: "" });
+                                setShowRefundModal(true);
+                              }}
+                              className="text-red-600 hover:text-red-800 text-sm"
+                            >
+                              Refund
+                            </button>
+                          )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -581,6 +638,66 @@ const PaymentManagement = () => {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Process Refund
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTransferModal && selectedPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Transfer to Owner</h3>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Payment ID: {selectedPayment.id}
+              </p>
+              <p className="text-sm text-gray-600">
+                Total Amount: {formatCurrency(selectedPayment.amount)}
+              </p>
+              {selectedPayment.split_details && (
+                <div className="mt-2 p-2 bg-blue-50 rounded">
+                  <p className="text-sm text-blue-800">
+                    Base Amount:{" "}
+                    {formatCurrency(selectedPayment.split_details.base_amount)}
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    Commission:{" "}
+                    {formatCurrency(
+                      selectedPayment.split_details.commission_amount
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Transfer Amount
+                </label>
+                <input
+                  type="number"
+                  value={transferData.amount}
+                  onChange={(e) =>
+                    setTransferData({ ...transferData, amount: e.target.value })
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  placeholder="Amount to transfer to owner"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowTransferModal(false)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTransferToOwner}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Transfer to Owner
               </button>
             </div>
           </div>

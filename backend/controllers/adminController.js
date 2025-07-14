@@ -4,22 +4,22 @@ import Appointment from "../models/appointmentModel.js";
 import transporter from "../config/nodemailer.js";
 import { getEmailTemplate } from "../email.js";
 import {
-    getAllUsers,
-    getUserById,
-    updateUser,
-    deleteUser,
-    getAllProperties,
-    getPropertyById,
-    updateProperty,
-    deleteProperty,
-    // getAllAppointments,
-    // getAppointmentById,
-    // updateAppointment,
-    // deleteAppointment,
-    getDashboardStats
-} from '../services/adminService.js';
-import catchAsync from '../utils/catchAsync.js';
-import pool from '../config/postgres.js';
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  getAllProperties,
+  getPropertyById,
+  updateProperty,
+  deleteProperty,
+  // getAllAppointments,
+  // getAppointmentById,
+  // updateAppointment,
+  // deleteAppointment,
+  getDashboardStats,
+} from "../services/adminService.js";
+import catchAsync from "../utils/catchAsync.js";
+import pool from "../config/postgres.js";
 
 const formatRecentProperties = (properties) => {
   return properties.map((property) => ({
@@ -43,21 +43,31 @@ const formatRecentProperties = (properties) => {
 export const getAdminStats = async (req, res) => {
   try {
     // Get total properties
-    const { rows: [{ total_properties }] } = await pool.query('SELECT COUNT(*) as total_properties FROM properties');
-    
+    const {
+      rows: [{ total_properties }],
+    } = await pool.query("SELECT COUNT(*) as total_properties FROM properties");
+
     // Get active listings
-    const { rows: [{ active_listings }] } = await pool.query("SELECT COUNT(*) as active_listings FROM properties WHERE status = 'active'");
-    
+    const {
+      rows: [{ active_listings }],
+    } = await pool.query(
+      "SELECT COUNT(*) as active_listings FROM properties WHERE status = 'active'"
+    );
+
     // Get total views from stats table
-    const { rows: [{ total_views }] } = await pool.query(`
+    const {
+      rows: [{ total_views }],
+    } = await pool.query(`
       SELECT COUNT(*) as total_views 
       FROM stats 
       WHERE endpoint LIKE '/api/properties/%' 
       AND method = 'GET'
     `);
-    
+
     // Get pending appointments
-    const { rows: [{ pending_appointments }] } = await pool.query(`
+    const {
+      rows: [{ pending_appointments }],
+    } = await pool.query(`
       SELECT COUNT(*) as pending_appointments 
       FROM appointments 
       WHERE status = 'pending'
@@ -78,7 +88,8 @@ export const getAdminStats = async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { rows: viewsData } = await pool.query(`
+    const { rows: viewsData } = await pool.query(
+      `
       SELECT 
         DATE(timestamp) as date,
         COUNT(*) as count
@@ -88,29 +99,35 @@ export const getAdminStats = async (req, res) => {
         AND timestamp >= $1
       GROUP BY DATE(timestamp)
       ORDER BY date ASC
-    `, [thirtyDaysAgo]);
+    `,
+      [thirtyDaysAgo]
+    );
 
     // Format views data for chart
     const chartData = {
       labels: [],
-      datasets: [{
-        label: 'Property Views',
-        data: [],
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.4,
-        fill: true
-      }]
+      datasets: [
+        {
+          label: "Property Views",
+          data: [],
+          borderColor: "rgb(75, 192, 192)",
+          backgroundColor: "rgba(75, 192, 192, 0.2)",
+          tension: 0.4,
+          fill: true,
+        },
+      ],
     };
 
     // Generate dates for last 30 days
     for (let i = 30; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = date.toISOString().split("T")[0];
       chartData.labels.push(dateString);
 
-      const dayData = viewsData.find(d => d.date.toISOString().split('T')[0] === dateString);
+      const dayData = viewsData.find(
+        (d) => d.date.toISOString().split("T")[0] === dateString
+      );
       chartData.datasets[0].data.push(dayData ? parseInt(dayData.count) : 0);
     }
 
@@ -122,15 +139,15 @@ export const getAdminStats = async (req, res) => {
         totalViews: parseInt(total_views),
         pendingAppointments: parseInt(pending_appointments),
         recentActivity,
-        viewsData: chartData
-      }
+        viewsData: chartData,
+      },
     });
   } catch (error) {
     console.error("Admin stats error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching admin statistics",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -295,222 +312,238 @@ export const updateAppointmentStatus = async (req, res) => {
 };
 
 export const getAdminDashboard = async (req, res) => {
-    try {
-        const dashboardData = await getDashboardStats();
-        
-        res.json({
-            success: true,
-            data: dashboardData
-        });
-    } catch (error) {
-        console.error('Error fetching admin dashboard:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch dashboard data',
-            error: error.message
-        });
-    }
+  try {
+    const dashboardData = await getDashboardStats();
+
+    res.json({
+      success: true,
+      data: dashboardData,
+    });
+  } catch (error) {
+    console.error("Error fetching admin dashboard:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch dashboard data",
+      error: error.message,
+    });
+  }
 };
 
 export const getPropertyAnalytics = async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
-        
-        const analytics = await getDashboardStats();
-        
-        res.json({
-            success: true,
-            data: analytics
-        });
-    } catch (error) {
-        console.error('Error fetching property analytics:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch property analytics',
-            error: error.message
-        });
-    }
+  try {
+    const { startDate, endDate } = req.query;
+
+    const analytics = await getDashboardStats();
+
+    res.json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching property analytics:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch property analytics",
+      error: error.message,
+    });
+  }
 };
 
 export const getUserAnalytics = async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
-        
-        const analytics = await getDashboardStats();
-        
-        res.json({
-            success: true,
-            data: analytics
-        });
-    } catch (error) {
-        console.error('Error fetching user analytics:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch user analytics',
-            error: error.message
-        });
-    }
+  try {
+    const { startDate, endDate } = req.query;
+
+    const analytics = await getDashboardStats();
+
+    res.json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching user analytics:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user analytics",
+      error: error.message,
+    });
+  }
 };
 
 export const getRevenueAnalytics = async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
-        
-        const analytics = await getDashboardStats();
-        
-        res.json({
-            success: true,
-            data: analytics
-        });
-    } catch (error) {
-        console.error('Error fetching revenue analytics:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch revenue analytics',
-            error: error.message
-        });
-    }
+  try {
+    const { startDate, endDate } = req.query;
+
+    const analytics = await getDashboardStats();
+
+    res.json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching revenue analytics:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch revenue analytics",
+      error: error.message,
+    });
+  }
 };
 
 export const getSystemHealth = async (req, res) => {
-    try {
-        const healthData = await getDashboardStats();
-        
-        res.json({
-            success: true,
-            data: healthData
-        });
-    } catch (error) {
-        console.error('Error fetching system health:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch system health',
-            error: error.message
-        });
-    }
+  try {
+    const healthData = await getDashboardStats();
+
+    res.json({
+      success: true,
+      data: healthData,
+    });
+  } catch (error) {
+    console.error("Error fetching system health:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch system health",
+      error: error.message,
+    });
+  }
 };
 
 export const getUsers = catchAsync(async (req, res) => {
-    const users = await getAllUsers(req.query);
-    res.json({
-        success: true,
-        data: users
-    });
+  const users = await getAllUsers(req.query);
+  res.json({
+    success: true,
+    data: users,
+  });
 });
 
 export const getUser = catchAsync(async (req, res) => {
-    const user = await getUserById(req.params.id);
-    res.json({
-        success: true,
-        data: user
-    });
+  const user = await getUserById(req.params.id);
+  console.log(user);
+  res.json({
+    success: true,
+    data: user,
+  });
 });
 
 export const updateUserDetails = catchAsync(async (req, res) => {
-    const user = await updateUser(req.params.id, req.body);
-    res.json({
-        success: true,
-        message: 'User updated successfully',
-        data: user
-    });
+  const user = await updateUser(req.params.id, req.body);
+  res.json({
+    success: true,
+    message: "User updated successfully",
+    data: user,
+  });
 });
 
 export const removeUser = catchAsync(async (req, res) => {
-    await deleteUser(req.params.id);
-    res.json({
-        success: true,
-        message: 'User deleted successfully'
-    });
+  await deleteUser(req.params.id);
+  res.json({
+    success: true,
+    message: "User deleted successfully",
+  });
 });
 
 export const getProperties = catchAsync(async (req, res) => {
-    const properties = await getAllProperties(req.query);
-    res.json({
-        success: true,
-        data: properties
-    });
+  const properties = await getAllProperties(req.query);
+  res.json({
+    success: true,
+    data: properties,
+  });
 });
 
 export const getProperty = catchAsync(async (req, res) => {
-    const property = await getPropertyById(req.params.id);
-    res.json({
-        success: true,
-        data: property
-    });
+  const property = await getPropertyById(req.params.id);
+  res.json({
+    success: true,
+    data: property,
+  });
 });
 
 export const updatePropertyDetails = catchAsync(async (req, res) => {
-    const property = await updateProperty(req.params.id, req.body);
-    res.json({
-        success: true,
-        message: 'Property updated successfully',
-        data: property
-    });
+  const property = await updateProperty(req.params.id, req.body);
+  res.json({
+    success: true,
+    message: "Property updated successfully",
+    data: property,
+  });
 });
 
 export const removeProperty = catchAsync(async (req, res) => {
-    await deleteProperty(req.params.id);
-    res.json({
-        success: true,
-        message: 'Property deleted successfully'
-    });
+  await deleteProperty(req.params.id);
+  res.json({
+    success: true,
+    message: "Property deleted successfully",
+  });
 });
 
 export const getAppointments = catchAsync(async (req, res) => {
-    const appointments = await getAllAppointments(req.query);
-    res.json({
-        success: true,
-        data: appointments
-    });
+  const appointments = await getAllAppointments(req.query);
+  res.json({
+    success: true,
+    data: appointments,
+  });
 });
 
 export const getAppointment = catchAsync(async (req, res) => {
-    const appointment = await getAppointmentById(req.params.id);
-    res.json({
-        success: true,
-        data: appointment
-    });
+  const appointment = await getAppointmentById(req.params.id);
+  res.json({
+    success: true,
+    data: appointment,
+  });
 });
 
 export const updateAppointmentDetails = catchAsync(async (req, res) => {
-    const appointment = await updateAppointment(req.params.id, req.body);
-    res.json({
-        success: true,
-        message: 'Appointment updated successfully',
-        data: appointment
-    });
+  const appointment = await updateAppointment(req.params.id, req.body);
+  res.json({
+    success: true,
+    message: "Appointment updated successfully",
+    data: appointment,
+  });
 });
 
 export const removeAppointment = catchAsync(async (req, res) => {
-    await deleteAppointment(req.params.id);
-    res.json({
-        success: true,
-        message: 'Appointment deleted successfully'
-    });
+  await deleteAppointment(req.params.id);
+  res.json({
+    success: true,
+    message: "Appointment deleted successfully",
+  });
 });
 
 export const getStats = catchAsync(async (req, res) => {
-    const stats = await getDashboardStats();
-    res.json({
-        success: true,
-        data: stats
-    });
+  const stats = await getDashboardStats();
+  res.json({
+    success: true,
+    data: stats,
+  });
 });
 
 export const verifyUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const user = await import('../services/userService.js').then(m => m.default.updateUser(userId, { verified: true }));
+    let updateObj = {};
+    if (typeof req.body.is_verified === "boolean") {
+      updateObj.verification_status = req.body.is_verified
+        ? "verified"
+        : "pending";
+      updateObj.is_verified = req.body.is_verified;
+    } else if (typeof req.body.verification_status === "string") {
+      updateObj.verification_status = req.body.verification_status;
+      updateObj.is_verified = req.body.verification_status === "verified";
+    } else {
+      updateObj.verification_status = "verified";
+      updateObj.is_verified = true;
+    }
+    const user = await import("../services/userService.js").then((m) =>
+      m.default.updateUser(userId, updateObj)
+    );
     res.status(200).json({
       success: true,
-      message: 'User verified successfully',
-      data: user
+      message: "User verification status updated successfully",
+      data: user,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to verify user',
-      error: error.message
+      message: "Failed to update user verification status",
+      error: error.message,
     });
   }
 };

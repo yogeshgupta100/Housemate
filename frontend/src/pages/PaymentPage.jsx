@@ -39,6 +39,15 @@ const PaymentPage = () => {
               title: location.state.propertyTitle,
             },
             room: location.state.roomDetails,
+            // Use calculated amounts from backend if available
+            calculatedAmounts: {
+              amount: location.state.amount,
+              baseAmount: location.state.baseAmount,
+              adminCommission: location.state.adminCommission,
+              razorpayFee: location.state.razorpayFee,
+              subtotalWithFees: location.state.subtotalWithFees,
+              gst: location.state.gst,
+            },
           });
           setLoading(false);
           return;
@@ -117,7 +126,20 @@ const PaymentPage = () => {
     );
   }
 
-  const totalAmount = transaction.rent_amount + transaction.deposit_amount;
+  // Calculate fees and total - use backend calculations if available, otherwise calculate in frontend
+  const baseAmount =
+    transaction.calculatedAmounts?.baseAmount ||
+    Number(transaction.rent_amount) + Number(transaction.deposit_amount);
+  const adminCommission =
+    transaction.calculatedAmounts?.adminCommission || baseAmount * 0.02;
+  const razorpayFee =
+    transaction.calculatedAmounts?.razorpayFee || baseAmount * 0.025;
+  const subtotalWithFees =
+    transaction.calculatedAmounts?.subtotalWithFees ||
+    baseAmount + adminCommission + razorpayFee;
+  const gst = transaction.calculatedAmounts?.gst || subtotalWithFees * 0.18;
+  const finalTotal =
+    transaction.calculatedAmounts?.amount || subtotalWithFees + gst;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -142,7 +164,7 @@ const PaymentPage = () => {
           <div className="lg:col-span-1">
             <PaymentComponent
               transactionId={transaction.id}
-              amount={totalAmount}
+              amount={finalTotal}
               propertyTitle={transaction.property?.title}
               onPaymentSuccess={handlePaymentSuccess}
               onPaymentCancel={handlePaymentCancel}
@@ -181,20 +203,54 @@ const PaymentPage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Monthly Rent:</span>
                   <span className="font-medium">
-                    ₹{transaction.rent_amount?.toLocaleString()}
+                    ₹{Number(transaction.rent_amount)?.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Security Deposit:</span>
                   <span className="font-medium">
-                    ₹{transaction.deposit_amount?.toLocaleString()}
+                    ₹{Number(transaction.deposit_amount)?.toLocaleString()}
+                  </span>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">
+                      ₹{baseAmount?.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Admin Commission (2%):</span>
+                  <span className="text-gray-500">
+                    ₹{adminCommission?.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Processing Fee (2.5%):</span>
+                  <span className="text-gray-500">
+                    ₹{razorpayFee?.toLocaleString()}
+                  </span>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal with Fees:</span>
+                    <span className="font-medium">
+                      ₹{subtotalWithFees?.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">GST (18%):</span>
+                  <span className="text-gray-500">
+                    ₹{gst?.toLocaleString()}
                   </span>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total Amount:</span>
                     <span className="text-blue-600">
-                      ₹{totalAmount?.toLocaleString()}
+                      ₹{finalTotal?.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -208,9 +264,9 @@ const PaymentPage = () => {
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Payment is processed securely through Razorpay</li>
                   <li>• Rent will be transferred to the property owner</li>
-                  <li>
-                    • A small commission fee applies for platform services
-                  </li>
+                  <li>• 2% admin commission applies for platform services</li>
+                  <li>• 2.5% processing fee charged by Razorpay</li>
+                  <li>• 18% GST applies on the total amount</li>
                   <li>
                     • You'll receive confirmation email after successful payment
                   </li>

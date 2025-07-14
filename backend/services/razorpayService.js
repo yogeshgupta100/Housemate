@@ -15,6 +15,7 @@ class RazorpayService {
     amount,
     baseAmount,
     commissionAmount,
+    ownerBankDetails,
     currency = "INR",
     receipt = null
   ) {
@@ -27,19 +28,10 @@ class RazorpayService {
           source: "housemate_platform",
           base_amount: baseAmount,
           commission_amount: commissionAmount,
+          owner_bank_details: JSON.stringify(ownerBankDetails),
         },
-        // Split payment configuration
-        transfers: [
-          {
-            account: process.env.ADMIN_RAZORPAY_ACCOUNT_ID, // Admin's Razorpay account
-            amount: Math.round(commissionAmount * 100),
-            currency: currency,
-            notes: {
-              type: "commission",
-              description: "Platform commission",
-            },
-          },
-        ],
+        // For now, we'll collect the full amount to admin account
+        // and handle the split manually after payment
       };
 
       const order = await razorpay.orders.create(options);
@@ -115,7 +107,7 @@ class RazorpayService {
     const client = await pool.connect();
     try {
       const { rows } = await client.query(
-        `SELECT u.bank_details, u.first_name, u.last_name, u.email
+        `SELECT u.bank_details, u.first_name, u.last_name, u.email, u.phone
          FROM properties p
          JOIN users u ON p.user_id = u.id
          WHERE p.id = $1`,
@@ -137,14 +129,23 @@ class RazorpayService {
         throw new Error(`Invalid bank details: ${validation.error}`);
       }
 
-      return owner.bank_details;
+      // Add owner's contact information to bank details
+      const enhancedBankDetails = {
+        ...owner.bank_details,
+        email: owner.email,
+        phone: owner.phone,
+        first_name: owner.first_name,
+        last_name: owner.last_name,
+      };
+
+      return enhancedBankDetails;
     } finally {
       client.release();
     }
   }
 
   // Calculate commission amount (configurable percentage)
-  calculateCommission(baseAmount, commissionPercentage = 5) {
+  calculateCommission(baseAmount, commissionPercentage = 2) {
     return (baseAmount * commissionPercentage) / 100;
   }
 
@@ -215,18 +216,21 @@ class RazorpayService {
         client.release();
       }
 
-      // Calculate base amount (rent or deposit)
+      // Calculate base amount (rent + deposit)
       const baseAmount =
-        transaction.rent_amount ||
-        transaction.deposit_amount ||
-        transaction.property_price ||
-        0;
+        Number(transaction.rent_amount || 0) +
+        Number(transaction.deposit_amount || 0);
+
+      console.log("base amount", baseAmount);
 
       // Calculate commission amount
       const commissionAmount = this.calculateCommission(baseAmount);
 
+      console.log("commission", commissionAmount);
+
       // Verify total amount matches
-      const expectedTotal = baseAmount + commissionAmount;
+      const expectedTotal = Number(baseAmount) + Number(commissionAmount);
+
       if (Math.abs(totalAmount - expectedTotal) > 1) {
         // Allow 1 rupee difference for rounding
         throw new Error(
@@ -244,6 +248,7 @@ class RazorpayService {
         totalAmount,
         baseAmount,
         commissionAmount,
+        ownerBankDetails,
         "INR",
         `txn_${transactionId}`
       );
@@ -462,6 +467,25 @@ class RazorpayService {
       };
     } catch (error) {
       console.error("Refund error:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  // Create payout to owner's bank account
+  async createPayout(payoutData) {
+    try {
+      const payout = await razorpay.payouts.create(payoutData);
+      return {
+        success: true,
+        id: payout.id,
+        status: payout.status,
+        payout: payout,
+      };
+    } catch (error) {
+      console.error("Create payout error:", error);
       return {
         success: false,
         error: error.message,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   Download,
@@ -24,35 +24,37 @@ const TransactionDetailPage = () => {
   const [invoice, setInvoice] = useState(null);
   const [agreement, setAgreement] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [actionLoading, setActionLoading] = useState(false);
   const { user } = useAuth();
-  console.log("user", user);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTransaction = async () => {
       try {
-        const res = await fetch(`${Backendurl}/api/transactions/${id}`);
+        const token = user?.token || localStorage.getItem("token");
+        const res = await fetch(`${Backendurl}/api/transactions/${id}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = await res.json();
         if (data.success && data.transaction) {
           setTransaction(data.transaction);
 
-          // Mock invoice data
-          const mockInvoice = {
-            invoiceNumber: `INV-${data.transaction.id}-${Date.now()
-              .toString()
-              .slice(-4)}`,
-            date: new Date().toISOString(),
-            dueDate: new Date(
-              Date.now() + 7 * 24 * 60 * 60 * 1000
-            ).toISOString(),
+          // Invoice data from transaction
+          const invoiceData = {
+            invoiceNumber: `INV-${data.transaction.id}`,
+            date: data.transaction.created_at,
+            dueDate: data.transaction.move_in_date,
             items: [
               {
-                description: `${data.transaction.type} of ${
-                  data.transaction.property?.title || "Property"
-                }`,
-                amount:
-                  data.transaction.amount ||
-                  data.transaction.property_price ||
-                  0,
+                description: `Rent for Room ${data.transaction.room_number} at ${data.transaction.property_title}`,
+                amount: Number(data.transaction.rent_amount),
+              },
+              {
+                description: `Security Deposit`,
+                amount: Number(data.transaction.deposit_amount),
               },
             ],
             taxes: [
@@ -60,78 +62,86 @@ const TransactionDetailPage = () => {
                 description: "GST",
                 percentage: 18,
                 amount:
-                  (data.transaction.amount ||
-                    data.transaction.property_price ||
-                    0) * 0.18,
-              },
-              {
-                description: "Registration Fee",
-                percentage: 1,
-                amount:
-                  (data.transaction.amount ||
-                    data.transaction.property_price ||
-                    0) * 0.01,
+                  (Number(data.transaction.rent_amount) +
+                    Number(data.transaction.deposit_amount)) *
+                  0.18,
               },
             ],
             amount:
-              data.transaction.amount || data.transaction.property_price || 0,
+              Number(data.transaction.rent_amount) +
+              Number(data.transaction.deposit_amount),
             totalAmount:
-              (data.transaction.amount ||
-                data.transaction.property_price ||
-                0) * 1.19,
-            paidAmount:
-              data.transaction.amount || data.transaction.property_price || 0,
+              (Number(data.transaction.rent_amount) +
+                Number(data.transaction.deposit_amount)) *
+              1.18,
+            paidAmount: Number(data.transaction.payment_amount),
             dueAmount:
-              (data.transaction.amount ||
-                data.transaction.property_price ||
-                0) * 0.19,
+              (Number(data.transaction.rent_amount) +
+                Number(data.transaction.deposit_amount)) *
+                1.18 -
+              Number(data.transaction.payment_amount),
+            tenant: `${user?.data?.first_name || data.transaction.first_name} ${
+              user?.data?.last_name || data.transaction.last_name
+            }`,
+            tenantEmail: user?.data?.email || data.transaction.email,
+            propertyTitle: data.transaction.property_title,
+            moveInDate: data.transaction.move_in_date,
+            leasePeriod: data.transaction.lease_period,
+            seller: {
+              name:
+                `${data.transaction.owner_first_name || "N/A"} ${
+                  data.transaction.owner_last_name || ""
+                }`.trim() || "N/A",
+              email: data.transaction.owner_email || "N/A",
+              phone: data.transaction.owner_phone || "N/A",
+            },
+            buyer: {
+              name:
+                `${
+                  user?.data?.first_name || data.transaction.first_name || "N/A"
+                } ${
+                  user?.data?.last_name || data.transaction.last_name || ""
+                }`.trim() || "N/A",
+              email: user?.data?.email || data.transaction.email || "N/A",
+              phone: user?.data?.phone || "N/A",
+            },
           };
-          setInvoice(mockInvoice);
+          setInvoice(invoiceData);
 
-          // Mock agreement data
-          const mockAgreement = {
-            agreementNumber: `AGR-${data.transaction.id}-${Date.now()
-              .toString()
-              .slice(-4)}`,
-            date: new Date().toISOString(),
+          // Agreement data from transaction
+          const agreementData = {
+            agreementNumber: `AGR-${data.transaction.id}`,
+            date: data.transaction.created_at,
             parties: {
               seller: {
-                name: data.transaction.seller?.name || "Property Owner",
-                address:
-                  data.transaction.seller?.address || "123 Seller Street",
-                city: data.transaction.seller?.city || "Mumbai",
-                state: data.transaction.seller?.state || "Maharashtra",
-                zip: data.transaction.seller?.zip || "400001",
-                email: data.transaction.seller?.email || "seller@example.com",
-                phone: data.transaction.seller?.phone || "+91 98765 43210",
+                name:
+                  `${data.transaction.owner_first_name || "N/A"} ${
+                    data.transaction.owner_last_name || ""
+                  }`.trim() || "N/A",
+                email: data.transaction.owner_email || "N/A",
+                phone: data.transaction.owner_phone || "N/A",
               },
               buyer: {
-                name: `${user?.data?.first_name || "John"} ${
-                  user?.data?.last_name || "Doe"
-                }`,
-                address: user?.data?.address || "456 Buyer Avenue",
-                city: user?.data?.city || "Mumbai",
-                state: user?.data?.state || "Maharashtra",
-                zip: user?.data?.zip || "400002",
-                email: user?.data?.email || "buyer@example.com",
-                phone: user?.data?.phone || "+91 98765 43211",
+                name:
+                  `${
+                    user?.data?.first_name ||
+                    data.transaction.first_name ||
+                    "N/A"
+                  } ${
+                    user?.data?.last_name || data.transaction.last_name || ""
+                  }`.trim() || "N/A",
+                email: user?.data?.email || data.transaction.email || "N/A",
+                phone: user?.data?.phone || "N/A",
               },
             },
             property: {
-              title: data.transaction.property?.title || "Luxury Apartment",
-              description:
-                data.transaction.property?.description ||
-                "A beautiful property in a prime location",
-              location: data.transaction.property?.location || "Downtown",
-              city: data.transaction.property?.city || "Mumbai",
-              state: data.transaction.property?.state || "Maharashtra",
-              type: data.transaction.property?.type || "Apartment",
-              area: data.transaction.property?.area || "1200",
-              bedrooms: data.transaction.property?.bedrooms || 3,
-              bathrooms: data.transaction.property?.bathrooms || 2,
-              price:
-                data.transaction.amount || data.transaction.property_price || 0,
+              title: data.transaction.property_title,
+              roomNumber: data.transaction.room_number,
             },
+            leasePeriod: data.transaction.lease_period,
+            moveInDate: data.transaction.move_in_date,
+            rentAmount: data.transaction.rent_amount,
+            depositAmount: data.transaction.deposit_amount,
             terms: [
               "The property will be delivered in the same condition as shown during the inspection.",
               "All necessary documents and clearances will be provided by the seller.",
@@ -139,12 +149,8 @@ const TransactionDetailPage = () => {
               "The seller warrants that the property is free from any legal encumbrances.",
               "Both parties agree to complete the registration process within 30 days of this agreement.",
             ],
-            signatures: {
-              seller: "_________________",
-              buyer: "_________________",
-            },
           };
-          setAgreement(mockAgreement);
+          setAgreement(agreementData);
         } else {
           toast.error("Transaction not found");
           setTransaction(null);
@@ -187,7 +193,7 @@ const TransactionDetailPage = () => {
   const type = transaction?.type || "Rent";
   const date = transaction?.created_at || transaction?.date;
   const documents = transaction.documents || {};
-  const seller = transaction.seller || {};
+  // const seller = transaction.seller || {};
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -246,6 +252,101 @@ const TransactionDetailPage = () => {
     }
   };
 
+  const handleCompleteTransaction = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to proceed with payment for this transaction?"
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const token = user?.token || localStorage.getItem("token");
+      const response = await fetch(
+        `${Backendurl}/api/transactions/complete/${transaction.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Redirecting to payment gateway...");
+
+        // Redirect to payment gateway with transaction details
+        navigate(`/payment/${data.paymentDetails.transactionId}`, {
+          state: {
+            transactionId: data.paymentDetails.transactionId,
+            amount: data.paymentDetails.amount,
+            baseAmount: data.paymentDetails.baseAmount,
+            adminCommission: data.paymentDetails.adminCommission,
+            razorpayFee: data.paymentDetails.razorpayFee,
+            subtotalWithFees: data.paymentDetails.subtotalWithFees,
+            gst: data.paymentDetails.gst,
+            propertyTitle: data.paymentDetails.propertyTitle,
+            roomDetails: {
+              roomNumber: data.paymentDetails.roomNumber,
+              rent: data.paymentDetails.rentAmount,
+              deposit: data.paymentDetails.depositAmount,
+            },
+          },
+        });
+      } else {
+        toast.error(data.message || "Failed to proceed with payment");
+      }
+    } catch (error) {
+      console.error("Error preparing payment:", error);
+      toast.error("Failed to proceed with payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelTransaction = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to cancel this transaction? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const token = user?.token || localStorage.getItem("token");
+      const response = await fetch(
+        `${Backendurl}/api/transactions/cancel/${transaction.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Transaction cancelled successfully!");
+        // Refresh transaction data
+        window.location.reload();
+      } else {
+        toast.error(data.message || "Failed to cancel transaction");
+      }
+    } catch (error) {
+      console.error("Error cancelling transaction:", error);
+      toast.error("Failed to cancel transaction");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -275,6 +376,45 @@ const TransactionDetailPage = () => {
           <span className="ml-1">{status}</span>
         </span>
       </div>
+
+      {/* Action Buttons for Pending Transactions */}
+      {transaction.status === "pending" && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-3">
+            Transaction Actions
+          </h3>
+          <p className="text-yellow-700 mb-4">
+            This transaction is currently pending. You can proceed to payment to
+            complete the rental or cancel it to remove the transaction entirely.
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={handleCompleteTransaction}
+              disabled={actionLoading}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {actionLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <CheckCircle className="w-4 h-4" />
+              )}
+              Proceed to Payment
+            </button>
+            <button
+              onClick={handleCancelTransaction}
+              disabled={actionLoading}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {actionLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              Cancel Transaction
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6">
         <div className="flex border-b">
@@ -333,40 +473,97 @@ const TransactionDetailPage = () => {
                     </div>
                     <div>
                       <span className="text-sm text-gray-500 block mb-1">
-                        Date
+                        Property Title
                       </span>
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        <span className="font-medium">{formatDate(date)}</span>
-                      </div>
+                      <span className="font-medium">
+                        {transaction.property_title}
+                      </span>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500 block mb-1">
-                        Type
+                        Room Number
                       </span>
-                      <span className="font-medium">{type}</span>
+                      <span className="font-medium">
+                        {transaction.room_number}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Tenant Name
+                      </span>
+                      <span className="font-medium">
+                        {transaction.first_name} {transaction.last_name}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Tenant Email
+                      </span>
+                      <span className="font-medium">{transaction.email}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Move-in Date
+                      </span>
+                      <span className="font-medium">
+                        {formatDate(transaction.move_in_date)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Lease Period
+                      </span>
+                      <span className="font-medium">
+                        {transaction.lease_period}
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
                       <span className="text-sm text-gray-500 block mb-1">
-                        Status
+                        Rent Amount
                       </span>
-                      <div className="flex items-center">
-                        {getStatusIcon()}
-                        <span className="font-medium ml-2">{status}</span>
-                      </div>
+                      <span className="font-medium">
+                        {formatCurrency(Number(transaction.rent_amount))}
+                      </span>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500 block mb-1">
-                        Amount
+                        Deposit Amount
                       </span>
-                      <div className="flex items-center">
-                        {/* <DollarSign className="w-4 h-4 text-gray-400 mr-2" /> */}
-                        <span className="font-medium text-xl">
-                          {formatCurrency(amount)}
-                        </span>
-                      </div>
+                      <span className="font-medium">
+                        {formatCurrency(Number(transaction.deposit_amount))}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Payment Status
+                      </span>
+                      <span className="font-medium">
+                        {transaction.payment_status}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Payment Amount
+                      </span>
+                      <span className="font-medium">
+                        {formatCurrency(Number(transaction.payment_amount))}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Status
+                      </span>
+                      <span className="font-medium">{transaction.status}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 block mb-1">
+                        Created At
+                      </span>
+                      <span className="font-medium">
+                        {formatDate(transaction.created_at)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -384,10 +581,10 @@ const TransactionDetailPage = () => {
                     </h4>
                     <div>
                       <p className="font-medium">
-                        {user?.data?.first_name} {user?.data?.last_name}
+                        {transaction?.first_name} {transaction?.last_name}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {user?.data?.email}
+                        {transaction?.email}
                       </p>
                       {/* <p className="text-sm text-gray-500">{user?.data?.phone}</p>
                       <p className="text-sm text-gray-500 mt-2">
@@ -401,15 +598,20 @@ const TransactionDetailPage = () => {
                       Seller
                     </h4>
                     <div>
-                      <p className="font-medium">{seller.name}</p>
-                      <p className="text-sm text-gray-500">{seller.email}</p>
+                      <p className="font-medium">
+                        {transaction?.owner_first_name}{" "}
+                        {transaction?.owner_last_name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {transaction?.owner_email}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {/* <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Documents</h3>
                 <div className="flex flex-wrap gap-4">
@@ -441,7 +643,7 @@ const TransactionDetailPage = () => {
                   )}
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="lg:col-span-1">
@@ -452,7 +654,7 @@ const TransactionDetailPage = () => {
       )}
 
       {activeTab === "invoice" && invoice && (
-        <InvoicePreview invoice={invoice} transaction={transaction} />
+        <InvoicePreview invoice={invoice} />
       )}
       {activeTab === "agreement" && agreement && (
         <AgreementPreview agreement={agreement} />

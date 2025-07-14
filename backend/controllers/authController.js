@@ -1,17 +1,23 @@
-import authService from '../services/authService.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import pool from '../config/postgres.js';
+import authService from "../services/authService.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import pool from "../config/postgres.js";
 
 export const register = async (req, res) => {
   try {
-    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'phone'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
+    const requiredFields = [
+      "firstName",
+      "lastName",
+      "email",
+      "password",
+      "phone",
+    ];
+    const missingFields = requiredFields.filter((field) => !req.body[field]);
 
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: `Missing required fields: ${missingFields.join(', ')}`
+        message: `Missing required fields: ${missingFields.join(", ")}`,
       });
     }
 
@@ -21,7 +27,7 @@ export const register = async (req, res) => {
 
     const { user, token } = await authService.register({
       ...req.body,
-      isVerified
+      isVerified,
     });
 
     res.status(201).json({
@@ -35,15 +41,15 @@ export const register = async (req, res) => {
           phone: user.phone,
           user_type: user.user_type,
           role_id: user.role_id,
-          is_verified: user.is_verified
+          is_verified: user.is_verified,
         },
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -55,7 +61,7 @@ export const login = async (req, res) => {
     if (!identifier || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide either email or phone number and password'
+        message: "Please provide either email or phone number and password",
       });
     }
 
@@ -71,15 +77,15 @@ export const login = async (req, res) => {
           email: user.email,
           phone: user.phone,
           user_type: user.user_type,
-          role_id: user.role_id
+          role_id: user.role_id,
         },
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -89,12 +95,12 @@ export const getCurrentUser = async (req, res) => {
     const user = await authService.getCurrentUser(req.user.id);
     res.status(200).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -105,32 +111,36 @@ export const updateProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
     res.status(200).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
 
 export const updatePassword = async (req, res) => {
   try {
-    await authService.updatePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+    await authService.updatePassword(
+      req.user.id,
+      req.body.currentPassword,
+      req.body.newPassword
+    );
     res.status(200).json({
       success: true,
-      message: 'Password updated successfully'
+      message: "Password updated successfully",
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -140,12 +150,12 @@ export const forgotPassword = async (req, res) => {
     await authService.forgotPassword(req.body.email);
     res.status(200).json({
       success: true,
-      message: 'Password reset email sent'
+      message: "Password reset email sent",
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -156,7 +166,7 @@ export const resetPassword = async (req, res) => {
     if (!identifier || !otp || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Identifier, OTP, and new password are required'
+        message: "Identifier, OTP, and new password are required",
       });
     }
 
@@ -164,12 +174,12 @@ export const resetPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Password reset successful'
+      message: "Password reset successful",
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -177,17 +187,19 @@ export const resetPassword = async (req, res) => {
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     // Find user with admin role
-    const { rows: [user] } = await pool.query(
-      'SELECT * FROM users WHERE email = $1 AND role_id = 4',
+    const {
+      rows: [user],
+    } = await pool.query(
+      "SELECT * FROM users WHERE email = $1 AND role_id = 4",
       [email]
     );
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid admin credentials'
+        message: "Invalid admin credentials",
       });
     }
 
@@ -196,15 +208,15 @@ export const adminLogin = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid admin credentials'
+        message: "Invalid admin credentials",
       });
     }
 
     // Generate token
     const token = jwt.sign(
-      { id: user.id, role: 'admin' },
+      { id: user.id, role: "admin" },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: "30d" }
     );
 
     res.status(200).json({
@@ -215,14 +227,14 @@ export const adminLogin = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        role_id: user.role_id
-      }
+        role_id: user.role_id,
+      },
     });
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error("Admin login error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server error",
     });
   }
 };

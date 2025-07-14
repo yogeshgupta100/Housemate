@@ -3,9 +3,20 @@ import userRepository from "../repositories/userRepository.js";
 import pool from "../config/postgres.js";
 
 export const createTransaction = async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { property_id, floor_id, room_id, user_id, move_in_date, status } =
-      req.body;
+    await client.query("BEGIN");
+    console.log("body", req.body);
+    const {
+      property_id,
+      floor_id,
+      room_id,
+      user_id,
+      move_in_date,
+      status,
+      rent_amount,
+      deposit_amount,
+    } = req.body;
     if (!property_id || !room_id || !user_id) {
       return res.status(400).json({
         success: false,
@@ -13,13 +24,58 @@ export const createTransaction = async (req, res) => {
       });
     }
 
+    // Application-level check for existing active transaction (not pending)
+    const { rows: existing } = await client.query(
+      `SELECT * FROM transactions WHERE property_id = $1 AND floor_id = $2 AND room_id = $3 AND user_id = $4 AND status = 'active'`,
+      [property_id, floor_id, room_id, user_id]
+    );
+    if (existing.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        success: false,
+        message: "An active transaction already exists for this user and room.",
+      });
+    }
+
+    // Delete all pending transactions for this room (to allow new bookings)
+    await client.query(
+      `DELETE FROM transactions WHERE property_id = $1 AND floor_id = $2 AND room_id = $3 AND status = 'pending'`,
+      [property_id, floor_id, room_id]
+    );
+
+    // Check if room is available (only count active transactions)
+    const { rows: activeTransactions } = await client.query(
+      `SELECT COUNT(*) as active_count FROM transactions WHERE property_id = $1 AND floor_id = $2 AND room_id = $3 AND status = 'active'`,
+      [property_id, floor_id, room_id]
+    );
+
+    const {
+      rows: [room],
+    } = await client.query(`SELECT * FROM rooms WHERE id = $1`, [room_id]);
+
+    if (!room) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    if (Number(activeTransactions[0].active_count) >= room.capacity) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: "Room is already at full capacity",
+      });
+    }
+
     const {
       rows: [transaction],
-    } = await pool.query(
+    } = await client.query(
       `INSERT INTO transactions (
         property_id, floor_id, room_id, user_id, 
-        move_in_date, status
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        move_in_date, status, rent_amount, deposit_amount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
         property_id,
@@ -28,11 +84,18 @@ export const createTransaction = async (req, res) => {
         user_id,
         move_in_date,
         status || "pending",
+        rent_amount,
+        deposit_amount,
       ]
     );
 
+    // Note: We do NOT increase room occupancy here for pending transactions
+    // Room occupancy will be increased only when transaction becomes 'active' after payment
+
+    await client.query("COMMIT");
     res.status(201).json({ success: true, transaction });
   } catch (error) {
+    await client.query("ROLLBACK");
     if (error.code === "23505") {
       // unique violation
       return res.status(409).json({
@@ -41,6 +104,8 @@ export const createTransaction = async (req, res) => {
       });
     }
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 };
 
@@ -72,11 +137,16 @@ export const getTransactionById = async (req, res) => {
       `SELECT t.*, 
         p.title as property_title,
         u.first_name, u.last_name, u.email,
-        r.room_number
+        r.room_number,
+        owner.first_name as owner_first_name,
+        owner.last_name as owner_last_name,
+        owner.email as owner_email,
+        owner.phone as owner_phone
        FROM transactions t
        LEFT JOIN properties p ON t.property_id = p.id
        LEFT JOIN users u ON t.user_id = u.id
        LEFT JOIN rooms r ON t.room_id = r.id
+       LEFT JOIN users owner ON p.user_id = owner.id
        WHERE t.id = $1`,
       [id]
     );
@@ -101,7 +171,7 @@ export const getTransactionsByUser = async (req, res) => {
       `SELECT t.*, 
         p.title as property_title,
         u.first_name, u.last_name, u.email,
-        r.room_number
+        r.room_number , images , listing_type
        FROM transactions t
        LEFT JOIN properties p ON t.property_id = p.id
        LEFT JOIN users u ON t.user_id = u.id
@@ -439,6 +509,7 @@ export const mapTenantToRoom = async (req, res) => {
     } = await client.query("SELECT * FROM users WHERE id = $1", [user_id]);
 
     if (!user) {
+      await client.query("ROLLBACK");
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -457,14 +528,40 @@ export const mapTenantToRoom = async (req, res) => {
     );
 
     if (!room) {
+      await client.query("ROLLBACK");
       return res.status(404).json({
         success: false,
         message: "Room not found",
       });
     }
 
-    // Check if room is already occupied
-    if (room.occupied >= room.capacity) {
+    // Application-level check for existing active transaction (not pending)
+    const { rows: existing } = await client.query(
+      `SELECT * FROM transactions WHERE property_id = $1 AND floor_id = $2 AND room_id = $3 AND user_id = $4 AND status = 'active'`,
+      [room.property_id, room.floor_id, room.id, user.id]
+    );
+    if (existing.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        success: false,
+        message: "An active transaction already exists for this user and room.",
+      });
+    }
+
+    // Delete all pending transactions for this room (to allow new bookings)
+    await client.query(
+      `DELETE FROM transactions WHERE property_id = $1 AND floor_id = $2 AND room_id = $3 AND status = 'pending'`,
+      [room.property_id, room.floor_id, room.id]
+    );
+
+    // Check if room is available (only count active transactions)
+    const { rows: activeTransactions } = await client.query(
+      `SELECT COUNT(*) as active_count FROM transactions WHERE property_id = $1 AND floor_id = $2 AND room_id = $3 AND status = 'active'`,
+      [room.property_id, room.floor_id, room.id]
+    );
+
+    if (Number(activeTransactions[0].active_count) >= room.capacity) {
+      await client.query("ROLLBACK");
       return res.status(400).json({
         success: false,
         message: "Room is already at full capacity",
@@ -496,7 +593,7 @@ export const mapTenantToRoom = async (req, res) => {
       ]
     );
 
-    // Update room occupied count
+    // Update room occupied count (only for active transactions)
     await client.query(
       "UPDATE rooms SET occupied = occupied + 1 WHERE id = $1",
       [room_id]
@@ -518,6 +615,202 @@ export const mapTenantToRoom = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to map tenant to room",
+    });
+  } finally {
+    client.release();
+  }
+};
+
+// Complete a pending transaction - redirect to payment
+export const completeTransaction = async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const userId = req.user.id;
+
+    // Verify the transaction belongs to the user and is pending
+    const {
+      rows: [transaction],
+    } = await pool.query(
+      `SELECT t.*, p.title as property_title, r.room_number
+       FROM transactions t
+       JOIN properties p ON t.property_id = p.id
+       JOIN rooms r ON t.room_id = r.id
+       WHERE t.id = $1 AND t.user_id = $2 AND t.status = 'pending'`,
+      [transactionId, userId]
+    );
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Transaction not found or you are not authorized to complete this transaction",
+      });
+    }
+
+    // Check if room is still available
+    const {
+      rows: [room],
+    } = await pool.query(`SELECT r.* FROM rooms r WHERE r.id = $1`, [
+      transaction.room_id,
+    ]);
+
+    if (!room || room.occupied >= room.capacity) {
+      return res.status(400).json({
+        success: false,
+        message: "Room is no longer available",
+      });
+    }
+
+    // Return payment details for frontend to redirect to payment gateway
+    const baseAmount =
+      Number(transaction.rent_amount) + Number(transaction.deposit_amount);
+    const adminCommission = baseAmount * 0.02; // 2% admin commission
+    const razorpayFee = baseAmount * 0.025; // 2.5% Razorpay processing fee
+    const subtotalWithFees = baseAmount + adminCommission + razorpayFee;
+    const gst = subtotalWithFees * 0.18; // 18% GST on subtotal with fees
+    const finalTotal = subtotalWithFees + gst;
+
+    res.status(200).json({
+      success: true,
+      message: "Redirecting to payment gateway",
+      paymentDetails: {
+        transactionId: transaction.id,
+        amount: finalTotal,
+        baseAmount: baseAmount,
+        adminCommission: adminCommission,
+        razorpayFee: razorpayFee,
+        subtotalWithFees: subtotalWithFees,
+        gst: gst,
+        propertyTitle: transaction.property_title,
+        roomNumber: transaction.room_number,
+        rentAmount: transaction.rent_amount,
+        depositAmount: transaction.deposit_amount,
+      },
+    });
+  } catch (error) {
+    console.error("Error preparing transaction for payment:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Cancel a pending transaction - delete from database
+export const cancelTransaction = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { transactionId } = req.params;
+    const userId = req.user.id;
+
+    // Verify the transaction belongs to the user and is pending
+    const {
+      rows: [transaction],
+    } = await client.query(
+      `SELECT t.*
+       FROM transactions t
+       WHERE t.id = $1 AND t.user_id = $2 AND t.status = 'pending'`,
+      [transactionId, userId]
+    );
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Transaction not found or you are not authorized to cancel this transaction",
+      });
+    }
+
+    // Delete the transaction from database
+    // Note: We don't decrease room occupancy since pending transactions don't increase it
+    await client.query(`DELETE FROM transactions WHERE id = $1`, [
+      transactionId,
+    ]);
+
+    await client.query("COMMIT");
+
+    res.status(200).json({
+      success: true,
+      message: "Transaction cancelled and removed successfully",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error cancelling transaction:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+// Activate transaction after successful payment
+export const activateTransaction = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { transactionId } = req.params;
+    const userId = req.user.id;
+
+    // Verify the transaction belongs to the user and is pending
+    const {
+      rows: [transaction],
+    } = await client.query(
+      `SELECT t.*, r.id as room_id, r.occupied, r.capacity
+       FROM transactions t
+       JOIN rooms r ON t.room_id = r.id
+       WHERE t.id = $1 AND t.user_id = $2 AND t.status = 'pending'`,
+      [transactionId, userId]
+    );
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Transaction not found or you are not authorized to activate this transaction",
+      });
+    }
+
+    // Check if room is still available
+    if (transaction.occupied >= transaction.capacity) {
+      return res.status(400).json({
+        success: false,
+        message: "Room is no longer available",
+      });
+    }
+
+    // Update transaction status to 'active'
+    await client.query(
+      `UPDATE transactions 
+       SET status = 'active', updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [transactionId]
+    );
+
+    // Increase room occupancy (now that transaction is active)
+    await client.query(
+      `UPDATE rooms 
+       SET occupied = occupied + 1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [transaction.room_id]
+    );
+
+    await client.query("COMMIT");
+
+    res.status(200).json({
+      success: true,
+      message: "Transaction activated successfully",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error activating transaction:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   } finally {
     client.release();

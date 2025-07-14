@@ -190,6 +190,12 @@ const PropertyDetails = () => {
         return;
       }
 
+      // Prevent owner from renting their own property
+      if (user_id === property?.user_id) {
+        toast.error("You cannot rent your own property.");
+        return;
+      }
+
       if (selectedRoom.occupied >= selectedRoom.capacity) {
         toast.error("This room has reached its maximum capacity.");
         return;
@@ -207,7 +213,7 @@ const PropertyDetails = () => {
         move_in_date: new Date().toISOString().split("T")[0],
         status: "pending",
         description: "",
-        rent_amount: selectedRoom.rent || property.price,
+        rent_amount: property.rent || property.price,
         deposit_amount: selectedRoom.rent || property.price, // Default deposit is same as rent
       };
 
@@ -224,13 +230,15 @@ const PropertyDetails = () => {
         navigate(`/payment/${transaction.id}`, {
           state: {
             transactionId: transaction.id,
-            amount: transaction.rent_amount + transaction.deposit_amount,
+            amount:
+              Number(transaction.rent_amount) +
+              Number(transaction.deposit_amount),
             propertyTitle: property.title,
             roomDetails: {
               roomNumber: selectedRoom.roomNumber,
               floorNumber: selectedRoom.floor_number,
-              rent: transaction.rent_amount,
-              deposit: transaction.deposit_amount,
+              rent: selectedRoom.rent,
+              deposit: Number(transaction.deposit_amount),
             },
           },
         });
@@ -239,10 +247,7 @@ const PropertyDetails = () => {
       }
     } catch (error) {
       console.error("Error in handleAccept:", error);
-      toast.error(
-        "Error creating transaction: " +
-          (error.response?.data?.message || error.message)
-      );
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 

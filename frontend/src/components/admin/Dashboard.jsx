@@ -1,19 +1,23 @@
-import React from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Users, Home, Building, Settings, LogOut } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import './Dashboard.css';
+import React from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { Users, Home, Building, Settings, LogOut } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import "./Dashboard.css";
 
 const AdminDashboard = () => {
   const location = useLocation();
   const { logout } = useAuth();
 
   const navItems = [
-    { path: '/admin', label: 'Dashboard', icon: Home },
-    { path: '/admin/users', label: 'Users', icon: Users },
-    { path: '/admin/properties', label: 'Properties', icon: Building },
-    { path: '/admin/room-availability-requests', label: 'Room Requests', icon: Building },
-    { path: '/admin/settings', label: 'Settings', icon: Settings },
+    { path: "/admin", label: "Dashboard", icon: Home },
+    { path: "/admin/users", label: "Users", icon: Users },
+    { path: "/admin/properties", label: "Properties", icon: Building },
+    {
+      path: "/admin/room-availability-requests",
+      label: "Room Requests",
+      icon: Building,
+    },
+    { path: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   const handleLogout = () => {
@@ -34,7 +38,7 @@ const AdminDashboard = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`nav-item ${isActive ? 'active' : ''}`}
+                className={`nav-item ${isActive ? "active" : ""}`}
               >
                 <Icon className="nav-icon" />
                 <span>{item.label}</span>
@@ -54,4 +58,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

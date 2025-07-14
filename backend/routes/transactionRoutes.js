@@ -9,6 +9,9 @@ import {
   checkoutFromProperty,
   adminCheckoutTenant,
   getAllActiveTransactions,
+  completeTransaction,
+  cancelTransaction,
+  activateTransaction,
 } from "../controllers/transactionController.js";
 import { protect } from "../middleware/authmiddleware.js";
 
@@ -21,6 +24,11 @@ router.post("/", createTransaction);
 router.get("/", getAllTransactions);
 router.get("/:id", getTransactionById);
 router.get("/user/:userId", getTransactionsByUser);
+
+// Transaction actions
+router.post("/complete/:transactionId", completeTransaction);
+router.post("/cancel/:transactionId", cancelTransaction);
+router.post("/activate/:transactionId", activateTransaction);
 
 // Rented properties and checkout
 router.get("/rented-properties/me", getUserRentedProperties);

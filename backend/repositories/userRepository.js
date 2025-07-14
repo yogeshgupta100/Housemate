@@ -1,9 +1,11 @@
-import pool from '../config/postgres.js';
-import bcrypt from 'bcrypt';
+import pool from "../config/postgres.js";
+import bcrypt from "bcrypt";
 
 class UserRepository {
   async findAll() {
-    const { rows } = await pool.query('SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at FROM users');
+    const { rows } = await pool.query(
+      "SELECT id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at FROM users"
+    );
     return rows;
   }
 
@@ -13,7 +15,7 @@ class UserRepository {
         id, first_name, last_name, email, phone, gender, role_id, 
         user_type, company_name, registration_number, dealer_license, 
         city, state, bio, profile_image, marital_status, govt_id_number, 
-        id_card_images, verification_status, profession, nationality, 
+        id_card_images, verification_status , is_verified , profession, nationality, 
         bank_details, is_active, created_at, updated_at 
       FROM users WHERE id = $1`,
       [id]
@@ -22,29 +24,27 @@ class UserRepository {
   }
 
   async findByEmail(email) {
-    const { rows } = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
+    const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
     return rows[0];
   }
 
   async findByPhone(phone) {
-    const { rows } = await pool.query(
-      'SELECT * FROM users WHERE phone = $1',
-      [phone]
-    );
+    const { rows } = await pool.query("SELECT * FROM users WHERE phone = $1", [
+      phone,
+    ]);
     return rows[0];
   }
 
   async create(userData) {
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-      
+      await client.query("BEGIN");
+
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
+
       const { rows } = await client.query(
         `INSERT INTO users (
           first_name, last_name, email, password, phone, gender,
@@ -72,17 +72,17 @@ class UserRepository {
           userData.maritalStatus,
           userData.govtIdNumber,
           userData.idCardImages || [],
-          userData.verificationStatus || 'pending',
+          userData.verificationStatus || "pending",
           userData.profession,
           userData.nationality,
-          userData.bankDetails ? JSON.stringify(userData.bankDetails) : null
+          userData.bankDetails ? JSON.stringify(userData.bankDetails) : null,
         ]
       );
-      
-      await client.query('COMMIT');
+
+      await client.query("COMMIT");
       return rows[0];
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
@@ -92,21 +92,23 @@ class UserRepository {
   async update(id, updateData) {
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-      
-      const { rows: [existingUser] } = await client.query(
-        'SELECT * FROM users WHERE id = $1',
-        [id]
-      );
+      await client.query("BEGIN");
+
+      const {
+        rows: [existingUser],
+      } = await client.query("SELECT * FROM users WHERE id = $1", [id]);
 
       if (!existingUser) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         return null;
       }
 
       const convertedUpdateData = {};
       for (const [key, value] of Object.entries(updateData)) {
-        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        const snakeKey = key.replace(
+          /[A-Z]/g,
+          (letter) => `_${letter.toLowerCase()}`
+        );
         convertedUpdateData[snakeKey] = value;
       }
 
@@ -128,16 +130,16 @@ class UserRepository {
       values.push(id);
       const { rows } = await client.query(
         `UPDATE users 
-         SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         SET ${setClause.join(", ")}, updated_at = CURRENT_TIMESTAMP
          WHERE id = $${paramCount}
          RETURNING id, first_name, last_name, email, phone, gender, role_id, user_type, company_name, city, state, bio, profile_image, marital_status, govt_id_number, id_card_images, verification_status, profession, nationality, bank_details, created_at, updated_at`,
         values
       );
-      
-      await client.query('COMMIT');
+
+      await client.query("COMMIT");
       return rows[0];
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
@@ -146,7 +148,7 @@ class UserRepository {
 
   async delete(id) {
     const { rows } = await pool.query(
-      'DELETE FROM users WHERE id = $1 RETURNING *',
+      "DELETE FROM users WHERE id = $1 RETURNING *",
       [id]
     );
     return rows[0];
@@ -154,7 +156,7 @@ class UserRepository {
 
   async findByResetPasswordToken(token) {
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expire > CURRENT_TIMESTAMP',
+      "SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expire > CURRENT_TIMESTAMP",
       [token]
     );
     return rows[0];

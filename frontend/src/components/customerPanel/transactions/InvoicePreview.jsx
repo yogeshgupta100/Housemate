@@ -1,27 +1,27 @@
-import React from 'react';
-import { Download, Printer } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
+import React from "react";
+import { Download, Printer } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
-const InvoicePreview = ({ invoice, transaction }) => {
+const InvoicePreview = ({ invoice }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const handlePrint = () => {
-    const printContent = document.getElementById('invoice-content');
+    const printContent = document.getElementById("invoice-content");
     const originalContent = document.body.innerHTML;
     document.body.innerHTML = printContent.innerHTML;
     window.print();
@@ -30,13 +30,13 @@ const InvoicePreview = ({ invoice, transaction }) => {
   };
 
   const handleDownload = () => {
-    const element = document.getElementById('invoice-content');
+    const element = document.getElementById("invoice-content");
     const opt = {
       margin: 1,
       filename: `invoice-${invoice.invoiceNumber}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
     };
 
     html2pdf().set(opt).from(element).save();
@@ -45,16 +45,18 @@ const InvoicePreview = ({ invoice, transaction }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold">Invoice #{invoice.invoiceNumber}</h3>
+        <h3 className="text-lg font-semibold">
+          Invoice #{invoice.invoiceNumber}
+        </h3>
         <div className="flex space-x-2">
-          <button 
+          <button
             onClick={handlePrint}
             className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors"
           >
             <Printer className="w-4 h-4 mr-1.5" />
             Print
           </button>
-          <button 
+          <button
             onClick={handleDownload}
             className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
           >
@@ -76,13 +78,16 @@ const InvoicePreview = ({ invoice, transaction }) => {
           <div className="text-right">
             <p className="text-lg font-semibold mb-1">INVOICE</p>
             <p className="text-sm text-gray-500">
-              <span className="font-medium">Invoice Number:</span> {invoice.invoiceNumber}
+              <span className="font-medium">Invoice Number:</span>{" "}
+              {invoice.invoiceNumber}
             </p>
             <p className="text-sm text-gray-500">
-              <span className="font-medium">Date:</span> {formatDate(invoice.date)}
+              <span className="font-medium">Date:</span>{" "}
+              {formatDate(invoice.date)}
             </p>
             <p className="text-sm text-gray-500">
-              <span className="font-medium">Due Date:</span> {formatDate(invoice.dueDate)}
+              <span className="font-medium">Due Date:</span>{" "}
+              {formatDate(invoice.dueDate)}
             </p>
           </div>
         </div>
@@ -90,26 +95,22 @@ const InvoicePreview = ({ invoice, transaction }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <p className="font-medium text-gray-700 mb-2">Bill To:</p>
-            <p className="font-semibold">{transaction?.buyer?.name}</p>
-            <p className="text-sm text-gray-500">{transaction?.buyer?.email}</p>
-            <p className="text-sm text-gray-500">{transaction?.buyer?.phone}</p>
+            <p className="font-semibold">{invoice?.buyer?.name || "N/A"}</p>
             <p className="text-sm text-gray-500">
-              {transaction?.buyer?.address}, {transaction?.buyer?.city}, {transaction?.buyer?.state} {transaction?.buyer?.zip}
+              {invoice?.buyer?.email || "N/A"}
+            </p>
+            <p className="text-sm text-gray-500">
+              {invoice?.buyer?.phone || "N/A"}
             </p>
           </div>
           <div>
-            <p className="font-medium text-gray-700 mb-2">Transaction Details:</p>
-            <p className="text-sm">
-              <span className="font-medium">Type:</span> {transaction.type}
+            <p className="font-medium text-gray-700 mb-2">Seller:</p>
+            <p className="font-semibold">{invoice?.seller?.name || "N/A"}</p>
+            <p className="text-sm text-gray-500">
+              {invoice?.seller?.email || "N/A"}
             </p>
-            <p className="text-sm">
-              <span className="font-medium">Property:</span> {transaction.property.title}
-            </p>
-            <p className="text-sm">
-              <span className="font-medium">Location:</span> {transaction.property.location}, {transaction.property.city}, {transaction.property.state}
-            </p>
-            <p className="text-sm">
-              <span className="font-medium">Status:</span> {transaction.status}
+            <p className="text-sm text-gray-500">
+              {invoice?.seller?.phone || "N/A"}
             </p>
           </div>
         </div>
@@ -118,15 +119,21 @@ const InvoicePreview = ({ invoice, transaction }) => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 text-sm font-medium text-gray-700">Description</th>
-                <th className="py-3 px-4 text-right text-sm font-medium text-gray-700">Amount</th>
+                <th className="py-3 px-4 text-sm font-medium text-gray-700">
+                  Description
+                </th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-gray-700">
+                  Amount
+                </th>
               </tr>
             </thead>
             <tbody>
-              {invoice.items.map((item, index) => (
+              {(invoice.items || []).map((item, index) => (
                 <tr key={index} className="border-b border-gray-200">
                   <td className="py-3 px-4">{item.description}</td>
-                  <td className="py-3 px-4 text-right">{formatCurrency(item.amount)}</td>
+                  <td className="py-3 px-4 text-right">
+                    {formatCurrency(item.amount)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -138,17 +145,25 @@ const InvoicePreview = ({ invoice, transaction }) => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 text-sm font-medium text-gray-700">Description</th>
-                <th className="py-3 px-4 text-right text-sm font-medium text-gray-700">Percentage</th>
-                <th className="py-3 px-4 text-right text-sm font-medium text-gray-700">Amount</th>
+                <th className="py-3 px-4 text-sm font-medium text-gray-700">
+                  Description
+                </th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-gray-700">
+                  Percentage
+                </th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-gray-700">
+                  Amount
+                </th>
               </tr>
             </thead>
             <tbody>
-              {invoice.taxes.map((tax, index) => (
+              {(invoice.taxes || []).map((tax, index) => (
                 <tr key={index} className="border-b border-gray-200">
                   <td className="py-3 px-4">{tax.description}</td>
                   <td className="py-3 px-4 text-right">{tax.percentage}%</td>
-                  <td className="py-3 px-4 text-right">{formatCurrency(tax.amount)}</td>
+                  <td className="py-3 px-4 text-right">
+                    {formatCurrency(tax.amount)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -162,7 +177,11 @@ const InvoicePreview = ({ invoice, transaction }) => {
           </div>
           <div className="flex justify-between mb-2">
             <p className="font-medium">Taxes & Fees:</p>
-            <p>{formatCurrency(invoice.taxes.reduce((acc, tax) => acc + tax.amount, 0))}</p>
+            <p>
+              {formatCurrency(
+                (invoice.taxes || []).reduce((acc, tax) => acc + tax.amount, 0)
+              )}
+            </p>
           </div>
           <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-300 mt-2">
             <p>Total:</p>

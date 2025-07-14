@@ -1,8 +1,8 @@
-import userService from '../services/userService.js';
-import otpRepository from '../repositories/otpRepository.js';
-import { sendEmail } from '../email.js';
-import { sendOTP as sendSMSOTP } from '../services/smsService.js';
-import pool from '../config/postgres.js';
+import userService from "../services/userService.js";
+import otpRepository from "../repositories/otpRepository.js";
+import { sendEmail } from "../email.js";
+import { sendOTP as sendSMSOTP } from "../services/smsService.js";
+import pool from "../config/postgres.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ export const getAllUsers = async (req, res) => {
     if (req.query.search) {
       query.search = req.query.search;
     }
-    
+
     if (req.query.userType) {
       query.userType = req.query.userType;
     }
@@ -25,7 +25,7 @@ export const getAllUsers = async (req, res) => {
 
     const [users, totalUsers] = await Promise.all([
       userService.getPaginatedUsers(query, skip, limit),
-      userService.getTotalUsers(query)
+      userService.getTotalUsers(query),
     ]);
 
     res.status(200).json({
@@ -35,15 +35,15 @@ export const getAllUsers = async (req, res) => {
         currentPage: page,
         totalPages: Math.ceil(totalUsers / limit),
         totalItems: totalUsers,
-        itemsPerPage: limit
-      }
+        itemsPerPage: limit,
+      },
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error("Error fetching users:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch users',
-      error: error.message
+      message: "Failed to fetch users",
+      error: error.message,
     });
   }
 };
@@ -53,14 +53,14 @@ export const getUserById = async (req, res) => {
     const user = await userService.getUserById(req.params.id);
     res.status(200).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error("Error fetching user:", error);
     res.status(404).json({
       success: false,
-      message: 'User not found',
-      error: error.message
+      message: "User not found",
+      error: error.message,
     });
   }
 };
@@ -70,15 +70,15 @@ export const updateUser = async (req, res) => {
     const user = await userService.updateUser(req.params.id, req.body);
     res.status(200).json({
       success: true,
-      message: 'User updated successfully',
-      data: user
+      message: "User updated successfully",
+      data: user,
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error("Error updating user:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update user',
-      error: error.message
+      message: "Failed to update user",
+      error: error.message,
     });
   }
 };
@@ -88,127 +88,131 @@ export const deleteUser = async (req, res) => {
     await userService.deleteUser(req.params.id);
     res.status(200).json({
       success: true,
-      message: 'User deleted successfully'
+      message: "User deleted successfully",
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error("Error deleting user:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete user',
-      error: error.message
+      message: "Failed to delete user",
+      error: error.message,
     });
   }
 };
 
 export const updateUserProfile = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const updateData = req.body;
+  try {
+    const userId = req.user.id;
+    const updateData = req.body;
 
-        // Remove sensitive fields
-        delete updateData.password;
-        delete updateData.role;
-        delete updateData.email;
+    // Remove sensitive fields
+    delete updateData.password;
+    delete updateData.role;
+    delete updateData.email;
 
-        const updatedUser = await userService.updateUser(userId, updateData);
+    const updatedUser = await userService.updateUser(userId, updateData);
 
-        res.json({
-            success: true,
-            user: updatedUser
-        });
-    } catch (error) {
-        console.error('Error updating user profile:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update profile',
-            error: error.message
-        });
-    }
+    res.json({
+      success: true,
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+      error: error.message,
+    });
+  }
 };
 
 export const getUserDashboard = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        
-        const dashboardData = await userService.getUserDashboard(userId);
-        
-        res.json({
-            success: true,
-            data: dashboardData
-        });
-    } catch (error) {
-        console.error('Error fetching user dashboard:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch dashboard data',
-            error: error.message
-        });
-    }
+  try {
+    const userId = req.user.id;
+
+    const dashboardData = await userService.getUserDashboard(userId);
+
+    res.json({
+      success: true,
+      data: dashboardData,
+    });
+  } catch (error) {
+    console.error("Error fetching user dashboard:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch dashboard data",
+      error: error.message,
+    });
+  }
 };
 
 export const getUserNotifications = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        
-        const notifications = await userService.getUserNotifications(userId, page, limit);
-        
-        res.json({
-            success: true,
-            data: notifications
-        });
-    } catch (error) {
-        console.error('Error fetching user notifications:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch notifications',
-            error: error.message
-        });
-    }
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const notifications = await userService.getUserNotifications(
+      userId,
+      page,
+      limit
+    );
+
+    res.json({
+      success: true,
+      data: notifications,
+    });
+  } catch (error) {
+    console.error("Error fetching user notifications:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch notifications",
+      error: error.message,
+    });
+  }
 };
 
 export const markNotificationAsRead = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { notificationId } = req.params;
-        
-        await userService.markNotificationAsRead(userId, notificationId);
-        
-        res.json({
-            success: true,
-            message: 'Notification marked as read'
-        });
-    } catch (error) {
-        console.error('Error marking notification as read:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to mark notification as read',
-            error: error.message
-        });
-    }
+  try {
+    const userId = req.user.id;
+    const { notificationId } = req.params;
+
+    await userService.markNotificationAsRead(userId, notificationId);
+
+    res.json({
+      success: true,
+      message: "Notification marked as read",
+    });
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark notification as read",
+      error: error.message,
+    });
+  }
 };
 
 export const getUserActivity = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        
-        const activity = await userService.getUserActivity(userId, page, limit);
-        
-        res.json({
-            success: true,
-            data: activity
-        });
-    } catch (error) {
-        console.error('Error fetching user activity:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch activity',
-            error: error.message
-        });
-    }
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const activity = await userService.getUserActivity(userId, page, limit);
+
+    res.json({
+      success: true,
+      data: activity,
+    });
+  } catch (error) {
+    console.error("Error fetching user activity:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch activity",
+      error: error.message,
+    });
+  }
 };
 
 export const forgotPasswordWithOTP = async (req, res) => {
@@ -216,16 +220,28 @@ export const forgotPasswordWithOTP = async (req, res) => {
   try {
     const { identifier } = req.body;
     if (!identifier) {
-      return res.status(400).json({ success: false, message: 'Please provide an email or phone number' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Please provide an email or phone number",
+        });
     }
 
-    const isEmail = identifier.includes('@');
-    const { rows: [user] } = await client.query(
-      `SELECT * FROM users WHERE ${isEmail ? 'email' : 'phone'} = $1`,
+    const isEmail = identifier.includes("@");
+    const {
+      rows: [user],
+    } = await client.query(
+      `SELECT * FROM users WHERE ${isEmail ? "email" : "phone"} = $1`,
       [identifier]
     );
     if (!user) {
-      return res.status(404).json({ success: false, message: `No account found with this ${isEmail ? 'email' : 'phone'}` });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: `No account found with this ${isEmail ? "email" : "phone"}`,
+        });
     }
 
     // Generate OTP
@@ -235,24 +251,29 @@ export const forgotPasswordWithOTP = async (req, res) => {
     await otpRepository.createOTP({
       identifier,
       otp,
-      type: isEmail ? 'email' : 'phone',
-      expiresAt
+      type: isEmail ? "email" : "phone",
+      expiresAt,
     });
 
     if (isEmail) {
       await sendEmail({
         email: identifier,
-        subject: 'Your Password Reset Code',
-        message: `Your password reset code is: ${otp}. This code will expire in 10 minutes.`
+        subject: "Your Password Reset Code",
+        message: `Your password reset code is: ${otp}. This code will expire in 10 minutes.`,
       });
     } else {
       await sendSMSOTP(identifier, otp);
     }
 
-    res.status(200).json({ success: true, message: `OTP sent to your ${isEmail ? 'email' : 'phone'}` });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: `OTP sent to your ${isEmail ? "email" : "phone"}`,
+      });
   } catch (error) {
-    console.error('Error in forgotPasswordWithOTP:', error);
-    res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    console.error("Error in forgotPasswordWithOTP:", error);
+    res.status(500).json({ success: false, message: "Failed to send OTP" });
   } finally {
     client.release();
   }
@@ -265,7 +286,7 @@ export const searchUsers = async (req, res) => {
     if (!q) {
       return res.status(400).json({
         success: false,
-        message: 'Search query is required'
+        message: "Search query is required",
       });
     }
 
@@ -283,20 +304,20 @@ export const searchUsers = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      users: users.map(user => ({
+      users: users.map((user) => ({
         id: user.id,
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
         phone: user.phone,
-        userType: user.user_type
-      }))
+        userType: user.user_type,
+      })),
     });
   } catch (error) {
-    console.error('Error searching users:', error);
+    console.error("Error searching users:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to search users',
-      error: error.message
+      message: "Failed to search users",
+      error: error.message,
     });
   } finally {
     client.release();

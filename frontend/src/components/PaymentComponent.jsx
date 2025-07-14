@@ -42,11 +42,12 @@ const PaymentComponent = ({
   }, []);
 
   const formatCurrency = (amount) => {
+    const num = Number(amount);
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(isNaN(num) ? 0 : num);
   };
 
   const createPaymentOrder = async () => {
@@ -236,7 +237,7 @@ const PaymentComponent = ({
                 <span>{formatCurrency(splitDetails.baseAmount)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Commission (5%):</span>
+                <span>Commission (2%):</span>
                 <span>{formatCurrency(splitDetails.commissionAmount)}</span>
               </div>
               <div className="border-t border-blue-200 mt-2 pt-2">
@@ -261,8 +262,8 @@ const PaymentComponent = ({
                 type="radio"
                 name="paymentMethod"
                 value="razorpay"
-                checked={paymentMethod === "razorpay"}
-                onChange={() => handlePaymentMethodChange("razorpay")}
+                checked={true}
+                readOnly
                 className="mr-3"
               />
               <CreditCard className="w-5 h-5 text-blue-600 mr-3" />
@@ -273,51 +274,22 @@ const PaymentComponent = ({
                 </div>
               </div>
             </label>
-
-            <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="cash"
-                checked={paymentMethod === "cash"}
-                onChange={() => handlePaymentMethodChange("cash")}
-                className="mr-3"
-              />
-              <DollarSign className="w-5 h-5 text-green-600 mr-3" />
-              <div>
-                <div className="font-medium text-gray-900">Cash Payment</div>
-                <div className="text-sm text-gray-600">
-                  Pay in cash to admin
-                </div>
-              </div>
-            </label>
           </div>
         </div>
 
         <div className="space-y-3">
-          {paymentMethod === "razorpay" ? (
-            <button
-              onClick={handleRazorpayPayment}
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                <Loader className="w-5 h-5 animate-spin mr-2" />
-              ) : (
-                <CreditCard className="w-5 h-5 mr-2" />
-              )}
-              Pay {formatCurrency(amount)}
-            </button>
-          ) : (
-            <button
-              onClick={handleCashPayment}
-              className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
-            >
-              <DollarSign className="w-5 h-5 mr-2" />
-              Contact Admin for Cash Payment
-            </button>
-          )}
-
+          <button
+            onClick={handleRazorpayPayment}
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {loading ? (
+              <Loader className="w-5 h-5 animate-spin mr-2" />
+            ) : (
+              <CreditCard className="w-5 h-5 mr-2" />
+            )}
+            Pay {formatCurrency(amount)}
+          </button>
           <button
             onClick={() => {
               if (onPaymentCancel) onPaymentCancel();
