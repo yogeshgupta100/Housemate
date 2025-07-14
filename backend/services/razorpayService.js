@@ -100,6 +100,56 @@ class RazorpayService {
     }
   }
 
+  // Process split payment for a transaction
+  async processSplitPayment(transactionId, totalAmount, userData) {
+    try {
+      // Create Razorpay order for total amount
+      const orderResult = await this.createOrder(
+        totalAmount,
+        "INR",
+        `split_txn_${transactionId}`
+      );
+
+      if (!orderResult.success) {
+        throw new Error(orderResult.error);
+      }
+
+      // Create payment record in database with split details
+      const paymentData = {
+        transaction_id: transactionId,
+        user_id: userData.userId,
+        property_id: userData.propertyId,
+        amount: totalAmount,
+        currency: "INR",
+        payment_method: "razorpay",
+        payment_status: "pending",
+        razorpay_order_id: orderResult.order.id,
+        payment_notes: `Split payment for transaction ${transactionId} - Base: ${userData.baseAmount}, Admin Fee: ${userData.adminFee}`,
+        // Store split details in notes for later processing
+        split_details: {
+          base_amount: userData.baseAmount,
+          admin_fee: userData.adminFee,
+          total_amount: totalAmount,
+        },
+      };
+
+      const payment = await PaymentModel.create(paymentData);
+
+      return {
+        success: true,
+        order: orderResult.order,
+        payment: payment,
+        key_id: process.env.RAZORPAY_KEY_ID,
+      };
+    } catch (error) {
+      console.error("Split payment processing error:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
   // Verify and complete payment
   async verifyAndCompletePayment(
     paymentId,
@@ -151,6 +201,86 @@ class RazorpayService {
       try {
         await PaymentModel.updateStatus(paymentRecordId, "failed", {
           payment_notes: `Payment verification failed: ${error.message}`,
+        });
+      } catch (updateError) {
+        console.error("Failed to update payment status:", updateError);
+      }
+
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  // Verify and complete split payment
+  async verifyAndCompleteSplitPayment(
+    paymentId,
+    orderId,
+    signature,
+    paymentRecordId
+  ) {
+    try {
+      // Verify payment signature
+      const isValidSignature = this.verifyPaymentSignature(
+        orderId,
+        paymentId,
+        signature
+      );
+
+      if (!isValidSignature) {
+        throw new Error("Invalid payment signature");
+      }
+
+      // Get payment details from Razorpay
+      const payment = await razorpay.payments.fetch(paymentId);
+
+      if (payment.status !== "captured") {
+        throw new Error(`Payment not captured. Status: ${payment.status}`);
+      }
+
+      // Get the payment record to access split details
+      const paymentRecord = await PaymentModel.findById(paymentRecordId);
+      if (!paymentRecord) {
+        throw new Error("Payment record not found");
+      }
+
+      // Update payment record in database
+      const additionalData = {
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signature,
+        payment_receipt_url: payment.receipt || null,
+        payment_status: "completed",
+      };
+
+      const updatedPayment = await PaymentModel.updateStatus(
+        paymentRecordId,
+        "completed",
+        additionalData
+      );
+
+      // Here you would typically implement the actual split logic
+      // For now, we'll just log the split details
+      console.log("Split payment completed:", {
+        paymentId,
+        baseAmount: paymentRecord.split_details?.base_amount,
+        adminFee: paymentRecord.split_details?.admin_fee,
+        totalAmount: paymentRecord.amount,
+      });
+
+      return {
+        success: true,
+        payment: updatedPayment,
+        razorpayPayment: payment,
+        splitDetails: paymentRecord.split_details,
+      };
+    } catch (error) {
+      console.error("Split payment verification error:", error);
+
+      // Update payment status to failed
+      try {
+        await PaymentModel.updateStatus(paymentRecordId, "failed", {
+          payment_notes: `Split payment verification failed: ${error.message}`,
         });
       } catch (updateError) {
         console.error("Failed to update payment status:", updateError);

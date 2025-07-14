@@ -14,6 +14,10 @@ router.use(protect);
 router.post("/create-order", paymentController.createPaymentOrder);
 router.post("/verify", paymentController.verifyPayment);
 
+// Split payment routes
+router.post("/create-split-order", paymentController.createSplitPaymentOrder);
+router.post("/verify-split-payment", paymentController.verifySplitPayment);
+
 // Payment history and details
 router.get("/user-payments", paymentController.getUserPayments);
 router.get("/payment/:paymentId", paymentController.getPaymentDetails);

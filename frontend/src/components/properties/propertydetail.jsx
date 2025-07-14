@@ -18,18 +18,19 @@ import {
   Home,
   Edit,
   Save,
-  X
+  X,
 } from "lucide-react";
 import { Backendurl } from "../../App.jsx";
 import ScheduleViewing from "./ScheduleViewing";
 import { RoomGrid } from "./RoomGrid";
 import GeneralModal from "../GeneralModal.jsx";
 import TermsAndConditions from "../TermsAndConditions.jsx";
+import SplitPaymentComponent from "../SplitPaymentComponent.jsx";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext.jsx";
-import PanoramaViewer from '../PanoramaViewer';
-import FullscreenMediaViewer from '../FullscreenMediaViewer';
-import PropertyVirtualTour from '../PropertyVirtualTour';
+import PanoramaViewer from "../PanoramaViewer";
+import FullscreenMediaViewer from "../FullscreenMediaViewer";
+import PropertyVirtualTour from "../PropertyVirtualTour";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -44,20 +45,21 @@ const PropertyDetails = () => {
   const [roomStatus, setRoomStatus] = useState([]);
   const [roomStatusLoading, setRoomStatusLoading] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
-  const [roomDescription, setRoomDescription] = useState('');
+  const [roomDescription, setRoomDescription] = useState("");
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const navigate = useNavigate();
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [isFullViewOpen, setIsFullViewOpen] = useState(false);
   const [fullViewIndex, setFullViewIndex] = useState(0);
   const fullViewMediaRef = useRef(null);
 
-  
   useEffect(() => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`${Backendurl}/api/properties/${id}`);
-        
+
         if (response.data.success) {
           setProperty(response.data.property);
         } else {
@@ -70,38 +72,49 @@ const PropertyDetails = () => {
         setLoading(false);
       }
     };
-    
+
     if (id) {
       fetchProperty();
     }
   }, [id]);
-  
+
   useEffect(() => {
     window.scrollTo(0, 0);
     setActiveMediaIndex(0);
   }, [id]);
-  
+
   // Auto-select first room for 360° virtual tour when property loads
   useEffect(() => {
-    if (property && (property.type === "pg" || property.type === "rk" || property.type === "flat")) {
+    if (
+      property &&
+      (property.type === "pg" ||
+        property.type === "rk" ||
+        property.type === "flat")
+    ) {
       const firstFloor = property.floorDetails?.[0];
       const firstRoom = firstFloor?.rooms?.[0];
-      
+
       if (firstRoom && !selectedRoom) {
         setSelectedRoom({ ...firstRoom, floor_id: firstFloor.id });
       }
     }
   }, [property, selectedRoom]);
-  
+
   const getMediaGallery = (property) => {
     if (!property) return [];
-    const images = (property.images || []).map((url) => ({ type: "image", url }));
-    const videos = (property.videos || []).map((url) => ({ type: "video", url }));
+    const images = (property.images || []).map((url) => ({
+      type: "image",
+      url,
+    }));
+    const videos = (property.videos || []).map((url) => ({
+      type: "video",
+      url,
+    }));
     return [...images, ...videos];
   };
-  
+
   const mediaGallery = getMediaGallery(property);
-  
+
   const parseAmenities = (amenities) => {
     if (!amenities) return [];
     if (Array.isArray(amenities)) return amenities;
@@ -170,49 +183,85 @@ const PropertyDetails = () => {
       if (!user_id) {
         navigate("/login");
         toast.error("Please login to continue");
-        window.scrollTo(0, 0 , {
-          behavior: "smooth"
+        window.scrollTo(0, 0, {
+          behavior: "smooth",
         });
         return;
       }
       if (!selectedRoom) {
-        toast.error('Please select a room.');
+        toast.error("Please select a room.");
         return;
       }
 
       if (selectedRoom.occupied >= selectedRoom.capacity) {
-        toast.error('This room has reached its maximum capacity.');
+        toast.error("This room has reached its maximum capacity.");
         return;
       }
+
+      // Get lease period from property availability or use default
+      const leasePeriod = property.availability?.minLeasePeriod || "11 months";
 
       const transactionData = {
         property_id: property.id,
         floor_id: selectedRoom.floor_id,
         room_id: selectedRoom.id,
         user_id,
-        move_in_date: new Date().toISOString().split('T')[0],
-        status: 'pending',
-        description: '',
+        move_in_date: new Date().toISOString().split("T")[0],
+        status: "pending",
+        description: "",
+        lease_period: leasePeriod,
       };
 
       // Create transaction
-      const response = await axios.post(`${Backendurl}/api/transactions`, transactionData);
-      
+      const response = await axios.post(
+        `${Backendurl}/api/transactions`,
+        transactionData
+      );
+
       if (response.data.success) {
         // Update room occupancy
-        await axios.put(`${Backendurl}/api/properties/rooms/${selectedRoom.id}/occupy`, {
-          increment: true
-        });
+        await axios.put(
+          `${Backendurl}/api/properties/rooms/${selectedRoom.id}/occupy`,
+          {
+            increment: true,
+          }
+        );
 
         setOpenTermsAndConditions(false);
-        toast.success('Room booking request submitted successfully');
-        navigate('/customer-panel/transactions');
+
+        // For rent properties, proceed to payment gateway
+        if (property.listing_type === "rent") {
+          // Calculate payment amounts
+          const baseAmount = selectedRoom.rent || property.price; // Base amount goes to property owner
+          const adminFee = 1000; // Static admin fee (₹1000)
+          const totalAmount = baseAmount + adminFee;
+
+          // Store transaction details for payment
+          setPaymentDetails({
+            transactionId: response.data.transaction.id,
+            baseAmount: baseAmount,
+            adminFee: adminFee,
+            totalAmount: totalAmount,
+            propertyTitle: property.title,
+            roomDetails: selectedRoom,
+            leasePeriod: leasePeriod,
+          });
+
+          // Show payment modal
+          setShowPaymentModal(true);
+        } else {
+          toast.success("Room booking request submitted successfully");
+          navigate("/customer-panel/transactions");
+        }
       } else {
-        toast.error('Failed to create transaction: ' + response.data.message);
+        toast.error("Failed to create transaction: " + response.data.message);
       }
     } catch (error) {
-      console.error('Error in handleAccept:', error);
-      toast.error('Error creating transaction: ' + (error.response?.data?.message || error.message));
+      console.error("Error in handleAccept:", error);
+      toast.error(
+        "Error creating transaction: " +
+          (error.response?.data?.message || error.message)
+      );
     }
   };
 
@@ -221,13 +270,14 @@ const PropertyDetails = () => {
   };
 
   const isOwner = user?.data?.id === property?.user_id;
-  const isShow = location.pathname.includes('customer-panel');
+  const isShow = location.pathname.includes("customer-panel");
 
   useEffect(() => {
     if (isOwner && property?.id) {
       setRoomStatusLoading(true);
-      axios.get(`${Backendurl}/api/properties/${property.id}/room-status`)
-        .then(res => {
+      axios
+        .get(`${Backendurl}/api/properties/${property.id}/room-status`)
+        .then((res) => {
           if (res.data.success) setRoomStatus(res.data.data);
         })
         .catch(() => setRoomStatus([]))
@@ -242,47 +292,58 @@ const PropertyDetails = () => {
 
   const handleSaveDescription = async () => {
     if (!editingRoom?.roomId) {
-      toast.error('Invalid room selected');
+      toast.error("Invalid room selected");
       return;
     }
 
     try {
-      const response = await axios.put(`${Backendurl}/api/properties/rooms/${editingRoom.roomId}/description`, {
-        description: roomDescription
-      });
-      
+      const response = await axios.put(
+        `${Backendurl}/api/properties/rooms/${editingRoom.roomId}/description`,
+        {
+          description: roomDescription,
+        }
+      );
+
       if (response.data.success) {
         // Refresh room status
-        const res = await axios.get(`${Backendurl}/api/properties/${property.id}/room-status`);
+        const res = await axios.get(
+          `${Backendurl}/api/properties/${property.id}/room-status`
+        );
         if (res.data.success) {
           setRoomStatus(res.data.data);
-          toast.success('Room description updated successfully');
+          toast.success("Room description updated successfully");
         }
         setEditingRoom(null);
-        setRoomDescription('');
+        setRoomDescription("");
       } else {
-        toast.error('Failed to update room description');
+        toast.error("Failed to update room description");
       }
     } catch (error) {
-      console.error('Error updating room description:', error);
-      toast.error('Failed to update room description: ' + (error.response?.data?.message || error.message));
+      console.error("Error updating room description:", error);
+      toast.error(
+        "Failed to update room description: " +
+          (error.response?.data?.message || error.message)
+      );
     }
   };
 
   const handleMakeAvailable = async (roomId) => {
     try {
-      const res = await axios.post(`${Backendurl}/api/admin/rooms/make-available-request`, {
-        roomId,
-        propertyId: property.id,
-        ownerId: user.data.id,
-      });
+      const res = await axios.post(
+        `${Backendurl}/api/admin/rooms/make-available-request`,
+        {
+          roomId,
+          propertyId: property.id,
+          ownerId: user.data.id,
+        }
+      );
       if (res.data.success) {
-        toast.success('Request sent to admin!');
+        toast.success("Request sent to admin!");
       } else {
-        toast.error(res.data.message || 'Failed to send request');
+        toast.error(res.data.message || "Failed to send request");
       }
     } catch (err) {
-      toast.error('Error sending request');
+      toast.error("Error sending request");
     }
   };
 
@@ -303,12 +364,14 @@ const PropertyDetails = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen bg-gray-50 ${isShow ? 'pt-0' : 'pt-16'}`}>
+      <div className={`min-h-screen bg-gray-50 ${isShow ? "pt-0" : "pt-16"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-8">
             <div className="w-32 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
             <div className="flex items-center gap-2">
-              {isShow && <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>}
+              {isShow && (
+                <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+              )}
               <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
             </div>
           </div>
@@ -400,11 +463,11 @@ const PropertyDetails = () => {
             We couldn't find the property you're looking for.
           </p>
           <Link
-            to={isShow ? '/customer-panel/properties' : '/properties'}
+            to={isShow ? "/customer-panel/properties" : "/properties"}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to {isShow ? 'My Properties' : 'Properties'}
+            Back to {isShow ? "My Properties" : "Properties"}
           </Link>
         </div>
       </div>
@@ -419,15 +482,16 @@ const PropertyDetails = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`min-h-screen bg-gray-50 ${isShow ? 'pt-0' : 'pt-16'}`}
+      className={`min-h-screen bg-gray-50 ${isShow ? "pt-0" : "pt-16"}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <nav className="flex items-center justify-between mb-8">
           <Link
-            to={isShow ? '/customer-panel/properties' : '/properties'}
+            to={isShow ? "/customer-panel/properties" : "/properties"}
             className="inline-flex items-center text-blue-600 hover:text-blue-700"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to {isShow ? 'My Properties' : 'Properties'}
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to{" "}
+            {isShow ? "My Properties" : "Properties"}
           </Link>
           <div className="flex gap-2">
             {isOwner && isShow && (
@@ -459,29 +523,37 @@ const PropertyDetails = () => {
           </div>
         </nav>
 
-        <div className={`${isShow ? 'bg-gray-50' : 'bg-white shadow-lg'} rounded-xl overflow-hidden`}>
+        <div
+          className={`${
+            isShow ? "bg-gray-50" : "bg-white shadow-lg"
+          } rounded-xl overflow-hidden`}
+        >
           <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-8 flex md:h-[400px] md:min-h-[225px] h-[200px] min-h-[200px]">
             <div className="flex-1 flex items-center justify-center">
               <div className="w-full max-w-full aspect-video flex items-center justify-center bg-black rounded-xl overflow-hidden relative group">
                 {mediaGallery[activeMediaIndex]?.type === "image" ? (
                   <>
                     <div className="w-full h-full flex items-center justify-center relative">
-                    <img
-                      src={mediaGallery[activeMediaIndex].url}
-                      alt={`Media ${activeMediaIndex + 1}`}
-                      className="w-full h-full object-contain"
-                      style={{ aspectRatio: '16/9' }}
-                    />
-                    <button
-                      className={`absolute ${mediaGallery?.length > 1 ? 'top-[76%] right-[4%]' : 'top-[72%] right-[2%]'} bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition z-10 opacity-0 group-hover:opacity-100`}
-                      title="View Fullscreen"
-                      onClick={() => {
-                        setFullViewIndex(activeMediaIndex);
-                        setIsFullViewOpen(true);
-                      }}
-                    >
-                      <Maximize className="w-5 h-5" />
-                    </button>
+                      <img
+                        src={mediaGallery[activeMediaIndex].url}
+                        alt={`Media ${activeMediaIndex + 1}`}
+                        className="w-full h-full object-contain"
+                        style={{ aspectRatio: "16/9" }}
+                      />
+                      <button
+                        className={`absolute ${
+                          mediaGallery?.length > 1
+                            ? "top-[76%] right-[4%]"
+                            : "top-[72%] right-[2%]"
+                        } bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition z-10 opacity-0 group-hover:opacity-100`}
+                        title="View Fullscreen"
+                        onClick={() => {
+                          setFullViewIndex(activeMediaIndex);
+                          setIsFullViewOpen(true);
+                        }}
+                      >
+                        <Maximize className="w-5 h-5" />
+                      </button>
                     </div>
                   </>
                 ) : (
@@ -490,10 +562,14 @@ const PropertyDetails = () => {
                       src={mediaGallery[activeMediaIndex].url}
                       controls
                       className="w-full h-full object-contain"
-                      style={{ aspectRatio: '16/9' }}
+                      style={{ aspectRatio: "16/9" }}
                     />
                     <button
-                      className={`absolute ${mediaGallery?.length > 1 ? 'top-[76%] right-[4%]' : 'top-[72%] right-[2%]'} bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition z-10 opacity-0 group-hover:opacity-100`}
+                      className={`absolute ${
+                        mediaGallery?.length > 1
+                          ? "top-[76%] right-[4%]"
+                          : "top-[72%] right-[2%]"
+                      } bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition z-10 opacity-0 group-hover:opacity-100`}
                       title="View Fullscreen"
                       onClick={() => {
                         setFullViewIndex(activeMediaIndex);
@@ -510,24 +586,37 @@ const PropertyDetails = () => {
             {mediaGallery.length > 1 && (
               <div
                 className={`hidden lg:flex w-40 flex-col gap-2 mx-4 overflow-y-auto`}
-                style={{ maxHeight: '400px', height: '400px' }}
+                style={{ maxHeight: "400px", height: "400px" }}
               >
                 {mediaGallery.map((media, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveMediaIndex(idx)}
-                    className={`border-2 rounded-lg overflow-hidden ${activeMediaIndex === idx ? "border-blue-600" : "border-transparent"}`}
+                    className={`border-2 rounded-lg overflow-hidden ${
+                      activeMediaIndex === idx
+                        ? "border-blue-600"
+                        : "border-transparent"
+                    }`}
                     style={{
-                      aspectRatio: '16/9',
-                      height: '133.33px',
-                      minHeight: '133.33px',
-                      maxHeight: '133.33px',
+                      aspectRatio: "16/9",
+                      height: "133.33px",
+                      minHeight: "133.33px",
+                      maxHeight: "133.33px",
                     }}
                   >
                     {media.type === "image" ? (
-                      <img src={media.url} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" style={{ aspectRatio: '16/9' }} />
+                      <img
+                        src={media.url}
+                        alt={`Thumb ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        style={{ aspectRatio: "16/9" }}
+                      />
                     ) : (
-                      <video src={media.url} className="w-full h-full object-cover" style={{ aspectRatio: '16/9' }} />
+                      <video
+                        src={media.url}
+                        className="w-full h-full object-cover"
+                        style={{ aspectRatio: "16/9" }}
+                      />
                     )}
                   </button>
                 ))}
@@ -543,22 +632,33 @@ const PropertyDetails = () => {
                   <button
                     key={idx}
                     onClick={() => setActiveMediaIndex(idx)}
-                    className={`flex-shrink-0 border-2 rounded-lg overflow-hidden ${activeMediaIndex === idx ? "border-blue-600" : "border-transparent"}`}
+                    className={`flex-shrink-0 border-2 rounded-lg overflow-hidden ${
+                      activeMediaIndex === idx
+                        ? "border-blue-600"
+                        : "border-transparent"
+                    }`}
                     style={{
-                      aspectRatio: '16/9',
-                      width: '120px',
-                      minWidth: '120px',
+                      aspectRatio: "16/9",
+                      width: "120px",
+                      minWidth: "120px",
                     }}
                   >
                     {media.type === "image" ? (
-                      <img src={media.url} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img
+                        src={media.url}
+                        alt={`Thumb ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <video src={media.url} className="w-full h-full object-cover" />
+                      <video
+                        src={media.url}
+                        className="w-full h-full object-cover"
+                      />
                     )}
                   </button>
                 ))}
               </div>
-              
+
               {/* Mobile Navigation Controls */}
               {/* <div className="flex items-center justify-center gap-4 mt-3">
                 <button
@@ -644,7 +744,8 @@ const PropertyDetails = () => {
                               Security Deposit
                             </span>
                             <span className="font-semibold text-gray-800">
-                              ₹{Number(property.deposit).toLocaleString("en-IN")}
+                              ₹
+                              {Number(property.deposit).toLocaleString("en-IN")}
                             </span>
                           </div>
                           {property.availability?.availableFrom && (
@@ -665,7 +766,9 @@ const PropertyDetails = () => {
                           )}
                           {property.availability?.minLeasePeriod && (
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-600">Minimum Lease</span>
+                              <span className="text-gray-600">
+                                Minimum Lease
+                              </span>
                               <span className="font-semibold text-gray-800">
                                 {property.availability.minLeasePeriod}
                               </span>
@@ -708,26 +811,29 @@ const PropertyDetails = () => {
                     )}
                   </div>
 
-                  {!["flat", "pg", "rk"].includes(property.type) && <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <BedDouble className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
-                        {property.beds} {property.beds > 1 ? "Beds" : "Bed"}
-                      </p>
+                  {!["flat", "pg", "rk"].includes(property.type) && (
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="bg-gray-50 p-4 rounded-lg text-center">
+                        <BedDouble className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">
+                          {property.beds} {property.beds > 1 ? "Beds" : "Bed"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg text-center">
+                        <Bath className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">
+                          {property.baths}{" "}
+                          {property.baths > 1 ? "Baths" : "Bath"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg text-center">
+                        <Maximize className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">
+                          {property.sqft} sqft
+                        </p>
+                      </div>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <Bath className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
-                        {property.baths} {property.baths > 1 ? "Baths" : "Bath"}
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <Maximize className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
-                        {property.sqft} sqft
-                      </p>
-                    </div>
-                  </div>}
+                  )}
 
                   {/* {property?.listing_type !== "rent" && <div className="mb-6">
                     <h2 className="text-xl font-semibold mb-4">
@@ -779,7 +885,9 @@ const PropertyDetails = () => {
                       {/* Office-Specific Details */}
                       {property.type === "office" && (
                         <div className="mb-6">
-                          <h2 className="text-xl font-semibold mb-4">Office Details</h2>
+                          <h2 className="text-xl font-semibold mb-4">
+                            Office Details
+                          </h2>
                           <div className="grid grid-cols-2 gap-4">
                             {property.office_area && (
                               <div className="flex justify-between items-center">
@@ -815,7 +923,9 @@ const PropertyDetails = () => {
                             )}
                             {property.meeting_rooms && (
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Meeting Rooms</span>
+                                <span className="text-gray-600">
+                                  Meeting Rooms
+                                </span>
                                 <span className="font-semibold text-gray-800">
                                   {property.meeting_rooms}
                                 </span>
@@ -823,33 +933,46 @@ const PropertyDetails = () => {
                             )}
                             {property.head_cabins && (
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Head Cabins</span>
+                                <span className="text-gray-600">
+                                  Head Cabins
+                                </span>
                                 <span className="font-semibold text-gray-800">
                                   {property.head_cabins}
                                 </span>
                               </div>
                             )}
                           </div>
-                          {property.office_amenities && property.office_amenities.length > 0 && (
-                            <div className="mt-4">
-                              <h3 className="text-lg font-medium mb-2">Office Amenities</h3>
-                              <div className="grid grid-cols-2 gap-2">
-                                {property.office_amenities.map((amenity, index) => (
-                                  <div key={index} className="flex items-center text-gray-600">
-                                    <Building className="w-4 h-4 mr-2 text-blue-600" />
-                                    {amenity}
-                                  </div>
-                                ))}
+                          {property.office_amenities &&
+                            property.office_amenities.length > 0 && (
+                              <div className="mt-4">
+                                <h3 className="text-lg font-medium mb-2">
+                                  Office Amenities
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {property.office_amenities.map(
+                                    (amenity, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center text-gray-600"
+                                      >
+                                        <Building className="w-4 h-4 mr-2 text-blue-600" />
+                                        {amenity}
+                                      </div>
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       )}
 
                       {/* Plot-Specific Details */}
-                      {(property.type === "commercial plot" || property.type === "residential plot") && (
+                      {(property.type === "commercial plot" ||
+                        property.type === "residential plot") && (
                         <div className="mb-6">
-                          <h2 className="text-xl font-semibold mb-4">Plot Details</h2>
+                          <h2 className="text-xl font-semibold mb-4">
+                            Plot Details
+                          </h2>
                           <div className="grid grid-cols-2 gap-4">
                             {property.plot_area && (
                               <div className="flex justify-between items-center">
@@ -861,7 +984,9 @@ const PropertyDetails = () => {
                             )}
                             {property.nearby_area && (
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Nearby Area</span>
+                                <span className="text-gray-600">
+                                  Nearby Area
+                                </span>
                                 <span className="font-semibold text-gray-800">
                                   {property.nearby_area}
                                 </span>
@@ -869,20 +994,29 @@ const PropertyDetails = () => {
                             )}
                             {property.estimated_rental_income && (
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Estimated Rental Income</span>
+                                <span className="text-gray-600">
+                                  Estimated Rental Income
+                                </span>
                                 <span className="font-semibold text-gray-800">
-                                  ₹{Number(property.estimated_rental_income).toLocaleString("en-IN")}
+                                  ₹
+                                  {Number(
+                                    property.estimated_rental_income
+                                  ).toLocaleString("en-IN")}
                                 </span>
                               </div>
                             )}
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-600">Under Committee</span>
+                              <span className="text-gray-600">
+                                Under Committee
+                              </span>
                               <span className="font-semibold text-gray-800">
                                 {property.under_committee ? "Yes" : "No"}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-600">Passed Building Land</span>
+                              <span className="text-gray-600">
+                                Passed Building Land
+                              </span>
                               <span className="font-semibold text-gray-800">
                                 {property.passed_building_land ? "Yes" : "No"}
                               </span>
@@ -892,20 +1026,27 @@ const PropertyDetails = () => {
                       )}
 
                       {/* Builder Floor/House-Specific Details */}
-                      {(property.type === "builder floor" || property.type === "house") && (
+                      {(property.type === "builder floor" ||
+                        property.type === "house") && (
                         <div className="mb-6">
                           <h2 className="text-xl font-semibold mb-4">
-                            {property.type === "builder floor" ? "Builder Floor" : "House"} Details
+                            {property.type === "builder floor"
+                              ? "Builder Floor"
+                              : "House"}{" "}
+                            Details
                           </h2>
                           <div className="grid grid-cols-2 gap-4">
-                            {property.type === "builder floor" && property.builder_floors && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Number of Floors</span>
-                                <span className="font-semibold text-gray-800">
-                                  {property.builder_floors}
-                                </span>
-                              </div>
-                            )}
+                            {property.type === "builder floor" &&
+                              property.builder_floors && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">
+                                    Number of Floors
+                                  </span>
+                                  <span className="font-semibold text-gray-800">
+                                    {property.builder_floors}
+                                  </span>
+                                </div>
+                              )}
                             {property.house_area && (
                               <div className="flex justify-between items-center">
                                 <span className="text-gray-600">Area</span>
@@ -940,7 +1081,9 @@ const PropertyDetails = () => {
                             )}
                             {property.house_parking && (
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Parking Spaces</span>
+                                <span className="text-gray-600">
+                                  Parking Spaces
+                                </span>
                                 <span className="font-semibold text-gray-800">
                                   {property.house_parking}
                                 </span>
@@ -948,26 +1091,36 @@ const PropertyDetails = () => {
                             )}
                             {property.house_location && (
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Location Details</span>
+                                <span className="text-gray-600">
+                                  Location Details
+                                </span>
                                 <span className="font-semibold text-gray-800">
                                   {property.house_location}
                                 </span>
                               </div>
                             )}
                           </div>
-                          {property.house_amenities && property.house_amenities.length > 0 && (
-                            <div className="mt-4">
-                              <h3 className="text-lg font-medium mb-2">House Amenities</h3>
-                              <div className="grid grid-cols-2 gap-2">
-                                {property.house_amenities.map((amenity, index) => (
-                                  <div key={index} className="flex items-center text-gray-600">
-                                    <Building className="w-4 h-4 mr-2 text-blue-600" />
-                                    {amenity}
-                                  </div>
-                                ))}
+                          {property.house_amenities &&
+                            property.house_amenities.length > 0 && (
+                              <div className="mt-4">
+                                <h3 className="text-lg font-medium mb-2">
+                                  House Amenities
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {property.house_amenities.map(
+                                    (amenity, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center text-gray-600"
+                                      >
+                                        <Building className="w-4 h-4 mr-2 text-blue-600" />
+                                        {amenity}
+                                      </div>
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       )}
                     </>
@@ -991,7 +1144,12 @@ const PropertyDetails = () => {
                   <div className="mb-6">
                     <button
                       onClick={() => {
-                        property?.type === "rent" ? setOpenTermsAndConditions(true) : toast.success("You will be redirected to the Payment page")
+                        if (property.listing_type === "rent") {
+                          setOpenTermsAndConditions(true);
+                        } else {
+                          // For buy properties, open schedule meeting modal
+                          setShowSchedule(true);
+                        }
                       }}
                       className="w-full md:w-fit bg-blue-600 text-white p-3 rounded-lg 
                       hover:bg-blue-700 transition-colors flex items-center 
@@ -1006,22 +1164,28 @@ const PropertyDetails = () => {
             {/* Room Status Table for Owner */}
             {isOwner && isShow && (
               <div className="px-8 pb-8">
-                <h2 className="text-xl font-semibold mb-4 mt-2">Room & Rent Status</h2>
+                <h2 className="text-xl font-semibold mb-4 mt-2">
+                  Room & Rent Status
+                </h2>
                 {roomStatusLoading ? (
                   <div className="text-gray-500">Loading room status...</div>
                 ) : roomStatus.length === 0 ? (
                   <div className="text-gray-500">No room data available.</div>
                 ) : (
-                  roomStatus.map(floor => (
+                  roomStatus.map((floor) => (
                     <div key={floor.floor} className="mb-4">
-                      <div className="font-semibold text-blue-700 mb-2">Floor {floor.floor}</div>
+                      <div className="font-semibold text-blue-700 mb-2">
+                        Floor {floor.floor}
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="min-w-full bg-white border rounded-lg">
                           <thead>
                             <tr className="bg-blue-50">
                               <th className="px-4 py-2 border">Room</th>
                               <th className="px-4 py-2 border">Tenants</th>
-                              <th className="px-4 py-2 border">Rent Collection Status</th>
+                              <th className="px-4 py-2 border">
+                                Rent Collection Status
+                              </th>
                               <th className="px-4 py-2 border">Description</th>
                               <th className="px-4 py-2 border">Actions</th>
                               <th className="px-4 py-2 border"></th>
@@ -1029,25 +1193,41 @@ const PropertyDetails = () => {
                           </thead>
                           <tbody>
                             {floor.rooms.map((room, idx) => (
-                              <tr key={idx} className="text-center hover:bg-gray-50">
-                                <td className="px-4 py-2 border">{room.roomNumber}</td>
-                                <td className="px-4 py-2 border">{room.status}</td>
+                              <tr
+                                key={idx}
+                                className="text-center hover:bg-gray-50"
+                              >
                                 <td className="px-4 py-2 border">
-                                  <span className={`px-2 py-1 rounded-full text-sm ${
-                                    room.rentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                                    room.rentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    room.rentStatus === 'No Bill' ? 'bg-gray-100 text-gray-800' :
-                                    'bg-red-100 text-red-800'
-                                  }`}>
-                                    {room.rentStatus === "pending" ? "NO" : "YES"}
+                                  {room.roomNumber}
+                                </td>
+                                <td className="px-4 py-2 border">
+                                  {room.status}
+                                </td>
+                                <td className="px-4 py-2 border">
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-sm ${
+                                      room.rentStatus === "Paid"
+                                        ? "bg-green-100 text-green-800"
+                                        : room.rentStatus === "Pending"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : room.rentStatus === "No Bill"
+                                        ? "bg-gray-100 text-gray-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {room.rentStatus === "pending"
+                                      ? "NO"
+                                      : "YES"}
                                   </span>
                                 </td>
-                                <td 
+                                <td
                                   className="px-4 py-2 border cursor-pointer"
                                   onClick={() => {
                                     if (!editingRoom) {
                                       setEditingRoom({ roomId: room.roomId });
-                                      setRoomDescription(room.description || '');
+                                      setRoomDescription(
+                                        room.description || ""
+                                      );
                                     }
                                   }}
                                 >
@@ -1056,7 +1236,9 @@ const PropertyDetails = () => {
                                       <input
                                         type="text"
                                         value={roomDescription}
-                                        onChange={(e) => setRoomDescription(e.target.value)}
+                                        onChange={(e) =>
+                                          setRoomDescription(e.target.value)
+                                        }
                                         className="flex-1 px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         placeholder="Enter room description"
                                         onClick={(e) => e.stopPropagation()}
@@ -1064,7 +1246,7 @@ const PropertyDetails = () => {
                                     </div>
                                   ) : (
                                     <span className="block text-gray-700">
-                                      {room.description || 'No description'}
+                                      {room.description || "No description"}
                                     </span>
                                   )}
                                 </td>
@@ -1085,7 +1267,7 @@ const PropertyDetails = () => {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setEditingRoom(null);
-                                          setRoomDescription('');
+                                          setRoomDescription("");
                                         }}
                                         className="p-1 text-red-600 hover:text-red-700 transition-colors"
                                         title="Cancel"
@@ -1098,7 +1280,9 @@ const PropertyDetails = () => {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setEditingRoom({ roomId: room.roomId });
-                                        setRoomDescription(room.description || '');
+                                        setRoomDescription(
+                                          room.description || ""
+                                        );
                                       }}
                                       className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
                                       title="Edit Description"
@@ -1151,62 +1335,83 @@ const PropertyDetails = () => {
         </div> */}
 
         <div className="mt-4 md:mt-10 border bg-white p-4 rounded-xl shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4 md:px-4">360° Virtual Tour</h2>
-          
+          <h2 className="text-2xl font-semibold mb-4 md:px-4">
+            360° Virtual Tour
+          </h2>
+
           {/* Property-level 360° scenes for all property types */}
-          {property?.floorDetails?.length === 0 && <div className="mb-6">
-            <PropertyVirtualTour propertyId={property?.id} />
-          </div>}
+          {property?.floorDetails?.length === 0 && (
+            <div className="mb-6">
+              <PropertyVirtualTour propertyId={property?.id} />
+            </div>
+          )}
 
           {/* Room-level 360° scenes for PG, RK, and flat properties */}
-          {(property?.type === "pg" || property?.type === "rk" || property?.type === "flat") && property?.floorDetails && property.floorDetails.length > 0 && (
-            <>
-              <div className="mt-8">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Room
-                  </label>
-                  <select
-                    value={selectedRoom?.id || ''}
-                    onChange={(e) => {
-                      const roomId = e.target.value;
-                      if (roomId) {
-                        // Find the floor and room
-                        const floor = property.floorDetails.find(f => 
-                          f.rooms.some(r => r.id === parseInt(roomId))
-                        );
-                        const room = floor?.rooms.find(r => r.id === parseInt(roomId));
-                        if (room) {
-                          setSelectedRoom({ ...room, floor_id: floor.id });
+          {(property?.type === "pg" ||
+            property?.type === "rk" ||
+            property?.type === "flat") &&
+            property?.floorDetails &&
+            property.floorDetails.length > 0 && (
+              <>
+                <div className="mt-8">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Room
+                    </label>
+                    <select
+                      value={selectedRoom?.id || ""}
+                      onChange={(e) => {
+                        const roomId = e.target.value;
+                        if (roomId) {
+                          // Find the floor and room
+                          const floor = property.floorDetails.find((f) =>
+                            f.rooms.some((r) => r.id === parseInt(roomId))
+                          );
+                          const room = floor?.rooms.find(
+                            (r) => r.id === parseInt(roomId)
+                          );
+                          if (room) {
+                            setSelectedRoom({ ...room, floor_id: floor.id });
+                          }
+                        } else {
+                          setSelectedRoom(null);
                         }
-                      } else {
-                        setSelectedRoom(null);
-                      }
-                    }}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  >
-                    <option value="">Select a room</option>
-                    {property.floorDetails?.map((floor) => (
-                      <optgroup key={floor.id} label={`Floor ${floor.floorNumber}`}>
-                        {floor.rooms?.map((room) => (
-                          <option key={room.id} value={room.id}>
-                            Room {room.roomNumber} - {room.capacity === room.occupied ? 'Occupied' : 'Available'}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-                {selectedRoom ? (
-                  <PanoramaViewer roomId={selectedRoom.id} className="w-full h-[500px] rounded-lg" />
-                ) : (
-                  <div className="w-full h-[500px] rounded-lg bg-gray-100 flex items-center justify-center">
-                    <p className="text-gray-600">Please select a room to view its 360° tour</p>
+                      }}
+                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    >
+                      <option value="">Select a room</option>
+                      {property.floorDetails?.map((floor) => (
+                        <optgroup
+                          key={floor.id}
+                          label={`Floor ${floor.floorNumber}`}
+                        >
+                          {floor.rooms?.map((room) => (
+                            <option key={room.id} value={room.id}>
+                              Room {room.roomNumber} -{" "}
+                              {room.capacity === room.occupied
+                                ? "Occupied"
+                                : "Available"}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
                   </div>
-                )}
-              </div>
-            </>
-          )}
+                  {selectedRoom ? (
+                    <PanoramaViewer
+                      roomId={selectedRoom.id}
+                      className="w-full h-[500px] rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-[500px] rounded-lg bg-gray-100 flex items-center justify-center">
+                      <p className="text-gray-600">
+                        Please select a room to view its 360° tour
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
         </div>
 
         <AnimatePresence>
@@ -1227,12 +1432,40 @@ const PropertyDetails = () => {
             >
               <TermsAndConditions />
               <div className="flex flex-row items-center justify-center mt-2">
-                <button className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                onClick={handleAccept}
+                <button
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={handleAccept}
                 >
                   Accept
                 </button>
               </div>
+            </GeneralModal>
+          )}
+        </AnimatePresence>
+
+        {/* Payment Modal */}
+        <AnimatePresence>
+          {showPaymentModal && paymentDetails && (
+            <GeneralModal
+              open={showPaymentModal}
+              onClose={() => setShowPaymentModal(false)}
+            >
+              <SplitPaymentComponent
+                paymentDetails={paymentDetails}
+                onPaymentSuccess={(payment) => {
+                  setShowPaymentModal(false);
+                  setPaymentDetails(null);
+                  toast.success(
+                    "Payment successful! Your booking is confirmed."
+                  );
+                  navigate("/customer-panel/transactions");
+                }}
+                onPaymentCancel={() => {
+                  setShowPaymentModal(false);
+                  setPaymentDetails(null);
+                  toast.info("Payment cancelled. You can try again later.");
+                }}
+              />
             </GeneralModal>
           )}
         </AnimatePresence>

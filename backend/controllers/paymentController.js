@@ -421,3 +421,130 @@ export const refundPayment = async (req, res) => {
     });
   }
 };
+
+// Create split payment order for Razorpay
+export const createSplitPaymentOrder = async (req, res) => {
+  try {
+    const { transactionId, baseAmount, adminFee, totalAmount } = req.body;
+    const userId = req.user.id;
+
+    if (!transactionId || !baseAmount || !adminFee || !totalAmount) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Transaction ID, base amount, admin fee, and total amount are required",
+      });
+    }
+
+    // Verify transaction exists and belongs to user
+    const transaction = await TransactionModel.getById(transactionId);
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found",
+      });
+    }
+
+    if (transaction.user_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // Process split payment through Razorpay
+    const result = await razorpayService.processSplitPayment(
+      transactionId,
+      totalAmount,
+      {
+        userId: userId,
+        propertyId: transaction.property_id,
+        baseAmount: baseAmount,
+        adminFee: adminFee,
+      }
+    );
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        order: result.order,
+        payment: result.payment,
+        key_id: result.key_id,
+      },
+    });
+  } catch (error) {
+    console.error("Create split payment order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create split payment order",
+    });
+  }
+};
+
+// Verify split payment
+export const verifySplitPayment = async (req, res) => {
+  try {
+    const { paymentId, orderId, signature, paymentRecordId } = req.body;
+    const userId = req.user.id;
+
+    if (!paymentId || !orderId || !signature || !paymentRecordId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Payment ID, Order ID, Signature, and Payment Record ID are required",
+      });
+    }
+
+    // Verify payment record belongs to user
+    const payment = await PaymentModel.findById(paymentRecordId);
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment record not found",
+      });
+    }
+
+    if (payment.user_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // Verify and complete split payment
+    const result = await razorpayService.verifyAndCompleteSplitPayment(
+      paymentId,
+      orderId,
+      signature,
+      paymentRecordId
+    );
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Split payment verified successfully",
+      data: {
+        payment: result.payment,
+      },
+    });
+  } catch (error) {
+    console.error("Verify split payment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify split payment",
+    });
+  }
+};

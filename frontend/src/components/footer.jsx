@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { 
-  Mail, 
-  Send, 
-  MapPin, 
+import React, { useState } from "react";
+import {
+  Mail,
+  Send,
+  MapPin,
   Phone,
   ChevronRight,
   ArrowRight,
-  ChevronDown
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
-import { Backendurl } from '../App';
-import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
+  ChevronDown,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
+import { Backendurl } from "../App";
+import { FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
 import logo from "../assets/Housemate_Logo_01.png";
 
 const MobileFooterSection = ({ title, children }) => {
@@ -21,23 +21,25 @@ const MobileFooterSection = ({ title, children }) => {
 
   return (
     <div className="border-b border-gray-200 py-3 lg:border-none lg:py-0">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between text-left lg:hidden"
       >
         <h3 className="text-sm font-bold tracking-wider text-gray-700 uppercase">
           {title}
         </h3>
-        <ChevronDown 
-          className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isOpen ? 'transform rotate-180' : ''}`} 
+        <ChevronDown
+          className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${
+            isOpen ? "transform rotate-180" : ""
+          }`}
         />
       </button>
-      
+
       <AnimatePresence>
         {(isOpen || window.innerWidth >= 1024) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden mt-3 lg:mt-0 lg:h-auto lg:opacity-100"
@@ -51,7 +53,7 @@ const MobileFooterSection = ({ title, children }) => {
 };
 
 // Footer Column Component
-const FooterColumn = ({ title, children, className = '', delay = 0 }) => {
+const FooterColumn = ({ title, children, className = "", delay = 0 }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -73,8 +75,8 @@ const FooterColumn = ({ title, children, className = '', delay = 0 }) => {
 // Footer Link Component
 const FooterLink = ({ href, children }) => {
   return (
-    <a 
-      href={href} 
+    <a
+      href={href}
       className="flex items-start text-base text-gray-600 transition-all duration-200 hover:text-blue-600 hover:translate-x-1 py-1.5 lg:py-0"
     >
       <ChevronRight className="w-3.5 h-3.5 mr-1 text-blue-500 opacity-0 transition-all duration-200 group-hover:opacity-100" />
@@ -85,9 +87,27 @@ const FooterLink = ({ href, children }) => {
 
 // Social Links Component
 const socialLinks = [
-  { icon: FaLinkedin, href: '#', label: 'Twitter', color: 'bg-[#1DA1F2]', hoverColor: 'hover:bg-[#1DA1F2]/90' },
-  { icon: FaFacebook, href: 'https://www.facebook.com/share/15mf6frSVt', label: 'Facebook', color: 'bg-[#1877F2]', hoverColor: 'hover:bg-[#1877F2]/90' },
-  { icon: FaInstagram, href: 'https://www.instagram.com/be.housemate?igsh=MTVueGZpcmZjeDBseQ==', label: 'Instagram', color: 'bg-gradient-to-tr from-[#fd5949] via-[#d6249f] to-[#285AEB]', hoverColor: 'hover:opacity-90' },
+  {
+    icon: FaLinkedin,
+    href: "#",
+    label: "Twitter",
+    color: "bg-[#1DA1F2]",
+    hoverColor: "hover:bg-[#1DA1F2]/90",
+  },
+  {
+    icon: FaFacebook,
+    href: "https://www.facebook.com/share/15mf6frSVt",
+    label: "Facebook",
+    color: "bg-[#1877F2]",
+    hoverColor: "hover:bg-[#1877F2]/90",
+  },
+  {
+    icon: FaInstagram,
+    href: "https://www.instagram.com/be.housemate?igsh=MTVueGZpcmZjeDBseQ==",
+    label: "Instagram",
+    color: "bg-gradient-to-tr from-[#fd5949] via-[#d6249f] to-[#285AEB]",
+    hoverColor: "hover:opacity-90",
+  },
 ];
 
 const SocialLinks = () => {
@@ -113,33 +133,37 @@ const SocialLinks = () => {
 
 // Newsletter Component
 const Newsletter = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Please enter your email');
+      toast.error("Please enter your email");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await axios.post(`${Backendurl}/api/news/newsdata`, { email } ,{
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await axios.post(
+        `${Backendurl}/api/news/newsdata`,
+        { email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-      });
+      );
       if (response.status === 200) {
-        toast.success('Successfully subscribed to our newsletter!');
-        setEmail('');
+        toast.success("Successfully subscribed to our newsletter!");
+        setEmail("");
       } else {
-        toast.error('Failed to subscribe. Please try again.');
+        toast.error("Failed to subscribe. Please try again.");
       }
     } catch (error) {
-      console.error('Error subscribing to newsletter:', error);
-      toast.error('Failed to subscribe. Please try again.');
+      console.error("Error subscribing to newsletter:", error);
+      toast.error("Failed to subscribe. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -147,12 +171,15 @@ const Newsletter = () => {
 
   return (
     <div className="w-full">
-      <h3 className="text-sm font-bold tracking-wider text-gray-700 uppercase mb-4">Stay Updated</h3>
-      
+      <h3 className="text-sm font-bold tracking-wider text-gray-700 uppercase mb-4">
+        Stay Updated
+      </h3>
+
       <p className="text-gray-600 mb-4 text-sm">
-        Subscribe to our newsletter for the latest property listings and real estate insights.
+        Subscribe to our newsletter for the latest property listings and real
+        estate insights.
       </p>
-      
+
       <form onSubmit={handleSubmit} className="mt-3">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-grow">
@@ -187,7 +214,11 @@ const Newsletter = () => {
       </form>
 
       <p className="mt-3 text-xs text-gray-500">
-        By subscribing, you agree to our <a href="/privacy" className="underline hover:text-blue-600">Privacy Policy</a>.
+        By subscribing, you agree to our{" "}
+        <a href="/privacy" className="underline hover:text-blue-600">
+          Privacy Policy
+        </a>
+        .
       </p>
     </div>
   );
@@ -195,34 +226,36 @@ const Newsletter = () => {
 
 // Main Footer Component
 const companyLinks = [
-  { name: 'Home', href: '/' },
-  { name: 'Properties', href: '/properties' },
-  { name: 'About Us', href: '/about' },
-  { name: 'Contact', href: '/contact' },
+  { name: "Home", href: "/" },
+  { name: "Properties", href: "/properties" },
+  { name: "About Us", href: "/about" },
+  { name: "Contact", href: "/contact" },
 ];
 
 const helpLinks = [
-  { name: 'Customer Support', href: '/contact' },
-  { name: 'FAQs', href: '/faqs' },
-  { name: 'Terms & Conditions', href: '/terms' },
-  { name: 'Privacy Policy', href: '/privacy' },
+  { name: "Customer Support", href: "/contact" },
+  { name: "FAQs", href: "/faqs" },
+  { name: "Terms & Conditions", href: "/terms" },
+  { name: "Privacy Policy", href: "/privacy" },
+  { name: "Refund Policy", href: "/refund-policy" },
+  { name: "Shipping & Delivery", href: "/shipping-policy" },
 ];
 
 const contactInfo = [
-  { 
-    icon: MapPin, 
-    text: 'Sec 28 Gurugram',
-    href: 'https://maps.google.com/?q=sec+28+gurugram' 
+  {
+    icon: MapPin,
+    text: "Sec 28 Gurugram",
+    href: "https://maps.google.com/?q=sec+28+gurugram",
   },
-  { 
-    icon: Phone, 
-    text: '+91 9518212905',
-    href: 'tel:+919518212905'
+  {
+    icon: Phone,
+    text: "+91 9518212905",
+    href: "tel:+919518212905",
   },
-  { 
-    icon: Mail, 
-    text: 'Be.housemate@gmail.com',
-    href: 'mailto:Be.housemate@gmail.com' 
+  {
+    icon: Mail,
+    text: "Be.housemate@gmail.com",
+    href: "mailto:Be.housemate@gmail.com",
   },
 ];
 
@@ -238,13 +271,17 @@ const Footer = () => {
               <div className="flex flex-col items-center lg:items-start">
                 <div className="flex items-center justify-center lg:justify-start">
                   <div className="mr-2 rounded-lg">
-                    <img src={logo} alt="HOUSEMATE logo" className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <img
+                      src={logo}
+                      alt="HOUSEMATE logo"
+                      className="w-6 h-6 sm:w-8 sm:h-8"
+                    />
                   </div>
                   <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     HOUSEMATE
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2 w-full pl-2">
                   <div className="flex-1 h-px bg-gray-400"></div>
                   <span className="text-sm text-gray-500 font-medium tracking-wider whitespace-nowrap">
@@ -254,11 +291,12 @@ const Footer = () => {
                 </div>
               </div>
             </div>
-            
+
             <p className="text-gray-600 mt-4 text-center lg:text-left lg:mt-6 max-w-md mx-auto lg:mx-0 leading-relaxed">
-              Your trusted partner in finding the perfect home. We make property hunting simple, efficient, and tailored to your unique needs.
+              Your trusted partner in finding the perfect home. We make property
+              hunting simple, efficient, and tailored to your unique needs.
             </p>
-            
+
             <div className="flex justify-center lg:justify-start">
               <SocialLinks />
             </div>
@@ -267,9 +305,13 @@ const Footer = () => {
           {/* Desktop layout */}
           <div className="hidden lg:grid grid-cols-12 gap-8">
             {/* Quick Links Column */}
-            <FooterColumn title="Quick Links" className="col-span-2" delay={0.2}>
+            <FooterColumn
+              title="Quick Links"
+              className="col-span-2"
+              delay={0.2}
+            >
               <ul className="space-y-3">
-                {companyLinks.map(link => (
+                {companyLinks.map((link) => (
                   <li key={link.name} className="group ml-[-18px]">
                     <FooterLink href={link.href}>{link.name}</FooterLink>
                   </li>
@@ -280,7 +322,7 @@ const Footer = () => {
             {/* Help Column */}
             <FooterColumn title="Support" className="col-span-2" delay={0.3}>
               <ul className="space-y-3">
-                {helpLinks.map(link => (
+                {helpLinks.map((link) => (
                   <li key={link.name} className="group ml-[-18px]">
                     <FooterLink href={link.href}>{link.name}</FooterLink>
                   </li>
@@ -293,11 +335,13 @@ const Footer = () => {
               <ul className="space-y-4">
                 {contactInfo.map((item, index) => (
                   <li key={index}>
-                    <a 
-                      href={item.href} 
+                    <a
+                      href={item.href}
                       className="flex items-start text-gray-600 hover:text-blue-600 transition-colors duration-200"
                       target={item.icon === MapPin ? "_blank" : undefined}
-                      rel={item.icon === MapPin ? "noopener noreferrer" : undefined}
+                      rel={
+                        item.icon === MapPin ? "noopener noreferrer" : undefined
+                      }
                     >
                       <item.icon className="w-4 h-4 mt-1 mr-3 flex-shrink-0 text-blue-500" />
                       <span className="text-sm">{item.text}</span>
@@ -306,7 +350,7 @@ const Footer = () => {
                 ))}
               </ul>
             </FooterColumn>
-            
+
             {/* Newsletter */}
             <div className="col-span-5">
               <Newsletter />
@@ -317,7 +361,7 @@ const Footer = () => {
           <div className="lg:hidden space-y-4">
             <MobileFooterSection title="Quick Links">
               <ul className="space-y-2 py-2">
-                {companyLinks.map(link => (
+                {companyLinks.map((link) => (
                   <li key={link.name} className="group">
                     <FooterLink href={link.href}>{link.name}</FooterLink>
                   </li>
@@ -327,7 +371,7 @@ const Footer = () => {
 
             <MobileFooterSection title="Support">
               <ul className="space-y-2 py-2">
-                {helpLinks.map(link => (
+                {helpLinks.map((link) => (
                   <li key={link.name} className="group">
                     <FooterLink href={link.href}>{link.name}</FooterLink>
                   </li>
@@ -339,11 +383,13 @@ const Footer = () => {
               <ul className="space-y-3 py-2">
                 {contactInfo.map((item, index) => (
                   <li key={index}>
-                    <a 
-                      href={item.href} 
+                    <a
+                      href={item.href}
                       className="flex items-start text-gray-600 hover:text-blue-600 transition-colors duration-200"
                       target={item.icon === MapPin ? "_blank" : undefined}
-                      rel={item.icon === MapPin ? "noopener noreferrer" : undefined}
+                      rel={
+                        item.icon === MapPin ? "noopener noreferrer" : undefined
+                      }
                     >
                       <item.icon className="w-4 h-4 mt-1 mr-3 flex-shrink-0 text-blue-500" />
                       <span className="text-sm">{item.text}</span>
@@ -359,14 +405,14 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Bottom Bar */}
       <div className="bg-gray-100 border-t border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-gray-600 mb-4 md:mb-0 text-center md:text-left">
             © {new Date().getFullYear()} HOUSEMATE. All Rights Reserved.
           </p>
-          
+
           <motion.a
             href="/properties"
             whileHover={{ scale: 1.03 }}

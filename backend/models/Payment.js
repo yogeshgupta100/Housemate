@@ -20,7 +20,17 @@ const PaymentModel = {
         payment_receipt_url,
         payment_notes,
         processed_by,
+        split_details,
       } = data;
+
+      // If split_details is provided, add it to payment_notes
+      let finalPaymentNotes = payment_notes;
+      if (split_details) {
+        const splitInfo = `Split Payment - Base: ₹${split_details.base_amount}, Admin Fee: ₹${split_details.admin_fee}, Total: ₹${split_details.total_amount}`;
+        finalPaymentNotes = finalPaymentNotes
+          ? `${finalPaymentNotes} | ${splitInfo}`
+          : splitInfo;
+      }
 
       const { rows } = await client.query(
         `INSERT INTO payments (
@@ -42,7 +52,7 @@ const PaymentModel = {
           razorpay_payment_id,
           razorpay_signature,
           payment_receipt_url,
-          payment_notes,
+          finalPaymentNotes,
           processed_by,
         ]
       );
@@ -67,7 +77,7 @@ const PaymentModel = {
           razorpay_order_id,
           razorpay_payment_id,
           payment_receipt_url,
-          payment_notes,
+          finalPaymentNotes,
           transaction_id,
         ]
       );
